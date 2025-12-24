@@ -20,7 +20,9 @@
     "server": "node server.js",
     "build:backend": "tsc -p backend/tsconfig.backend.json",
     "start:backend": "node backend/dist/server.js",
-    "server:ts": "npm run build:backend && npm run start:backend"
+    "server:ts": "npm run build:backend && npm run start:backend",
+    "deploy:backend": "npm run build:backend && npx prisma generate && npx prisma migrate deploy && npm run start:backend",
+    "deploy:web": "npm run build:web && npx serve dist -s -p ${PORT:-8080}"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

@@ -1,170 +1,188 @@
-# 🚀 Deployment Checklist
+# ✅ Railway Deployment Checklist
 
-## ✅ **Testing Status (Completed)**
+## 📋 Pre-Deployment Checklist
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| **User Registration** | ✅ Working | Email verification works (Resend domain needs verification for production) |
-| **User Login** | ✅ Working | Regular login + Google OAuth working |
-| **Google OAuth** | ✅ Working | Redirects correctly, creates users |
-| **VK OAuth** | ✅ Configured | Ready for testing |
-| **Admin Login** | ✅ Working | Admin role verified |
-| **Role-Based Access** | ✅ Working | Admin/Moderator/User roles functional |
-| **Navigation** | ✅ Working | All routes accessible (200 status) |
-| **Payriff Integration** | ✅ API Ready | Payment endpoints configured |
-| **Data Persistence** | ✅ Working | Login persists across sessions |
-
----
-
-## 🔒 **Security Hardening (Before Production)**
-
-### 1. **Re-enable Rate Limiting**
-- [ ] Uncomment rate limiting in `backend/routes/auth.ts`:
-  ```typescript
-  // Change from:
-  // auth.use('*', authRateLimit);
-  // To:
-  auth.use('*', authRateLimit);
-  ```
-
-### 2. **Environment Variables**
-- [ ] Update `.env` for production:
-  ```env
-  NODE_ENV=production
-  FRONTEND_URL=https://your-production-domain.com
-  EXPO_PUBLIC_RORK_API_BASE_URL=https://your-production-domain.com
-  JWT_SECRET=<strong-random-secret>
-  DATABASE_URL=<production-database-url>
-  ```
-
-### 3. **OAuth Redirect URIs**
-- [ ] **Google Cloud Console:**
-  - Add: `https://your-production-domain.com/api/auth/google/callback`
-  - Remove: `http://localhost:3000/api/auth/google/callback`
-  
-- [ ] **VK Developer Console:**
-  - Add: `https://your-production-domain.com/api/auth/vk/callback`
-  - Remove: `http://localhost:3000/api/auth/vk/callback`
-
-### 4. **Email Service (Resend)**
-- [ ] Verify domain in Resend dashboard
-- [ ] Update `EMAIL_FROM` to verified domain
-- [ ] Test email sending in production
-
-### 5. **Database**
-- [ ] Backup production database
-- [ ] Run migrations: `npx prisma migrate deploy`
-- [ ] Verify database connection
-
-### 6. **HTTPS/SSL**
-- [ ] Ensure all production URLs use HTTPS
-- [ ] SSL certificate configured
-- [ ] HSTS headers enabled (already in code)
+### Before You Deploy
+- [ ] Railway account created
+- [ ] Domain `naxtap.az` accessible
+- [ ] All API keys collected:
+  - [ ] JWT_SECRET generated
+  - [ ] Payriff credentials
+  - [ ] Google OAuth credentials
+  - [ ] Facebook OAuth credentials
+  - [ ] VK OAuth credentials
+  - [ ] Resend API key
+  - [ ] Other optional keys (Twilio, AWS, etc.)
 
 ---
 
-## 📦 **Build & Deploy Steps**
+## 🔧 Backend Deployment Steps
 
-### **Frontend Build:**
-```bash
-npm run build:web
+### 1. Create Railway Project
+- [ ] Login to Railway
+- [ ] Create new project
+- [ ] Connect GitHub repo (or upload code)
+
+### 2. Add PostgreSQL Database
+- [ ] Click "+ New" → Database → PostgreSQL
+- [ ] Verify `DATABASE_URL` was auto-generated
+- [ ] Database is linked to backend service
+
+### 3. Configure Backend Service
+- [ ] Build command: `npm run build:backend && npx prisma generate`
+- [ ] Start command: `npx prisma migrate deploy && npm run start:backend`
+- [ ] Root directory: `/` (or leave blank)
+
+### 4. Set Environment Variables
+Copy from `env.production.backend.example` and set in Railway:
+- [ ] `JWT_SECRET` (64+ character random string)
+- [ ] `FRONTEND_URL=https://naxtap.az`
+- [ ] `EXPO_PUBLIC_FRONTEND_URL=https://naxtap.az`
+- [ ] `NODE_ENV=production`
+- [ ] `PAYRIFF_MERCHANT_ID`
+- [ ] `PAYRIFF_SECRET_KEY`
+- [ ] `PAYRIFF_BASE_URL=https://api.payriff.com`
+- [ ] `GOOGLE_CLIENT_ID`
+- [ ] `GOOGLE_CLIENT_SECRET`
+- [ ] `FACEBOOK_APP_ID`
+- [ ] `FACEBOOK_APP_SECRET`
+- [ ] `VK_CLIENT_ID`
+- [ ] `VK_CLIENT_SECRET`
+- [ ] `RESEND_API_KEY`
+- [ ] `EMAIL_FROM=noreply@naxtap.az`
+- [ ] `EMAIL_FROM_NAME=Naxtap`
+
+### 5. Deploy Backend
+- [ ] Click "Deploy" button
+- [ ] Wait for build to complete (~3-5 min)
+- [ ] Check logs for errors
+- [ ] Note Railway backend URL
+
+### 6. Add Custom Domain
+- [ ] Settings → Networking → Custom Domain
+- [ ] Add: `api.naxtap.az`
+- [ ] Copy CNAME record from Railway
+- [ ] Add DNS record to domain registrar
+- [ ] Wait for DNS propagation (5-60 min)
+
+### 7. Test Backend
+- [ ] Visit `https://api.naxtap.az/` - should return JSON health check
+- [ ] Check tRPC endpoint: `https://api.naxtap.az/api/trpc`
+- [ ] No errors in Railway logs
+
+---
+
+## 🌐 Frontend Deployment Steps
+
+### 1. Create Frontend Service
+- [ ] Click "+ New" → Empty Service
+- [ ] Name: "frontend" or "web"
+- [ ] Connect same repo (or separate deployment)
+
+### 2. Configure Frontend Service
+- [ ] Build command: `npm run build:web`
+- [ ] Start command: `node server-frontend.js`
+- [ ] Root directory: `/` (or leave blank)
+
+### 3. Set Environment Variables
+Copy from `env.production.frontend.example`:
+- [ ] `EXPO_PUBLIC_RORK_API_BASE_URL=https://api.naxtap.az`
+- [ ] `EXPO_PUBLIC_API_BASE_URL=https://api.naxtap.az`
+- [ ] `EXPO_PUBLIC_BACKEND_URL=https://api.naxtap.az`
+- [ ] `EXPO_PUBLIC_FRONTEND_URL=https://naxtap.az`
+- [ ] `NODE_ENV=production`
+
+### 4. Deploy Frontend
+- [ ] Click "Deploy"
+- [ ] Wait for build (~2-3 min)
+- [ ] Check logs for "✅ Frontend server running"
+- [ ] Note Railway frontend URL
+
+### 5. Add Custom Domain
+- [ ] Settings → Networking → Custom Domain
+- [ ] Add: `naxtap.az`
+- [ ] Copy DNS records from Railway
+- [ ] Add to domain registrar
+- [ ] Wait for propagation
+
+### 6. Test Frontend
+- [ ] Visit `https://naxtap.az`
+- [ ] App loads correctly
+- [ ] Check browser console for errors
+- [ ] Test login/authentication
+- [ ] Test API calls to backend
+- [ ] No CORS errors
+
+---
+
+## 🌍 DNS Configuration
+
+Add these records at your domain registrar:
+
+### For api.naxtap.az (Backend)
+```
+Type: CNAME
+Name: api
+Target: [your-backend.up.railway.app]
+TTL: 3600
 ```
 
-### **Backend Build:**
-```bash
-npm run build:backend
+### For naxtap.az (Frontend)
+```
+Type: CNAME or A
+Name: @ (or root)
+Target: [your-frontend.up.railway.app]
+TTL: 3600
 ```
 
-### **Start Production Server:**
-```bash
-npm run start:backend
-# Or use PM2:
-pm2 start backend/dist/server.js --name naxtap-api
+### Optional: WWW redirect
+```
+Type: CNAME
+Name: www
+Target: naxtap.az
+TTL: 3600
 ```
 
 ---
 
-## 🧪 **Pre-Deployment Testing**
+## 🧪 Post-Deployment Testing
 
-### **Manual Tests:**
-- [ ] Register new user
-- [ ] Login with email/password
-- [ ] Login with Google OAuth
-- [ ] Login with VK OAuth (if needed)
-- [ ] Admin dashboard access
-- [ ] Moderator dashboard access
-- [ ] Create listing
-- [ ] Payment flow (test mode)
-- [ ] Profile editing
-- [ ] Settings page
+### Backend Tests
+- [ ] Health endpoint: `https://api.naxtap.az/`
+- [ ] tRPC endpoint accessible
+- [ ] Database queries work
+- [ ] Auth endpoints respond
+- [ ] Payment endpoints configured
+- [ ] Social login callbacks work
 
-### **Security Tests:**
-- [ ] Rate limiting works (try 6+ login attempts)
-- [ ] CORS blocks unauthorized origins
-- [ ] JWT tokens expire correctly
-- [ ] Password validation enforced
-- [ ] SQL injection protection (Prisma handles this)
+### Frontend Tests
+- [ ] Homepage loads: `https://naxtap.az`
+- [ ] User registration works
+- [ ] User login works
+- [ ] Listings display
+- [ ] Search functionality
+- [ ] Store pages work
+- [ ] Payment flow functional
+- [ ] Image uploads work
+- [ ] Mobile responsive
+- [ ] SSL certificate active (🔒 in browser)
 
----
-
-## 🐛 **Known Issues & Notes**
-
-1. **Email Verification:**
-   - Resend domain not verified (development)
-   - Users can register but won't receive emails
-   - **Fix:** Verify domain in Resend dashboard
-
-2. **Payriff Payment:**
-   - API returns error (likely test credentials)
-   - **Fix:** Update Payriff credentials for production
-
-3. **Rate Limiting:**
-   - Currently disabled for development
-   - **Fix:** Re-enable before production
+### Integration Tests
+- [ ] Frontend connects to backend API
+- [ ] Authentication persists across refresh
+- [ ] Real-time features work (chat, calls)
+- [ ] Payments process correctly
+- [ ] Email confirmations send
+- [ ] Push notifications work
 
 ---
 
-## 📋 **Post-Deployment Checklist**
+## ✅ Deployment Complete!
 
-- [ ] Monitor error logs
-- [ ] Check API response times
-- [ ] Verify OAuth redirects work
-- [ ] Test payment flow end-to-end
-- [ ] Monitor database performance
-- [ ] Set up error tracking (Sentry, etc.)
-- [ ] Configure backup schedule
-- [ ] Set up monitoring/alerts
+When all items are checked, your Naxtap marketplace is live! 🎉
 
----
+- Backend: `https://api.naxtap.az`
+- Frontend: `https://naxtap.az`
+- Mobile: Coming soon (Expo deployment)
 
-## 🔧 **Quick Fixes Needed**
-
-### **1. Re-enable Auth Rate Limiting:**
-```typescript
-// backend/routes/auth.ts - Line 12
-auth.use('*', authRateLimit); // Uncomment this
-```
-
-### **2. Update Production URLs:**
-```env
-# .env
-FRONTEND_URL=https://your-domain.com
-EXPO_PUBLIC_RORK_API_BASE_URL=https://your-domain.com
-```
-
-### **3. Verify OAuth Redirects:**
-- Google: `https://your-domain.com/api/auth/google/callback`
-- VK: `https://your-domain.com/api/auth/vk/callback`
-
----
-
-## ✅ **Ready for Deployment!**
-
-All core features are working. Follow the security hardening steps above before going live.
-
-**Priority Actions:**
-1. Re-enable rate limiting
-2. Update production environment variables
-3. Configure OAuth redirect URIs
-4. Verify email domain in Resend
-5. Test all flows in staging environment
+Good luck! 🚀
