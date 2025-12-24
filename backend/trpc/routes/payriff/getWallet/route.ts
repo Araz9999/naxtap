@@ -1,8 +1,8 @@
 import { publicProcedure } from "../../../create-context";
-import config from "@/constants/config";
-import { PayriffResponse, isPayriffSuccess, getPayriffErrorMessage } from '@/constants/payriffCodes';
+import config from '../../../../config';
+import { PayriffResponse, isPayriffSuccess, getPayriffErrorMessage } from '../../../../constants/payriffCodes';
 
-import { logger } from '@/utils/logger';
+import { logger } from '../../../../utils/logger';
 export const getWalletProcedure = publicProcedure.query(async () => {
   try {
     const merchantId = config.PAYRIFF_MERCHANT_ID;

@@ -6,8 +6,8 @@ import {
   ReportStatus,
   ReportPriority,
   TicketStatus 
-} from '@/types/moderation';
-import { logger } from '../../utils/logger';
+} from '../types/moderation';
+import { logger } from '../utils/logger';
 
 const reports: Map<string, Report> = new Map();
 const moderationActions: Map<string, ModerationAction> = new Map();

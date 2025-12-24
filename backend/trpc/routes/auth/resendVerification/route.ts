@@ -1,13 +1,13 @@
 import { protectedProcedure } from '../../../create-context';
-import { userDB } from '../../../../db/users';
+import { findUserById, setVerificationToken } from '../../../../db/userPrisma';
 import { emailService } from '../../../../services/email';
 
-import { logger } from '@/utils/logger';
+import { logger } from '../../../../utils/logger';
 export const resendVerificationProcedure = protectedProcedure
   .mutation(async ({ ctx }) => {
     logger.debug('[Auth] Resend verification attempt:', ctx.user.userId);
 
-    const user = await userDB.findById(ctx.user.userId);
+    const user = await findUserById(ctx.user.userId);
     if (!user) {
       throw new Error('İstifadəçi tapılmadı');
     }
@@ -20,7 +20,7 @@ export const resendVerificationProcedure = protectedProcedure
     }
 
     const verificationToken = generateRandomToken();
-    await userDB.setVerificationToken(user.id, verificationToken, 24);
+    await setVerificationToken(user.id, verificationToken, 24);
 
     const frontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
     const verificationUrl = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;

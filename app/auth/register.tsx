@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '@/constants/translations';
 import { useUserStore } from '@/store/userStore';
@@ -15,6 +15,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { t, language } = useTranslation();
   const { login } = useUserStore();
+
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,7 +30,69 @@ export default function RegisterScreen() {
   const [loadingSocial, setLoadingSocial] = useState<string | null>(null);
   
   const registerMutation = trpc.auth.register.useMutation();
-  
+
+  // Native HTML button for web to ensure clicks always work
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const container = document.getElementById('register-button-container');
+    if (!container) return;
+
+    // Clear previous content and recreate button each time
+    container.innerHTML = '';
+
+    // Debug: log when we create the button
+    console.log('[Register] Creating native web register button');
+
+    const nativeButton = document.createElement('button');
+    nativeButton.textContent = isLoading
+      ? (t('loading') || 'Loading...')
+      : (t('registerNow') || 'Register');
+
+    nativeButton.style.cssText = `
+      width: 100%;
+      padding: 15px;
+      background-color: ${(!agreeToTerms || isLoading) ? '#9CA3AF' : (Colors?.primary || '#0EA5A7')};
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: ${(!agreeToTerms || isLoading) ? 'not-allowed' : 'pointer'};
+      margin-top: 10px;
+    `;
+
+    nativeButton.disabled = !agreeToTerms || isLoading;
+
+    nativeButton.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+       // Debug: confirm click is firing
+       console.log('[Register] Native web register button clicked');
+       // Simple visible feedback so we know click works at all
+       window.alert('Register button clicked. Now running validation...');
+
+      if (!agreeToTerms) {
+        const title = language === 'az' ? 'Xəta' : 'Ошибка';
+        const msg =
+          language === 'az'
+            ? 'İstifadə şərtlərini qəbul edin'
+            : 'Примите условия использования';
+        window.alert(`${title}: ${msg}`);
+        return;
+      }
+
+      if (isLoading) {
+        return;
+      }
+
+      handleRegister();
+    };
+
+    container.appendChild(nativeButton);
+  }, [agreeToTerms, isLoading, t, language, name, email, phone, password, confirmPassword]);
+
   // ✅ Enhanced form validation
   const validateForm = (): { isValid: boolean; error?: string } => {
     if (!name || !name.trim()) {
@@ -53,28 +116,32 @@ export default function RegisterScreen() {
     }
     
     if (!validateAzerbaijanPhone(phone)) {
-      return { isValid: false, error: language === 'az' ? 'Düzgün telefon nömrəsi daxil edin' : 'Введите корректный номер телефона' };
+      const cleaned = phone.replace(/[^0-9+]/g, '');
+      const digitsAfter994 = cleaned.replace('+994', '').replace('994', '');
+      return { 
+        isValid: false, 
+        error: language === 'az' 
+          ? `Düzgün telefon nömrəsi daxil edin. Format: +994XXXXXXXXX (9 rəqəm). Sizin: ${phone} (${digitsAfter994.length} rəqəm)` 
+          : `Введите корректный номер телефона. Формат: +994XXXXXXXXX (9 цифр). Ваш: ${phone} (${digitsAfter994.length} цифр)`
+      };
     }
     
     if (!password) {
-      return { isValid: false, error: language === 'az' ? 'Şifrə daxil edin' : 'Введите пароль' };
+      return {
+        isValid: false,
+        error: language === 'az' ? 'Şifrə daxil edin' : 'Введите пароль',
+      };
     }
-    
-    // ✅ Match backend password requirements (8 chars, uppercase, lowercase, number)
+
+    // Simpler frontend rule: only length >= 8, let backend enforce strong rules
     if (password.length < 8) {
-      return { isValid: false, error: language === 'az' ? 'Şifrə ən az 8 simvol olmalıdır' : 'Пароль должен содержать минимум 8 символов' };
-    }
-    
-    if (!/[A-Z]/.test(password)) {
-      return { isValid: false, error: language === 'az' ? 'Şifrə ən azı 1 böyük hərf olmalıdır' : 'Пароль должен содержать минимум 1 заглавную букву' };
-    }
-    
-    if (!/[a-z]/.test(password)) {
-      return { isValid: false, error: language === 'az' ? 'Şifrə ən azı 1 kiçik hərf olmalıdır' : 'Пароль должен содержать минимум 1 строчную букву' };
-    }
-    
-    if (!/[0-9]/.test(password)) {
-      return { isValid: false, error: language === 'az' ? 'Şifrə ən azı 1 rəqəm olmalıdır' : 'Пароль должен содержать минимум 1 цифру' };
+      return {
+        isValid: false,
+        error:
+          language === 'az'
+            ? 'Şifrə ən az 8 simvol olmalıdır'
+            : 'Пароль должен содержать минимум 8 символов',
+      };
     }
     
     if (!confirmPassword) {
@@ -93,29 +160,42 @@ export default function RegisterScreen() {
   };
   
   const handleRegister = async () => {
-    if (isLoading) {
-      return;
-    }
-    
-    // ✅ Validate form
-    const validation = validateForm();
-    if (!validation.isValid) {
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        validation.error || 'Form düzgün doldurulmayıb'
-      );
-      return;
-    }
-    
-    setIsLoading(true);
-    
     try {
-      const result = await registerMutation.mutateAsync({
-        email: email.trim().toLowerCase(),
-        password,
-        name: sanitizeTextInput(name.trim(), 100),
-        phone: phone.trim(),
-      });
+      if (isLoading) {
+        return;
+      }
+
+      // ✅ Validate form
+      const validation = validateForm();
+      console.log('[Register] Validation result:', validation);
+
+      if (!validation.isValid) {
+        const title = language === 'az' ? 'Xəta' : 'Ошибка';
+        const message = validation.error || 'Form düzgün doldurulmayıb';
+
+        Alert.alert(title, message);
+        if (Platform.OS === 'web') {
+          // Extra visible feedback on web
+          window.alert(`${title}: ${message}`);
+        }
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        console.log('[Register] Sending register mutation with data:', {
+          email: email.trim().toLowerCase(),
+          phone: phone.trim(),
+          name: name.trim(),
+        });
+
+        const result = await registerMutation.mutateAsync({
+          email: email.trim().toLowerCase(),
+          password,
+          name: sanitizeTextInput(name.trim(), 100),
+          phone: phone.trim(),
+        });
       
       // ✅ Create complete user object
       const mockUser = {
@@ -141,47 +221,52 @@ export default function RegisterScreen() {
         },
       };
       
-      if (result.emailSent) {
-        Alert.alert(
-          t('success') || 'Uğurlu',
-          language === 'az' 
-            ? 'Qeydiyyat uğurla tamamlandı! Email ünvanınıza təsdiq linki göndərildi. Zəhmət olmasa email-inizi yoxlayın.'
-            : 'Регистрация успешно завершена! Ссылка для подтверждения отправлена на ваш email. Пожалуйста, проверьте почту.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                login(mockUser);
-                router.replace('/');
-              },
-            },
-          ]
-        );
-      } else {
-        Alert.alert(
-          language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
-          language === 'az'
-            ? 'Qeydiyyat uğurlu oldu, lakin email göndərilmədi. Daha sonra email təsdiqini tamamlaya bilərsiniz.'
-            : 'Регистрация прошла успешно, но письмо не было отправлено. Вы сможете завершить подтверждение email позже.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                login(mockUser);
-                router.replace('/');
-              },
-            },
-          ]
-        );
-      }
+      // ✅ Always login user and redirect (email sending is optional)
+      console.log('[Register] Logging in user and redirecting...');
+      login(mockUser);
+
+      // Show success message
+      const successMessage = result.emailSent
+        ? (language === 'az'
+            ? 'Qeydiyyat uğurla tamamlandı! Email ünvanınıza təsdiq linki göndərildi.'
+            : 'Регистрация успешно завершена! Ссылка для подтверждения отправлена на ваш email.')
+        : (language === 'az'
+            ? 'Qeydiyyat uğurlu oldu! Email göndərilmədi, amma hesabınız aktivdir.'
+            : 'Регистрация прошла успешно! Email не был отправлен, но ваш аккаунт активен.');
+
+      Alert.alert(
+        t('success') || 'Uğurlu',
+        successMessage,
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/'),
+          },
+        ]
+      );
+
+      // Auto-redirect after 3 seconds if user doesn't click OK
+      setTimeout(() => {
+        console.log('[Register] Auto-redirecting to home...');
+        router.replace('/');
+      }, 3000);
     } catch (error: any) {
       logger.error('Registration error:', error);
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        error?.message || (language === 'az' ? 'Qeydiyyat zamanı xəta baş verdi' : 'Ошибка при регистрации')
-      );
+      const title = language === 'az' ? 'Xəta' : 'Ошибка';
+      const message =
+        error?.message ||
+        (language === 'az' ? 'Qeydiyyat zamanı xəta baş verdi' : 'Ошибка при регистрации');
+
+      Alert.alert(title, message);
+      if (Platform.OS === 'web') {
+        window.alert(`${title}: ${message}`);
+      }
     } finally {
       setIsLoading(false);
+    }
+    } catch (outerError: any) {
+      console.error('[Register] Outer error in handleRegister:', outerError);
+      Alert.alert('Error', 'An unexpected error occurred during registration');
     }
   };
 
@@ -344,6 +429,7 @@ export default function RegisterScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+
         <Text style={styles.title}>
           {t('registerNow')}
         </Text>
@@ -458,18 +544,45 @@ export default function RegisterScreen() {
           </Text>
         </TouchableOpacity>
 
+
+
         {/* Register Button */}
-        <TouchableOpacity
-          style={[styles.registerButton, (!agreeToTerms || isLoading) && styles.disabledButton]}
-          onPress={handleRegister}
-          disabled={!agreeToTerms || isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.registerButtonText}>{t('registerNow')}</Text>
-          )}
-        </TouchableOpacity>
+        {Platform.OS === 'web' ? (
+          <View
+            nativeID="register-button-container"
+            style={{ marginTop: 10 }}
+          />
+        ) : (
+          <Pressable
+            style={({ pressed }) => [
+              styles.registerButton,
+              (!agreeToTerms || isLoading) && styles.disabledButton,
+              pressed && { opacity: 0.7 },
+            ]}
+            onPress={() => {
+              if (!agreeToTerms) {
+                Alert.alert(
+                  language === 'az' ? 'Xəta' : 'Ошибка',
+                  language === 'az'
+                    ? 'İstifadə şərtlərini qəbul edin'
+                    : 'Примите условия использования'
+                );
+                return;
+              }
+              if (isLoading) {
+                return;
+              }
+              handleRegister();
+            }}
+            disabled={!agreeToTerms || isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.registerButtonText}>{t('registerNow')}</Text>
+            )}
+          </Pressable>
+        )}
 
         {/* Divider */}
         <View style={styles.divider}>

@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions } from 'react-native';
+import { logger } from '@/utils/logger';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
 import { useModerationStore } from '@/store/moderationStore';
 import { getColors } from '@/constants/colors';
+import { trpc } from '@/lib/trpc';
 import { 
   Shield, 
   Users, 
@@ -35,8 +37,46 @@ export default function ModerationScreen() {
 
   const colors = getColors(themeMode, colorTheme);
 
-  // Check if user has moderation permissions
+  // Check if user has moderation permissions (must be defined before useQuery hooks)
   const canAccessModeration = currentUser?.role === 'admin' || currentUser?.role === 'moderator';
+
+  // ✅ Fetch data from backend using tRPC
+  const { data: backendStats, isLoading: statsLoading, error: statsError } = trpc.moderation.getStats.useQuery(undefined, {
+    enabled: canAccessModeration,
+    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: false, // Don't retry on auth errors
+  });
+
+  const { data: allReports, isLoading: reportsLoading, error: reportsError } = trpc.moderation.getReports.useQuery(undefined, {
+    enabled: canAccessModeration,
+    refetchInterval: 30000,
+    retry: false, // Don't retry on auth errors
+  });
+
+  // ✅ Fetch moderators from backend (admin only)
+  const { data: backendModerators, isLoading: moderatorsLoading } = trpc.admin.getModerators.useQuery(undefined, {
+    enabled: canAccessModeration && currentUser?.role === 'admin',
+    refetchInterval: 60000, // Refetch every minute
+    retry: false,
+  });
+
+  // ✅ Use backend data if available, fallback to local store
+  const actualStats = backendStats || stats;
+  const actualReports = allReports || getReportsByStatus('pending');
+  const actualModerators = backendModerators || moderators || [];
+  
+  const isLoading = statsLoading || reportsLoading || moderatorsLoading;
+  const hasError = statsError || reportsError;
+  
+  // Log errors for debugging
+  useEffect(() => {
+    if (statsError) {
+      logger.error('[Moderation] Error fetching stats:', statsError);
+    }
+    if (reportsError) {
+      logger.error('[Moderation] Error fetching reports:', reportsError);
+    }
+  }, [statsError, reportsError]);
   
   // ✅ Get moderator permissions
   const hasPermission = (permission: string) => {
@@ -73,8 +113,10 @@ export default function ModerationScreen() {
     return null;
   }
 
-  const pendingReports = getReportsByStatus('pending');
-  const openTickets = getTicketsByStatus('open');
+  // ✅ Get reports by status from backend data
+  const pendingReports = actualReports?.filter((r: any) => r.status === 'pending') || [];
+  const resolvedReports = actualReports?.filter((r: any) => r.status === 'resolved') || [];
+  const openTickets = getTicketsByStatus('open'); // Still using local store for tickets
   const inProgressTickets = getTicketsByStatus('in_progress');
 
   const StatCard = ({ 
@@ -140,10 +182,19 @@ export default function ModerationScreen() {
   );
 
   const showComingSoon = (feature: string) => {
-    Alert.alert(
-      feature,
-      language === 'az' ? 'Bu funksiya tezliklə əlavə ediləcək' : 'Эта функция скоро будет добавлена'
-    );
+    const message = language === 'az' 
+      ? 'Bu funksiya tezliklə əlavə ediləcək' 
+      : 'Эта функция скоро будет добавлена';
+    
+    // Use web-compatible alert
+    if (typeof window !== 'undefined') {
+      window.alert(`${feature}\n\n${message}`);
+    } else {
+      Alert.alert(feature, message);
+    }
+    
+    // Also log for debugging
+    logger.info('[Moderation] Coming soon feature clicked:', feature);
   };
 
   return (
@@ -178,6 +229,22 @@ export default function ModerationScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {language === 'az' ? 'Statistika' : 'Статистика'}
           </Text>
+          {hasError ? (
+            <View style={[styles.errorContainer, { backgroundColor: `${colors.error || '#EF4444'}15` }]}>
+              <Text style={[styles.errorText, { color: colors.error || '#EF4444' }]}>
+                {language === 'az' 
+                  ? 'Məlumat yüklənərkən xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.' 
+                  : 'Произошла ошибка при загрузке данных. Пожалуйста, попробуйте еще раз.'}
+              </Text>
+            </View>
+          ) : isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                {language === 'az' ? 'Yüklənir...' : 'Загрузка...'}
+              </Text>
+            </View>
+          ) : (
           <View style={styles.statsGrid}>
             <StatCard
               title={language === 'az' ? 'Gözləyən şikayətlər' : 'Ожидающие жалобы'}
@@ -195,18 +262,19 @@ export default function ModerationScreen() {
             />
             <StatCard
               title={language === 'az' ? 'Moderatorlar' : 'Модераторы'}
-              value={moderators?.length || 0} 
+              value={actualModerators?.length || 0} 
               icon={UserCheck}
               color="#10B981"
               onPress={() => showComingSoon(language === 'az' ? 'Moderatorlar' : 'Модераторы')}
             />
             <StatCard
               title={language === 'az' ? 'Həll edilmiş' : 'Решенные'}
-              value={stats?.resolvedReports || 0}
+              value={resolvedReports?.length || actualStats?.resolvedReports || 0}
               icon={CheckCircle}
               color="#059669"
             />
           </View>
+          )}
         </View>
 
         {/* Quick Actions */}
@@ -264,8 +332,8 @@ export default function ModerationScreen() {
             <MenuCard
               title={language === 'az' ? 'Moderator idarəetməsi' : 'Управление модераторами'}
               subtitle={language === 'az' 
-                ? `${moderators?.length || 0} aktiv moderator` 
-                : `${moderators?.length || 0} активных модераторов`
+                ? `${actualModerators?.length || 0} aktiv moderator` 
+                : `${actualModerators?.length || 0} активных модераторов`
               }
               icon={UserCheck}
               onPress={() => showComingSoon(language === 'az' ? 'Moderator idarəetməsi' : 'Управление модераторами')}
@@ -528,5 +596,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     fontWeight: '500',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
+  errorContainer: {
+    padding: 20,
+    borderRadius: 12,
+    marginVertical: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

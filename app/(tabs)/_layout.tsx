@@ -74,13 +74,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
-      {/** Hide USSD tab from the bottom navigation */}
-      <Tabs.Screen
+      {/** Hide USSD tab from the bottom navigation - commented out since file doesn't exist */}
+      {/* <Tabs.Screen
         name="ussd"
         options={{
           href: null,
         }}
-      />
+      /> */}
       </Tabs>
     </>
   );

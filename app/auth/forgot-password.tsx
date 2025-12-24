@@ -16,9 +16,12 @@ export default function ForgotPasswordScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isOTPVerified, setIsOTPVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
   const [contactType, setContactType] = useState<'email' | 'phone'>('email');
   
   const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation();
+  const verifyOTPMutation = trpc.auth.verifyPasswordOTP.useMutation();
   
   const detectContactType = (input: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -110,22 +113,70 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true);
     
     try {
-      // await authService.sendPasswordResetCode(contactInfo.trim(), detectedType);
+      const input = detectedType === 'email' 
+        ? { email: contactInfo.trim() }
+        : { phone: contactInfo.replace(/[\s\-\(\)]/g, '') };
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await forgotPasswordMutation.mutateAsync(input as any);
       
       setIsLoading(false);
       setIsCodeSent(true);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Password reset error:', error);
       setIsLoading(false);
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
-          ? 'Kod göndərilərkən xəta baş verdi. Yenidən cəhd edin.'
-          : 'Ошибка при отправке кода. Попробуйте снова.'
-      );
+      const errorMessage = error?.message || (language === 'az' 
+        ? 'Kod göndərilərkən xəta baş verdi. Yenidən cəhd edin.'
+        : 'Ошибка при отправке кода. Попробуйте снова.');
+      
+      if (typeof window !== 'undefined') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', errorMessage);
+      }
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otpCode || otpCode.length !== 6) {
+      const message = language === 'az' 
+        ? 'OTP kodu 6 rəqəm olmalıdır'
+        : 'OTP код должен содержать 6 цифр';
+      
+      if (typeof window !== 'undefined') {
+        window.alert(message);
+      } else {
+        Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', message);
+      }
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const input = contactType === 'email'
+        ? { email: contactInfo.trim(), otp: otpCode }
+        : { phone: contactInfo.replace(/[\s\-\(\)]/g, ''), otp: otpCode };
+      
+      const result = await verifyOTPMutation.mutateAsync(input);
+      
+      if (result?.resetToken) {
+        setIsLoading(false);
+        setIsOTPVerified(true);
+        // Redirect to reset password page with token
+        router.replace(`/auth/reset-password?token=${result.resetToken}`);
+      }
+    } catch (error: any) {
+      logger.error('OTP verification error:', error);
+      setIsLoading(false);
+      const errorMessage = error?.message || (language === 'az'
+        ? 'Yanlış OTP kodu. Yenidən cəhd edin.'
+        : 'Неверный OTP код. Попробуйте снова.');
+      
+      if (typeof window !== 'undefined') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', errorMessage);
+      }
     }
   };
   
@@ -147,54 +198,95 @@ export default function ForgotPasswordScreen() {
   
   const handleResendCode = async () => {
     setIsCodeSent(false);
+    setIsOTPVerified(false);
+    setOtpCode('');
     await handleSendResetCode();
   };
   
-  if (isCodeSent) {
+  if (isCodeSent && !isOTPVerified) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-            <X size={24} color={Colors.text} />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.content}>
-          <View style={styles.successIconContainer}>
-            <CheckCircle size={80} color={Colors.success} />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+              <X size={24} color={Colors.text} />
+            </TouchableOpacity>
           </View>
           
-          <Text style={styles.successTitle}>
-            {contactType === 'email'
-              ? (language === 'az' ? 'E-poçt göndərildi!' : 'Письмо отправлено!')
-              : (language === 'az' ? 'SMS göndərildi!' : 'SMS отправлено!')
-            }
-          </Text>
-          
-          <Text style={styles.successMessage}>
-            {contactType === 'email'
-              ? (language === 'az' 
-                  ? `Şifrəni bərpa etmək üçün təlimatları ${contactInfo} ünvanına göndərdik.`
-                  : `Мы отправили инструкции по восстановлению пароля на ${contactInfo}.`)
-              : (language === 'az'
-                  ? `Şifrəni bərpa etmək üçün kod ${contactInfo} nömrəsinə göndərildi.`
-                  : `Код для восстановления пароля отправлен на ${contactInfo}.`)
-            }
-          </Text>
-          
-          <TouchableOpacity style={styles.primaryButton} onPress={handleBackToLogin}>
-            <Text style={styles.primaryButtonText}>
-              {language === 'az' ? 'Girişə qayıt' : 'Вернуться к входу'}
+          <View style={styles.content}>
+            <View style={styles.iconContainer}>
+              <Mail size={60} color={Colors.primary} />
+            </View>
+            
+            <Text style={styles.title}>
+              {language === 'az' ? 'OTP Kodu Daxil Edin' : 'Введите OTP код'}
             </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleResendCode}>
-            <Text style={styles.secondaryButtonText}>
-              {language === 'az' ? 'Yenidən göndər' : 'Отправить снова'}
+            
+            <Text style={styles.subtitle}>
+              {contactType === 'email'
+                ? (language === 'az' 
+                    ? `${contactInfo} ünvanına göndərilən 6 rəqəmli OTP kodunu daxil edin`
+                    : `Введите 6-значный OTP код, отправленный на ${contactInfo}`)
+                : (language === 'az'
+                    ? `${contactInfo} nömrəsinə göndərilən 6 rəqəmli OTP kodunu daxil edin`
+                    : `Введите 6-значный OTP код, отправленный на ${contactInfo}`)
+              }
             </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+            
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <TextInput
+                  style={[styles.input, styles.otpInput]}
+                  value={otpCode}
+                  onChangeText={(text) => setOtpCode(text.replace(/[^0-9]/g, '').slice(0, 6))}
+                  placeholder={language === 'az' ? '000000' : '000000'}
+                  placeholderTextColor={Colors.placeholder}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoFocus
+                  editable={!isLoading}
+                />
+              </View>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.primaryButton,
+                  (!otpCode || otpCode.length !== 6 || isLoading) && styles.disabledButton
+                ]} 
+                onPress={handleVerifyOTP}
+                disabled={!otpCode || otpCode.length !== 6 || isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>
+                    {language === 'az' ? 'OTP Kodunu Təsdiqlə' : 'Подтвердить OTP код'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleResendCode}>
+                <Text style={styles.secondaryButtonText}>
+                  {language === 'az' ? 'Kodu Yenidən Göndər' : 'Отправить код снова'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleBackToLogin}>
+                <Text style={styles.secondaryButtonText}>
+                  {language === 'az' ? 'Girişə qayıt' : 'Вернуться к входу'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     );
   }
   
@@ -526,5 +618,12 @@ const styles = StyleSheet.create({
     color: Colors.text,
     paddingVertical: 16,
     paddingHorizontal: 16,
+  },
+  otpInput: {
+    textAlign: 'center',
+    fontSize: 32,
+    letterSpacing: 8,
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
 });

@@ -12,6 +12,10 @@ import { verifyEmailProcedure } from "./routes/auth/verifyEmail/route";
 import { resendVerificationProcedure } from "./routes/auth/resendVerification/route";
 import { forgotPasswordProcedure } from "./routes/auth/forgotPassword/route";
 import { resetPasswordProcedure } from "./routes/auth/resetPassword/route";
+import { verifyPasswordOTPProcedure } from "./routes/auth/verifyPasswordOTP/route";
+import { registerWithPhoneProcedure } from "./routes/auth/registerWithPhone/route";
+import { verifyPhoneOTPProcedure } from "./routes/auth/verifyPhoneOTP/route";
+import { resendPhoneOTPProcedure } from "./routes/auth/resendPhoneOTP/route";
 import { saveCardProcedure } from "./routes/payriff/saveCard/route";
 import { getSavedCardsProcedure } from "./routes/payriff/getSavedCards/route";
 import { deleteCardProcedure } from "./routes/payriff/deleteCard/route";
@@ -31,6 +35,13 @@ import { getReportsProcedure } from "./routes/moderation/getReports/route";
 import { createReportProcedure } from "./routes/moderation/createReport/route";
 import { updateReportStatusProcedure } from "./routes/moderation/updateReportStatus/route";
 import { getStatsProcedure } from "./routes/moderation/getStats/route";
+import { getUsersProcedure } from "./routes/admin/getUsers/route";
+import { getUserProcedure } from "./routes/admin/getUser/route";
+import { updateUserProcedure } from "./routes/admin/updateUser/route";
+import { deleteUserProcedure } from "./routes/admin/deleteUser/route";
+import { getAnalyticsProcedure } from "./routes/admin/getAnalytics/route";
+import { getModeratorsProcedure } from "./routes/admin/getModerators/route";
+import { createModeratorProcedure } from "./routes/admin/createModerator/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -43,6 +54,10 @@ export const appRouter = createTRPCRouter({
     resendVerification: resendVerificationProcedure,
     forgotPassword: forgotPasswordProcedure,
     resetPassword: resetPasswordProcedure,
+    verifyPasswordOTP: verifyPasswordOTPProcedure,
+    registerWithPhone: registerWithPhoneProcedure,
+    verifyPhoneOTP: verifyPhoneOTPProcedure,
+    resendPhoneOTP: resendPhoneOTPProcedure,
   }),
   liveChat: createTRPCRouter({
     getConversations,
@@ -74,6 +89,15 @@ export const appRouter = createTRPCRouter({
     createReport: createReportProcedure,
     updateReportStatus: updateReportStatusProcedure,
     getStats: getStatsProcedure,
+  }),
+  admin: createTRPCRouter({
+    getUsers: getUsersProcedure,
+    getUser: getUserProcedure,
+    updateUser: updateUserProcedure,
+    deleteUser: deleteUserProcedure,
+    getAnalytics: getAnalyticsProcedure,
+    getModerators: getModeratorsProcedure,
+    createModerator: createModeratorProcedure,
   }),
 });
 

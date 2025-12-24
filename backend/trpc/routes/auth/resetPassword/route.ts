@@ -1,9 +1,9 @@
 import { publicProcedure } from '../../../create-context';
 import { z } from 'zod';
-import { userDB } from '../../../../db/users';
+import { findByPasswordResetToken, updatePassword } from '../../../../db/userPrisma';
 import { hashPassword } from '../../../../utils/password';
 
-import { logger } from '@/utils/logger';
+import { logger } from '../../../../utils/logger';
 export const resetPasswordProcedure = publicProcedure
   .input(
     z.object({
@@ -19,13 +19,13 @@ export const resetPasswordProcedure = publicProcedure
   .mutation(async ({ input }) => {
     logger.debug('[Auth] Password reset attempt');
 
-    const user = await userDB.findByPasswordResetToken(input.token);
+    const user = await findByPasswordResetToken(input.token);
     if (!user) {
       throw new Error('Şifrə sıfırlama linki etibarsızdır və ya vaxtı keçib');
     }
 
     const passwordHash = await hashPassword(input.password);
-    await userDB.updatePassword(user.id, passwordHash);
+    await updatePassword(user.id, passwordHash);
 
     logger.debug('[Auth] Password reset successfully:', user.id);
 

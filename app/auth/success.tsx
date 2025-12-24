@@ -42,6 +42,9 @@ export default function AuthSuccessScreen() {
 
       logger.debug('[AuthSuccess] Login successful, user:', userData.email);
 
+      // ✅ Normalize role to lowercase (backend returns uppercase: ADMIN, MODERATOR, USER)
+      const normalizedRole = (userData.role || 'USER').toLowerCase() as 'user' | 'moderator' | 'admin';
+
       login({
         id: userData.id,
         name: userData.name,
@@ -53,7 +56,7 @@ export default function AuthSuccessScreen() {
         memberSince: new Date().toISOString(),
         location: { en: '', ru: '', az: '' },
         balance: 0,
-        role: userData.role || 'user',
+        role: normalizedRole,
         privacySettings: {
           hidePhoneNumber: false,
           allowDirectContact: true,

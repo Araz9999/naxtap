@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
 import { payriffService } from '../../../../services/payriff';
 
-import { logger } from '@/utils/logger';
+import { logger } from '../../../../utils/logger';
 export const verifyPaymentProcedure = publicProcedure
   .input(
     z.object({

@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+model User {
+  id                  String              @id @default(cuid())
+  email               String              @unique
+  name                String
+  avatar              String?
+  phone               String?
+  verified            Boolean             @default(false)
+  passwordHash        String?
+  balance             Int                 @default(0)
+  role                Role                @default(USER)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  socialAccounts      SocialAccount[]
+  verificationTokens  VerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model SocialAccount {
+  id        String   @id @default(cuid())
+  provider  String
+  socialId  String
+  email     String
+  name      String
+  avatar    String?
+
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+
+  @@unique([provider, socialId])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+}
+
+

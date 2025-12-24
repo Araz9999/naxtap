@@ -1,4 +1,4 @@
-import { logger } from '../../utils/logger';
+import { logger } from '../utils/logger';
 
 export interface SocialProvider {
   provider: 'google' | 'facebook' | 'vk';
@@ -33,7 +33,7 @@ class UserDatabase {
   private socialIndex: Map<string, string> = new Map();
   private verificationTokenIndex: Map<string, string> = new Map();
   private passwordResetTokenIndex: Map<string, string> = new Map();
-  private cleanupInterval: NodeJS.Timeout | null = null;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.initializeDefaultUsers();
@@ -90,24 +90,66 @@ class UserDatabase {
     }
   }
 
-  private initializeDefaultUsers() {
+  private async initializeDefaultUsers() {
+    // Import password hashing
+    const { hashPassword } = await import('../utils/password');
+    
+    // Default regular user
     const defaultUser: DBUser = {
       id: '1',
-      email: 'demo@example.com',
-      name: 'Demo User',
+      email: 'user@test.com',
+      name: 'Test User',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
-      phone: '+1234567890',
+      phone: '+994501234567',
       verified: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      passwordHash: 'demo-password-hash',
+      passwordHash: await hashPassword('Test1234'),
       socialProviders: [],
       role: 'user',
-      balance: 0,
+      balance: 1000,
+    };
+
+    // Admin user
+    const adminUser: DBUser = {
+      id: '2',
+      email: 'admin@test.com',
+      name: 'Admin User',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
+      phone: '+994501234568',
+      verified: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      passwordHash: await hashPassword('Admin1234'),
+      socialProviders: [],
+      role: 'admin',
+      balance: 5000,
+    };
+
+    // Moderator user
+    const moderatorUser: DBUser = {
+      id: '3',
+      email: 'moderator@test.com',
+      name: 'Moderator User',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
+      phone: '+994501234569',
+      verified: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      passwordHash: await hashPassword('Mod1234'),
+      socialProviders: [],
+      role: 'moderator',
+      balance: 2000,
     };
 
     this.users.set(defaultUser.id, defaultUser);
     this.emailIndex.set(defaultUser.email.toLowerCase(), defaultUser.id);
+    
+    this.users.set(adminUser.id, adminUser);
+    this.emailIndex.set(adminUser.email.toLowerCase(), adminUser.id);
+    
+    this.users.set(moderatorUser.id, moderatorUser);
+    this.emailIndex.set(moderatorUser.email.toLowerCase(), moderatorUser.id);
   }
 
   async findByEmail(email: string): Promise<DBUser | null> {

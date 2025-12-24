@@ -1,5 +1,5 @@
 import { publicProcedure } from '../../../create-context';
-import { userDB } from '../../../../db/users';
+import { findUserByEmail } from '../../../../db/userPrisma';
 import { generateTokenPair } from '../../../../utils/jwt';
 import { userLoginSchema } from '../../../../utils/validation';
 import { AuthenticationError } from '../../../../utils/errors';
@@ -10,7 +10,7 @@ export const loginProcedure = publicProcedure
     try {
       logger.auth('Login attempt', { email: input.email });
 
-      const user = await userDB.findByEmail(input.email);
+      const user = await findUserByEmail(input.email);
       if (!user || !user.passwordHash) {
         // Use same error message to prevent email enumeration
         throw new AuthenticationError(
@@ -60,6 +60,7 @@ export const loginProcedure = publicProcedure
 
 /**
  * SECURITY: Verify password using PBKDF2 with stored salt
+ * Supports both Node.js crypto format (from seed) and Web Crypto API format
  */
 async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   const [saltHex, hashHex] = storedHash.split(':');
@@ -68,38 +69,63 @@ async function verifyPassword(password: string, storedHash: string): Promise<boo
     return await hashPasswordLegacy(password) === storedHash;
   }
   
-  const encoder = new TextEncoder();
-  const saltBytes = saltHex.match(/.{2}/g);
-  if (!saltBytes) {
-    // Invalid salt format - reject authentication
-    logger.error('[Auth] Invalid salt format in stored hash');
+  // Try Web Crypto API first (for new passwords)
+  try {
+    const encoder = new TextEncoder();
+    const saltBytes = saltHex.match(/.{2}/g);
+    if (!saltBytes) {
+      throw new Error('Invalid salt format');
+    }
+    const salt = new Uint8Array(saltBytes.map(byte => parseInt(byte, 16)));
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    );
+    
+    const hashBuffer = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      256
+    );
+    
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    if (computedHash === hashHex) {
+      return true;
+    }
+  } catch (error) {
+    // Fall through to Node.js crypto verification
+  }
+  
+  // Try Node.js crypto format (for seeded passwords)
+  // Seed uses: crypto.pbkdf2(password, salt, 100000, 32, 'sha256')
+  // where salt is a hex string
+  try {
+    const crypto = require('crypto');
+    return new Promise((resolve) => {
+      crypto.pbkdf2(password, saltHex, 100000, 32, 'sha256', (err, derivedKey) => {
+        if (err) {
+          resolve(false);
+          return;
+        }
+        const computedHash = derivedKey.toString('hex');
+        resolve(computedHash === hashHex);
+      });
+    });
+  } catch (error) {
+    logger.error('[Auth] Password verification error:', error);
     return false;
   }
-  const salt = new Uint8Array(saltBytes.map(byte => parseInt(byte, 16)));
-  
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(password),
-    { name: 'PBKDF2' },
-    false,
-    ['deriveBits']
-  );
-  
-  const hashBuffer = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      salt,
-      iterations: 100000,
-      hash: 'SHA-256'
-    },
-    keyMaterial,
-    256
-  );
-  
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  return computedHash === hashHex;
 }
 
 /**

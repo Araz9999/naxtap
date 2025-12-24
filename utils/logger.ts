@@ -12,6 +12,11 @@ interface LoggerConfig {
   prefix?: string;
 }
 
+// Determine dev mode in both React Native / web (__DEV__) and Node.js
+const IS_DEV: boolean =
+  // @ts-ignore - __DEV__ is provided by React Native / Expo on the client
+  typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
+
 const LOG_LEVELS: Record<LogLevel, number> = {
   debug: 0,
   info: 1,
@@ -24,8 +29,8 @@ class Logger {
 
   constructor(config?: Partial<LoggerConfig>) {
     this.config = {
-      enabled: __DEV__,
-      minLevel: __DEV__ ? 'debug' : 'error',
+      enabled: IS_DEV,
+      minLevel: IS_DEV ? 'debug' : 'error',
       prefix: '',
       ...config,
     };
@@ -42,30 +47,30 @@ class Logger {
     return `${timestamp} ${prefix}[${level.toUpperCase()}] ${message}`;
   }
 
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, metadata?: any): void {
     if (this.shouldLog('debug')) {
-      logger.debug(this.formatMessage('debug', message), ...args);
+      console.debug(this.formatMessage('debug', message), metadata || '');
     }
   }
 
-  info(message: string, ...args: any[]): void {
+  info(message: string, metadata?: any): void {
     if (this.shouldLog('info')) {
-      logger.info(this.formatMessage('info', message), ...args);
+      console.info(this.formatMessage('info', message), metadata || '');
     }
   }
 
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, metadata?: any): void {
     if (this.shouldLog('warn')) {
-      logger.warn(this.formatMessage('warn', message), ...args);
+      console.warn(this.formatMessage('warn', message), metadata || '');
     }
   }
 
-  error(message: string, error?: Error | unknown, ...args: any[]): void {
+  error(message: string, error?: Error | unknown, metadata?: any): void {
     if (this.shouldLog('error')) {
-      logger.error(this.formatMessage('error', message), error, ...args);
+      console.error(this.formatMessage('error', message), error || '', metadata || '');
       
       // In production, send to error tracking service
-      if (!__DEV__ && error) {
+      if (!IS_DEV && error) {
         this.reportError(message, error);
       }
     }
@@ -85,19 +90,19 @@ class Logger {
   }
 
   group(label: string): void {
-    if (this.config.enabled && __DEV__) {
+    if (this.config.enabled && IS_DEV) {
       console.group(label);
     }
   }
 
   groupEnd(): void {
-    if (this.config.enabled && __DEV__) {
+    if (this.config.enabled && IS_DEV) {
       console.groupEnd();
     }
   }
 
   table(data: any): void {
-    if (this.config.enabled && __DEV__) {
+    if (this.config.enabled && IS_DEV) {
       console.table(data);
     }
   }

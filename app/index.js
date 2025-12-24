@@ -1,4 +1,4 @@
-// app/index.jsu
+// app/index.js
 import { View, Text } from "react-native";
 
 import { useEffect } from 'react';

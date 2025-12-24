@@ -1,4 +1,4 @@
-import { logger } from '../../utils/logger';
+import { logger } from '../utils/logger';
 
 interface OAuthConfig {
   clientId: string;
@@ -33,7 +33,10 @@ class OAuthService {
   }
 
   private initializeConfigs() {
-    const frontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
+    // In development, always use localhost:3000 (proxy port)
+    const frontendUrl = process.env.NODE_ENV !== 'production'
+      ? 'http://localhost:3000'
+      : (process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app');
     logger.info('[OAuth] Frontend URL:', frontendUrl);
 
     this.configs.google = {
@@ -153,14 +156,14 @@ class OAuthService {
         throw new Error(`Token exchange failed: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       logger.info(`[OAuth] Successfully exchanged code for token with ${provider}`, { 
         provider,
         hasAccessToken: !!data.access_token,
         hasRefreshToken: !!data.refresh_token,
         expiresIn: data.expires_in
       });
-      return data;
+      return data as OAuthTokenResponse;
     } catch (error) {
       logger.error(`[OAuth] Error exchanging code for token with ${provider}:`, error);
       throw error;

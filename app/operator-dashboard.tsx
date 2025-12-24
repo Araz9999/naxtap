@@ -7,14 +7,17 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useSupportStore } from '@/store/supportStore';
+import { useUserStore } from '@/store/userStore';
 import { getColors } from '@/constants/colors';
 import { prompt } from '@/utils/confirm';
+import { trpc } from '@/lib/trpc';
 import {
   MessageCircle,
   Users,
@@ -33,6 +36,7 @@ const { width } = Dimensions.get('window');
 export default function OperatorDashboard() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
+  const { currentUser } = useUserStore();
   const { liveChats, operators, sendMessage, assignOperator, closeLiveChat } = useSupportStore();
   const colors = getColors(themeMode, colorTheme);
 
@@ -40,16 +44,28 @@ export default function OperatorDashboard() {
   const currentOperator = operators && operators.length > 0 ? operators[0] : null;
   const [selectedChat, setSelectedChat] = useState<LiveChat | null>(null);
 
+  // ✅ Fetch conversations from backend using tRPC
+  const { data: backendConversations, isLoading: conversationsLoading, refetch } = trpc.liveChat.getConversations.useQuery(
+    { userId: currentUser?.id || '' },
+    {
+      enabled: !!currentUser?.id,
+      refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
+    }
+  );
+
+  // ✅ Use backend data if available, fallback to local store
+  const allChats = backendConversations || liveChats;
+  
   // ✅ Get chats for current operator with null-safety
   const operatorChats = currentOperator 
-    ? liveChats.filter(chat => 
+    ? allChats.filter((chat: any) => 
         chat.operatorId === currentOperator.id || chat.status === 'waiting'
       )
-    : [];
+    : allChats.filter((chat: any) => chat.status === 'waiting'); // Show waiting chats if no operator assigned
 
-  const waitingChats = operatorChats.filter(chat => chat.status === 'waiting');
-  const activeChats = operatorChats.filter(chat => chat.status === 'active');
-  const closedChats = operatorChats.filter(chat => chat.status === 'closed');
+  const waitingChats = operatorChats.filter((chat: any) => chat.status === 'waiting');
+  const activeChats = operatorChats.filter((chat: any) => chat.status === 'active');
+  const closedChats = operatorChats.filter((chat: any) => chat.status === 'closed');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -233,24 +249,35 @@ export default function OperatorDashboard() {
 
         {/* Stats */}
         <View style={styles.statsContainer}>
-          <StatsCard
-            icon={Clock}
-            title={language === 'az' ? 'Gözləyən' : 'Ожидающие'}
-            value={waitingChats.length}
-            color="#FFA500"
-          />
-          <StatsCard
-            icon={Activity}
-            title={language === 'az' ? 'Aktiv' : 'Активные'}
-            value={activeChats.length}
-            color="#4CAF50"
-          />
-          <StatsCard
-            icon={CheckCircle}
-            title={language === 'az' ? 'Bağlı' : 'Закрытые'}
-            value={closedChats.length}
-            color="#9E9E9E"
-          />
+          {conversationsLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                {language === 'az' ? 'Yüklənir...' : 'Загрузка...'}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <StatsCard
+                icon={Clock}
+                title={language === 'az' ? 'Gözləyən' : 'Ожидающие'}
+                value={waitingChats.length}
+                color="#FFA500"
+              />
+              <StatsCard
+                icon={Activity}
+                title={language === 'az' ? 'Aktiv' : 'Активные'}
+                value={activeChats.length}
+                color="#4CAF50"
+              />
+              <StatsCard
+                icon={CheckCircle}
+                title={language === 'az' ? 'Bağlı' : 'Закрытые'}
+                value={closedChats.length}
+                color="#9E9E9E"
+              />
+            </>
+          )}
         </View>
 
         {/* Waiting Chats */}
@@ -609,5 +636,15 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
   },
 });

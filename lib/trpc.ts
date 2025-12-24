@@ -22,15 +22,15 @@ const getBaseUrl = () => {
     return stripTrailingSlash(fromEnv);
   }
 
-  // On web, default to same-origin base (works with Nginx proxying /api)
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return stripTrailingSlash(window.location.origin);
+  // ✅ In development, always use localhost:3000 for backend API
+  if (__DEV__ || process.env.NODE_ENV === 'development') {
+    console.log('[tRPC] Using backend API at http://localhost:3000');
+    return 'http://localhost:3000';
   }
 
-  // Fallback to localhost for development (native/dev)
-  if (__DEV__) {
-    console.warn('EXPO_PUBLIC_RORK_API_BASE_URL not set, using http://localhost:3001');
-    return 'http://localhost:3001';
+  // On web production, default to same-origin base (works with Nginx proxying /api)
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return stripTrailingSlash(window.location.origin);
   }
 
   // Final safety: use relative path (same-origin). Avoid throwing to prevent white screens.

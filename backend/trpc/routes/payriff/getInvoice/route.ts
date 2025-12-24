@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
-import config from '@/constants/config';
-import { PayriffResponse, isPayriffSuccess, getPayriffErrorMessage } from '@/constants/payriffCodes';
+import config from '../../../../config';
+import { PayriffResponse, isPayriffSuccess, getPayriffErrorMessage } from '../../../../constants/payriffCodes';
 
-import { logger } from '@/utils/logger';
+import { logger } from '../../../../utils/logger';
 export const getInvoiceProcedure = publicProcedure
   .input(
     z.object({
@@ -37,7 +37,7 @@ export const getInvoiceProcedure = publicProcedure
       body: JSON.stringify(requestBody),
     });
 
-    const data: PayriffResponse = await response.json();
+    const data = await response.json() as PayriffResponse;
     logger.debug('Get invoice response:', JSON.stringify(data, null, 2));
 
     if (!response.ok || !isPayriffSuccess(data)) {

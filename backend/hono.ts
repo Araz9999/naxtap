@@ -1,4 +1,7 @@
-import { Hono, Context, Next } from "hono";
+// @ts-ignore - TypeScript module resolution issue with Hono
+import { Hono } from "hono";
+// @ts-ignore - TypeScript module resolution issue with Hono
+import type { Context, Next } from "hono";
 import { trpcServer } from "@hono/trpc-server";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
@@ -73,10 +76,14 @@ app.use("*", cors({
   maxAge: 86400,
 }));
 
-// Rate limiting
-const apiRateLimit = Number(process.env.API_RATE_LIMIT || 100);
-app.use('/api/*', rateLimit(apiRateLimit, 60_000));
-app.use('/auth/*', rateLimit(Math.max(20, Math.floor(apiRateLimit / 2)), 60_000));
+// Rate limiting (disabled for development)
+if (process.env.NODE_ENV === 'production') {
+  const apiRateLimit = Number(process.env.API_RATE_LIMIT || 100);
+  app.use('/api/*', rateLimit(apiRateLimit, 60_000));
+  app.use('/auth/*', rateLimit(Math.max(20, Math.floor(apiRateLimit / 2)), 60_000));
+} else {
+  logger.info('[RateLimit] Rate limiting disabled for development - you can test freely');
+}
 
 app.use(
   "/api/trpc/*",

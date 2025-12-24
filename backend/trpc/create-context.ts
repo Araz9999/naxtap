@@ -2,7 +2,7 @@ import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { verifyToken } from "../utils/jwt";
-import { logger } from "../../utils/logger";
+import { logger } from "../utils/logger";
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
   const authHeader = opts.req.headers.get('authorization');
   let user = null;
@@ -55,7 +55,9 @@ const isModerator = t.middleware(({ ctx, next }) => {
       message: 'Giriş tələb olunur',
     });
   }
-  if (ctx.user.role !== 'moderator' && ctx.user.role !== 'admin') {
+  // ✅ Check both uppercase (from JWT) and lowercase (normalized) roles
+  const role = ctx.user.role?.toUpperCase();
+  if (role !== 'MODERATOR' && role !== 'ADMIN') {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Bu əməliyyat üçün moderator icazəsi tələb olunur',
@@ -76,7 +78,9 @@ const isAdmin = t.middleware(({ ctx, next }) => {
       message: 'Giriş tələb olunur',
     });
   }
-  if (ctx.user.role !== 'admin') {
+  // ✅ Check both uppercase (from JWT) and lowercase (normalized) roles
+  const role = ctx.user.role?.toUpperCase();
+  if (role !== 'ADMIN') {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Bu əməliyyat üçün admin icazəsi tələb olunur',

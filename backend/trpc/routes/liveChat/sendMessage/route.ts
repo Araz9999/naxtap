@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
 import { liveChatDb } from '../../../../db/liveChat';
-import { LiveChatMessage } from '@/types/liveChat';
+import { LiveChatMessage } from '../../../../types/liveChat';
 
-import { logger } from '@/utils/logger';
+import { logger } from '../../../../utils/logger';
 export default publicProcedure
   .input(z.object({
     conversationId: z.string(),

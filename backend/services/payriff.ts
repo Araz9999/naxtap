@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { logger } from '../../utils/logger';
+import { logger } from '../utils/logger';
+import { PayriffResponse, isPayriffSuccess, getPayriffErrorMessage } from '../constants/payriffCodes';
 export interface PayriffPaymentData {
   amount: number;
   orderId: string;
@@ -105,50 +106,105 @@ class PayriffService {
       
       // ===== BACKEND VALIDATION END =====
 
-      const amountInQepik = Math.round(data.amount * 100);
-      const signString = `${this.merchantId}${data.orderId}${amountInQepik}${this.secretKey}`;
-      const signature = this.generateSignature(signString);
-
       const urls = this.getCallbackUrls();
 
+      // Use Payriff v3 API format (same as createOrder)
       const paymentData = {
-        merchantId: this.merchantId,
-        amount: amountInQepik,
+        amount: data.amount, // v3 API expects amount in main currency, not qepik
         currency: 'AZN',
-        orderId: data.orderId,
         description: data.description,
-        language: data.language || 'az',
-        signature: signature,
-        ...urls,
+        language: (data.language || 'az').toUpperCase() as 'AZ' | 'EN' | 'RU',
+        callbackUrl: urls.callbackUrl,
+        operation: 'PURCHASE' as const,
+        cardSave: false,
       };
 
-      logger.info('Creating Payriff payment:', {
+      logger.info('Creating Payriff payment (v3):', {
         orderId: data.orderId,
-        amount: amountInQepik,
+        amount: data.amount,
         merchantId: this.merchantId,
       });
 
-      const response = await fetch(`${this.apiUrl}/transactions`, {
+      // Use v3 orders endpoint - construct base URL properly
+      const baseUrl = this.apiUrl.includes('/api/') 
+        ? this.apiUrl.replace('/api/v2', '/api/v3')
+        : `${this.apiUrl}/api/v3`;
+      
+      const response = await fetch(`${baseUrl}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.secretKey}`,
+          'Authorization': this.secretKey, // v3 API uses secretKey directly, not Bearer token
         },
         body: JSON.stringify(paymentData),
       });
 
+      const responseText = await response.text();
+      logger.debug('[Payriff] API Response:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        responseLength: responseText.length 
+      });
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        logger.error('Payriff API error:', errorData);
-        throw new Error(errorData.message || 'Failed to create payment');
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          errorData = { message: responseText || 'Unknown error' };
+        }
+        
+        logger.error('[Payriff] API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        
+        const errorMessage = errorData.message || 
+                            errorData.error || 
+                            errorData.internalMessage ||
+                            `Payriff API error: ${response.status} ${response.statusText}`;
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      let result: PayriffResponse;
+      try {
+        result = JSON.parse(responseText) as PayriffResponse;
+      } catch {
+        logger.error('[Payriff] Failed to parse response:', responseText);
+        throw new Error('Invalid response from Payriff API');
+      }
+
+      // Check if response indicates success
+      if (!isPayriffSuccess(result)) {
+        const errorMessage = getPayriffErrorMessage(result, 'Failed to create payment');
+        logger.error('[Payriff] Payment creation failed:', {
+          code: result.code,
+          message: result.message,
+          internalMessage: result.internalMessage,
+        });
+        throw new Error(errorMessage);
+      }
+
+      // v3 API response format: { code, message, payload: { orderId, paymentUrl, transactionId } }
+      const paymentUrl = result.payload?.paymentUrl || result.route;
+      const transactionId = result.payload?.transactionId || result.payload?.orderId;
+      
+      if (!paymentUrl) {
+        logger.error('[Payriff] No payment URL in response:', result);
+        throw new Error('Payment URL not received from Payriff');
+      }
+
+      logger.info('[Payriff] Payment created successfully:', {
+        paymentUrl,
+        transactionId,
+        orderId: result.payload?.orderId || data.orderId,
+      });
 
       return {
         success: true,
-        paymentUrl: result.paymentUrl,
-        transactionId: result.transactionId,
+        paymentUrl,
+        transactionId: transactionId?.toString() || result.payload?.orderId || data.orderId,
       };
     } catch (error) {
       logger.error('Payriff payment creation error:', error);
@@ -183,7 +239,7 @@ class PayriffService {
         throw new Error('Failed to get transaction status');
       }
 
-      const result = await response.json();
+      const result = await response.json() as PayriffTransactionStatus;
       return result;
     } catch (error) {
       logger.error('Payriff transaction status error:', error);

@@ -1,5 +1,5 @@
 import { publicProcedure } from '../../../create-context';
-import { userDB } from '../../../../db/users';
+import { createUser, findUserByEmail, setVerificationToken } from '../../../../db/userPrisma';
 import { generateTokenPair } from '../../../../utils/jwt';
 import { emailService } from '../../../../services/email';
 import { userRegistrationSchema } from '../../../../utils/validation';
@@ -12,7 +12,7 @@ export const registerProcedure = publicProcedure
     try {
       logger.auth('Registration attempt', { email: input.email });
 
-      const existingUser = await userDB.findByEmail(input.email);
+      const existingUser = await findUserByEmail(input.email);
       if (existingUser) {
         throw new AuthenticationError(
           'Bu email artıq qeydiyyatdan keçib',
@@ -20,7 +20,7 @@ export const registerProcedure = publicProcedure
         );
       }
 
-      // BUG FIX: Add stronger password validation on backend
+      // Password validation
       if (input.password.length < 8) {
         throw new Error('Şifrə ən azı 8 simvol olmalıdır');
       }
@@ -36,15 +36,14 @@ export const registerProcedure = publicProcedure
 
       const passwordHash = await hashPassword(input.password);
 
-      const user = await userDB.createUser({
+      const user = await createUser({
         email: input.email,
         name: input.name,
         phone: input.phone,
         passwordHash,
         verified: false,
-        role: 'user',
+        role: 'USER',
         balance: 0,
-        socialProviders: [],
       });
 
       if (!user) {
@@ -52,7 +51,7 @@ export const registerProcedure = publicProcedure
       }
 
       const verificationToken = generateRandomToken();
-      const tokenSet = await userDB.setVerificationToken(user.id, verificationToken, 24);
+      const tokenSet = await setVerificationToken(user.id, verificationToken, 24);
       
       if (!tokenSet) {
         logger.warn('Failed to set verification token', { userId: user.id });

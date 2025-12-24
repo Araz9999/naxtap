@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
   RefreshCw,
 } from 'lucide-react-native';
 import FileAttachmentPicker, { FileAttachment } from '@/components/FileAttachmentPicker';
+import WebTextInput, { WebTextInputRef } from '@/components/WebTextInput';
 
 import { logger } from '@/utils/logger';
 const { width } = Dimensions.get('window');
@@ -157,10 +158,12 @@ export default function LiveChatScreen() {
     }
   };
 
-  const handleSendMessage = () => {
-    if ((!message.trim() && attachments.length === 0) || !currentChatId || !currentUser) {
+  const handleSendMessage = useCallback(() => {
+    const messageToSend = message;
+
+    if ((!messageToSend.trim() && attachments.length === 0) || !currentChatId || !currentUser) {
       logger.warn('[LiveChat] Cannot send message:', {
-        hasMessage: !!message.trim(),
+        hasMessage: !!messageToSend.trim(),
         hasAttachments: attachments.length > 0,
         hasChatId: !!currentChatId,
         hasUser: !!currentUser
@@ -171,13 +174,13 @@ export default function LiveChatScreen() {
     logger.info('[LiveChat] Sending message:', {
       chatId: currentChatId,
       userId: currentUser.id,
-      messageLength: message.trim().length,
+      messageLength: messageToSend.trim().length,
       attachmentsCount: attachments.length
     });
 
     try {
       const attachmentUrls = attachments.map(att => att.uri);
-      const messageText = message.trim() || (attachments.length > 0 ? `📎 ${attachments.length} fayl göndərildi` : '');
+      const messageText = messageToSend.trim() || (attachments.length > 0 ? `📎 ${attachments.length} fayl göndərildi` : '');
       
       sendMessage(
         currentChatId, 
@@ -189,7 +192,12 @@ export default function LiveChatScreen() {
       
       logger.info('[LiveChat] Message sent successfully:', { chatId: currentChatId });
       
+      // Clear message - on web, also clear the native input
       setMessage('');
+      if (Platform.OS === 'web' && webChatInputRef.current) {
+        webChatInputRef.current.clear();
+      }
+      
       setAttachments([]);
       setShowAttachments(false);
       setShouldScrollToEnd(true);
@@ -208,7 +216,7 @@ export default function LiveChatScreen() {
     } catch (error) {
       logger.error('[LiveChat] Send message error:', error);
     }
-  };
+  }, [message, attachments, currentChatId, currentUser, sendMessage, setMessage, setAttachments, setShowAttachments, setShouldScrollToEnd, scrollViewRef, scrollTimeoutRef, typingTimeoutRef, setTyping]);
 
   const handleTyping = (text: string) => {
     setMessage(text);
@@ -418,22 +426,43 @@ export default function LiveChatScreen() {
         <Text style={[styles.formLabel, { color: colors.text }]}>
           {language === 'az' ? 'Mövzu' : 'Тема'}
         </Text>
-        <TextInput
-          style={[
-            styles.subjectInput,
-            {
-              backgroundColor: colors.card,
-              color: colors.text,
-              borderColor: colors.border
-            }
-          ]}
-          placeholder={language === 'az' ? 'Probleminizi qısaca yazın' : 'Кратко опишите проблему'}
-          placeholderTextColor={colors.textSecondary}
-          value={subject}
-          onChangeText={setSubject}
-          multiline={false}
-          maxLength={100}
-        />
+        {Platform.OS === 'web' ? (
+          <WebTextInput
+            ref={webSubjectInputRef}
+            placeholder={language === 'az' ? 'Probleminizi qısaca yazın' : 'Кратко опишите проблему'}
+            placeholderTextColor={colors.textSecondary}
+            value={subject}
+            onChangeText={(text) => {
+              setSubject(text);
+            }}
+            style={[
+              styles.subjectInput,
+              {
+                backgroundColor: colors.card,
+                color: colors.text,
+                borderColor: colors.border
+              }
+            ]}
+            maxLength={100}
+          />
+        ) : (
+          <TextInput
+            style={[
+              styles.subjectInput,
+              {
+                backgroundColor: colors.card,
+                color: colors.text,
+                borderColor: colors.border
+              }
+            ]}
+            placeholder={language === 'az' ? 'Probleminizi qısaca yazın' : 'Кратко опишите проблему'}
+            placeholderTextColor={colors.textSecondary}
+            value={subject}
+            onChangeText={setSubject}
+            multiline={false}
+            maxLength={100}
+          />
+        )}
       </View>
 
               <TouchableOpacity
@@ -456,6 +485,10 @@ export default function LiveChatScreen() {
       </TouchableOpacity>
     </View>
   );
+
+  // Web input refs
+  const webChatInputRef = useRef<WebTextInputRef>(null);
+  const webSubjectInputRef = useRef<WebTextInputRef>(null);
 
   if (!currentUser) {
     logger.warn('[LiveChat] Access denied: user not logged in');
@@ -567,66 +600,113 @@ export default function LiveChatScreen() {
                   backgroundColor: colors.background
                 }
               ]}>
-              <TouchableOpacity
-                style={[
-                  styles.attachButton,
-                  {
-                    backgroundColor: showAttachments ? colors.primary : colors.card,
-                    borderColor: colors.border
-                  }
-                ]}
-                onPress={() => {
-                  logger.info('[LiveChat] Toggling attachments:', { showAttachments: !showAttachments });
-                  setShowAttachments(!showAttachments);
-                }}
-              >
+                <TouchableOpacity
+                  style={[
+                    styles.attachButton,
+                    {
+                      backgroundColor: showAttachments ? colors.primary : colors.card,
+                      borderColor: colors.border
+                    }
+                  ]}
+                  onPress={() => {
+                    logger.info('[LiveChat] Toggling attachments:', { showAttachments: !showAttachments });
+                    setShowAttachments(!showAttachments);
+                  }}
+                >
                   <Paperclip size={18} color={showAttachments ? '#fff' : colors.textSecondary} />
                 </TouchableOpacity>
-                
-                <TextInput
-                  testID="livechat-input"
-                  style={[
-                    styles.messageInput,
-                    {
-                      backgroundColor: colors.background,
-                      color: colors.text,
-                      borderColor: colors.border,
-                    }
-                  ]}
-                  placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите сообщение...'}
-                  placeholderTextColor={colors.textSecondary}
-                  value={message}
-                  onChangeText={handleTyping}
-                  multiline={false}
-                  numberOfLines={1}
-                  textAlignVertical="center"
-                  returnKeyType="send"
-                  onSubmitEditing={handleSendMessage}
-                  blurOnSubmit={false}
-                  autoCorrect={false}
-                  autoCapitalize="sentences"
-                  enablesReturnKeyAutomatically={false}
-                  scrollEnabled={false}
-                  onContentSizeChange={() => {}}
-                  keyboardAppearance={Platform.OS === 'ios' ? (themeMode === 'dark' ? 'dark' : 'light') : 'default'}
-                  maxLength={1000}
-                />
-                
-                <TouchableOpacity
-                  testID="livechat-send"
-                  style={[
-                    styles.sendButton,
-                    {
-                      backgroundColor: (message.trim() || attachments.length > 0) ? colors.primary : colors.border
-                    }
-                  ]}
-                  onPress={handleSendMessage}
-                  disabled={!message.trim() && attachments.length === 0}
-                  accessibilityRole="button"
-                  accessibilityLabel={language === 'az' ? 'Mesajı göndər' : 'Отправить сообщение'}
-                >
-                  <Send size={18} color={(message.trim() || attachments.length > 0) ? '#fff' : colors.textSecondary} />
-                </TouchableOpacity>
+
+                {/* Web: Use native HTML input, Mobile: Use React Native TextInput */}
+                {Platform.OS === 'web' ? (
+                  <>
+                    <WebTextInput
+                      ref={webChatInputRef}
+                      placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите сообщение...'}
+                      placeholderTextColor={colors.textSecondary}
+                      value={message}
+                      onChangeText={(text) => {
+                        setMessage(text);
+                      }}
+                      onSubmitEditing={() => {
+                        if (message.trim() || attachments.length > 0) {
+                          handleSendMessage();
+                        }
+                      }}
+                      style={[
+                        styles.messageInput,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.text,
+                          borderColor: colors.border,
+                        }
+                      ]}
+                      maxLength={1000}
+                    />
+                    
+                    <TouchableOpacity
+                      testID="livechat-send"
+                      style={[
+                        styles.sendButton,
+                        {
+                          backgroundColor: (message.trim() || attachments.length > 0) ? colors.primary : colors.border
+                        }
+                      ]}
+                      onPress={handleSendMessage}
+                      disabled={!message.trim() && attachments.length === 0}
+                      accessibilityRole="button"
+                      accessibilityLabel={language === 'az' ? 'Mesajı göndər' : 'Отправить сообщение'}
+                    >
+                      <Send size={18} color={(message.trim() || attachments.length > 0) ? '#fff' : colors.textSecondary} />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <TextInput
+                      testID="livechat-input"
+                      style={[
+                        styles.messageInput,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.text,
+                          borderColor: colors.border,
+                        }
+                      ]}
+                      placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите сообщение...'}
+                      placeholderTextColor={colors.textSecondary}
+                      value={message}
+                      onChangeText={handleTyping}
+                      multiline={false}
+                      numberOfLines={1}
+                      textAlignVertical="center"
+                      returnKeyType="send"
+                      onSubmitEditing={handleSendMessage}
+                      blurOnSubmit={false}
+                      autoCorrect={false}
+                      autoCapitalize="sentences"
+                      enablesReturnKeyAutomatically={false}
+                      scrollEnabled={false}
+                      onContentSizeChange={() => {}}
+                      keyboardAppearance={Platform.OS === 'ios' ? (themeMode === 'dark' ? 'dark' : 'light') : 'default'}
+                      maxLength={1000}
+                    />
+                    
+                    <TouchableOpacity
+                      testID="livechat-send"
+                      style={[
+                        styles.sendButton,
+                        {
+                          backgroundColor: (message.trim() || attachments.length > 0) ? colors.primary : colors.border
+                        }
+                      ]}
+                      onPress={handleSendMessage}
+                      disabled={!message.trim() && attachments.length === 0}
+                      accessibilityRole="button"
+                      accessibilityLabel={language === 'az' ? 'Mesajı göndər' : 'Отправить сообщение'}
+                    >
+                      <Send size={18} color={(message.trim() || attachments.length > 0) ? '#fff' : colors.textSecondary} />
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </KeyboardAvoidingView>
           ) : (
@@ -937,3 +1017,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+

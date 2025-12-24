@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
-import config from '@/constants/config';
-import { PayriffResponse, isPayriffSuccess, getPayriffErrorMessage } from '@/constants/payriffCodes';
+import config from '../../../../config';
+import { PayriffResponse, isPayriffSuccess, getPayriffErrorMessage } from '../../../../constants/payriffCodes';
 
-import { logger } from '@/utils/logger';
+import { logger } from '../../../../utils/logger';
 export const getOrderProcedure = publicProcedure
   .input(
     z.object({
@@ -28,7 +28,7 @@ export const getOrderProcedure = publicProcedure
       },
     });
 
-    const data: PayriffResponse = await response.json();
+    const data = await response.json() as PayriffResponse;
     logger.debug('Get order response:', JSON.stringify(data, null, 2));
 
     if (!response.ok || !isPayriffSuccess(data)) {

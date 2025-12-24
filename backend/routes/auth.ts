@@ -1,14 +1,19 @@
+// @ts-ignore - TypeScript module resolution issue with Hono
 import { Hono } from 'hono';
-import { logger } from '../../utils/logger';
+import { logger } from '../utils/logger';
 import { setCookie } from 'hono/cookie';
 import { oauthService } from '../services/oauth';
-import { userDB } from '../db/users';
+import { prisma } from '../db/client';
 import { generateTokenPair, verifyToken } from '../utils/jwt';
 import { authRateLimit } from '../middleware/rateLimit';
 const auth = new Hono();
 
 // SECURITY: Apply rate limiting to all auth routes
-auth.use('*', authRateLimit);
+// Rate limiting is disabled in development (see hono.ts), but enabled in production
+// For development testing, rate limiting is handled globally in hono.ts
+if (process.env.NODE_ENV === 'production') {
+  auth.use('*', authRateLimit);
+}
 
 const stateStore = new Map<string, { provider: string; createdAt: number }>();
 
@@ -83,7 +88,10 @@ auth.get('/:provider/callback', async (c) => {
 
   if (error) {
     logger.error(`[Auth] OAuth error from ${provider}:`, { provider, error });
-    const frontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
+    // Use localhost:3000 for development (proxy port), otherwise use env vars
+    const frontendUrl = process.env.NODE_ENV !== 'production'
+      ? 'http://localhost:3000'
+      : (process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app');
     return c.redirect(`${frontendUrl}/auth/login?error=${encodeURIComponent(error)}`);
   }
 
@@ -112,14 +120,25 @@ auth.get('/:provider/callback', async (c) => {
     const userInfo = await oauthService.getUserInfo(provider, tokenResponse.access_token, tokenResponse);
 
     logger.info(`[Auth] Looking up user by social ID`);
-    let user = await userDB.findBySocialId(provider, userInfo.id);
+    let user = await prisma.user.findFirst({
+      where: {
+        socialAccounts: {
+          some: {
+            provider,
+            socialId: userInfo.id,
+          },
+        },
+      },
+    });
 
     if (!user) {
       logger.info(`[Auth] User not found, checking by email:`, { 
         provider,
         email: userInfo.email
       });
-      user = await userDB.findByEmail(userInfo.email);
+      user = await prisma.user.findUnique({
+        where: { email: userInfo.email.toLowerCase() },
+      });
 
       if (user) {
         logger.info(`[Auth] Found existing user by email, linking ${provider} account`, { 
@@ -132,12 +151,26 @@ auth.get('/:provider/callback', async (c) => {
           logger.error('[Auth] Invalid OAuth provider:', { provider });
           throw new Error('Invalid OAuth provider');
         }
-        await userDB.addSocialProvider(user.id, {
-          provider: provider as 'google' | 'facebook' | 'vk',
-          socialId: userInfo.id,
-          email: userInfo.email,
-          name: userInfo.name,
-          avatar: userInfo.avatar,
+        await prisma.socialAccount.upsert({
+          where: {
+            provider_socialId: {
+              provider,
+              socialId: userInfo.id,
+            },
+          },
+          create: {
+            provider,
+            socialId: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            avatar: userInfo.avatar,
+            userId: user.id,
+          },
+          update: {
+            email: userInfo.email,
+            name: userInfo.name,
+            avatar: userInfo.avatar,
+          },
         });
         logger.info(`[Auth] Social provider linked successfully`, { 
           provider,
@@ -154,20 +187,24 @@ auth.get('/:provider/callback', async (c) => {
           logger.error('[Auth] Invalid OAuth provider:', { provider });
           throw new Error('Invalid OAuth provider');
         }
-        user = await userDB.createUser({
-          email: userInfo.email,
-          name: userInfo.name,
-          avatar: userInfo.avatar,
-          verified: true,
-          socialProviders: [{
-            provider: provider as 'google' | 'facebook' | 'vk',
-            socialId: userInfo.id,
-            email: userInfo.email,
+        user = await prisma.user.create({
+          data: {
+            email: userInfo.email.toLowerCase(),
             name: userInfo.name,
             avatar: userInfo.avatar,
-          }],
-          role: 'user',
-          balance: 0,
+            verified: true,
+            role: 'USER',
+            balance: 0,
+            socialAccounts: {
+              create: {
+                provider,
+                socialId: userInfo.id,
+                email: userInfo.email,
+                name: userInfo.name,
+                avatar: userInfo.avatar,
+              },
+            },
+          },
         });
         logger.info(`[Auth] New user created from ${provider}`, { 
           provider,
@@ -217,15 +254,28 @@ auth.get('/:provider/callback', async (c) => {
       path: '/',
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
-    // Pass only user ID in URL, client can fetch full user data with the cookie
-    const redirectUrl = `${frontendUrl}/auth/success?userId=${user.id}`;
+    // Use localhost:3000 for development (proxy port), otherwise use env vars
+    const frontendUrl = process.env.NODE_ENV !== 'production'
+      ? 'http://localhost:3000'
+      : (process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app');
+    // Pass token and user data in URL for frontend success page
+    const redirectUrl = `${frontendUrl}/auth/success?token=${encodeURIComponent(tokens.accessToken)}&user=${encodeURIComponent(JSON.stringify({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      avatar: user.avatar,
+      role: user.role
+    }))}`;
 
     logger.info(`[Auth] ${provider} login successful, redirecting to app`);
     return c.redirect(redirectUrl);
   } catch (error) {
     logger.error(`[Auth] Error processing ${provider} callback:`, error);
-    const frontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
+    // Use localhost:3000 for development (proxy port), otherwise use env vars
+    const frontendUrl = process.env.NODE_ENV !== 'production'
+      ? 'http://localhost:3000'
+      : (process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app');
     return c.redirect(`${frontendUrl}/auth/login?error=authentication_failed`);
   }
 });
@@ -301,7 +351,9 @@ auth.delete('/delete', async (c) => {
     }
 
     logger.info('[Auth] Deleting user account:', { userId: payload.userId });
-    const deleted = await userDB.deleteUser(payload.userId);
+    const deleted = await prisma.user.delete({
+      where: { id: payload.userId },
+    }).then(() => true).catch(() => false);
 
     // Clear cookies regardless (mirrors /logout)
     setCookie(c, 'accessToken', '', {

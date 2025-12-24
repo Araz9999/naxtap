@@ -1,4 +1,5 @@
-import { Context, Next } from 'hono';
+// @ts-ignore - TypeScript module resolution issue with Hono
+import type { Context, Next } from 'hono';
 import { logger } from '../utils/logger';
 
 interface RateLimitConfig {

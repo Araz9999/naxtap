@@ -17,10 +17,19 @@ export interface SocialAuthConfig {
 
 // A robust function to get the API base URL, respecting environment variables.
 function getApiBaseUrl() {
-  const envUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+  const envUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL || 
+                 process.env.EXPO_PUBLIC_BACKEND_URL ||
+                 process.env.EXPO_PUBLIC_API_BASE_URL;
   if (envUrl) {
     logger.debug(`[getApiBaseUrl] Using base URL from environment: ${envUrl}`);
     return envUrl;
+  }
+
+  // ✅ In development, always use localhost:3000 for backend
+  if (__DEV__ || process.env.NODE_ENV === 'development') {
+    const devUrl = 'http://localhost:3000';
+    logger.debug(`[getApiBaseUrl] Using development backend URL: ${devUrl}`);
+    return devUrl;
   }
 
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -29,7 +38,7 @@ function getApiBaseUrl() {
   }
   
   // Fallback for native development or when other methods fail
-  const fallbackUrl = 'http://localhost:3001';
+  const fallbackUrl = 'http://localhost:3000';
   logger.debug(`[getApiBaseUrl] Using fallback base URL: ${fallbackUrl}`);
   return fallbackUrl;
 }

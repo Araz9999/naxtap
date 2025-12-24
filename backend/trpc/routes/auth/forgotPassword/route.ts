@@ -1,48 +1,92 @@
 import { publicProcedure } from '../../../create-context';
 import { z } from 'zod';
-import { userDB } from '../../../../db/users';
+import { findUserByEmail, findUserByPhone } from '../../../../db/userPrisma';
 import { emailService } from '../../../../services/email';
-import { generateRandomToken } from '../../../../utils/password';
+import { smsService } from '../../../../services/sms';
+import { logger } from '../../../../utils/logger';
+import { otpStore, generateOTP } from '../verifyPasswordOTP/route';
 
-import { logger } from '@/utils/logger';
 export const forgotPasswordProcedure = publicProcedure
   .input(
     z.object({
-      email: z.string().email(),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+    })
+    .refine((data) => data.email || data.phone, {
+      message: 'Email və ya telefon nömrəsi tələb olunur',
     })
   )
   .mutation(async ({ input }) => {
-    logger.debug('[Auth] Forgot password attempt:', input.email);
+    try {
+      let user = null;
+      let contactInfo = '';
+      let contactType: 'email' | 'phone' = 'email';
 
-    const user = await userDB.findByEmail(input.email);
-    
-    if (!user) {
+      if (input.email) {
+        contactInfo = input.email.toLowerCase().trim();
+        contactType = 'email';
+        user = await findUserByEmail(contactInfo);
+      } else if (input.phone) {
+        contactInfo = input.phone.replace(/\s/g, '');
+        contactType = 'phone';
+        user = await findUserByPhone(contactInfo);
+      }
+
+      // Check if user exists - show error if phone number not registered
+      if (!user) {
+        if (contactType === 'phone') {
+          throw new Error('Bu telefon nömrəsi qeydiyyatdan keçməyib. Düzgün nömrə daxil edin.');
+        }
+        // For email, don't reveal if user exists (security best practice)
+        return {
+          success: true,
+          message: 'Əgər bu email qeydiyyatdan keçibsə, OTP kodu göndəriləcək',
+        };
+      }
+
+      // Generate OTP
+      const otp = generateOTP();
+      const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+      // Store OTP
+      otpStore.set(contactInfo, {
+        code: otp,
+        expiresAt,
+        userId: user.id,
+      });
+
+      // Send OTP via email or SMS
+      if (contactType === 'email') {
+        const emailSent = await emailService.sendPasswordResetOTP(user.email, {
+          name: user.name,
+          otp,
+        });
+
+        if (!emailSent) {
+          logger.warn('[Auth] Failed to send password reset OTP email');
+        }
+      } else {
+        // Send SMS OTP
+        const smsSent = await smsService.sendOTP(contactInfo, otp, 'password-reset');
+        
+        if (!smsSent) {
+          logger.warn('[Auth] Failed to send password reset OTP SMS');
+        } else {
+          logger.info('[Auth] Password reset OTP SMS sent:', { phone: contactInfo });
+        }
+      }
+
+      logger.info('[Auth] Password reset OTP sent:', { userId: user.id, contactType });
+
       return {
         success: true,
-        message: 'Əgər bu email qeydiyyatdan keçibsə, şifrə sıfırlama linki göndəriləcək',
+        message: contactType === 'email'
+          ? 'OTP kodu e-poçt ünvanınıza göndərildi'
+          : 'OTP kodu telefon nömrənizə göndərildi',
       };
+    } catch (error) {
+      logger.error('[Auth] Forgot password error:', error);
+      throw error;
     }
-
-    const resetToken = generateRandomToken();
-    await userDB.setPasswordResetToken(user.id, resetToken, 1);
-
-    const frontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
-    const resetUrl = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
-
-    const emailSent = await emailService.sendPasswordResetEmail(user.email, {
-      name: user.name,
-      resetUrl,
-    });
-
-    if (!emailSent) {
-      logger.warn('[Auth] Failed to send password reset email');
-    }
-
-    logger.debug('[Auth] Password reset email sent:', user.id);
-
-    return {
-      success: true,
-      message: 'Əgər bu email qeydiyyatdan keçibsə, şifrə sıfırlama linki göndəriləcək',
-    };
   });
 

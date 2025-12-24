@@ -1,5 +1,6 @@
+// @ts-ignore - TypeScript module resolution issue with Hono
 import { Hono } from 'hono';
-import { logger } from '../../utils/logger';
+import { logger } from '../utils/logger';
 import { secureHeaders } from 'hono/secure-headers';
 import { payriffService } from '../services/payriff';
 const payriffWebhook = new Hono();

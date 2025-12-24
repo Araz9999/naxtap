@@ -6,8 +6,11 @@ export const getReportsProcedure = moderatorProcedure
   .input(z.object({
     status: z.enum(['pending', 'in_review', 'resolved', 'dismissed']).optional(),
     moderatorId: z.string().optional(),
-  }))
+  }).optional())
   .query(({ input }) => {
+    if (!input) {
+      return moderationDb.reports.getAll();
+    }
     if (input.status) {
       return moderationDb.reports.getByStatus(input.status);
     }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
 import { liveChatDb } from '../../../../db/liveChat';
-import { LiveChatConversation } from '@/types/liveChat';
+import { LiveChatConversation } from '../../../../types/liveChat';
 
 export default publicProcedure
   .input(z.object({

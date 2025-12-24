@@ -6,7 +6,8 @@
   "scripts": {
     "start": "expo start",
     "start:dev": "expo start --dev-client",
-    "start:web": "cross-env EXPO_ROUTER_APP_ROOT=./app EXPO_ROUTER_IMPORT_MODE=eager expo start --web --clear",
+    "start:web": "node scripts/start-web-fixed.js",
+    "start:web:direct": "cross-env EXPO_ROUTER_APP_ROOT=./app EXPO_ROUTER_IMPORT_MODE=async expo start --web --clear",
     "start:web:dev": "DEBUG=expo* expo start --web",
     "build:web": "expo export --platform web && node scripts/fix-web-index-module.js",
     "build:android": "eas build --platform android",
@@ -19,7 +20,7 @@
     "server": "node server.js",
     "build:backend": "tsc -p backend/tsconfig.backend.json",
     "start:backend": "node backend/dist/server.js",
-    "server:ts": "node backend/run-ts.cjs"
+    "server:ts": "npm run build:backend && npm run start:backend"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",
@@ -27,6 +28,8 @@
     "@hono/node-server": "^1.19.5",
     "@hono/trpc-server": "^0.4.0",
     "@nkzw/create-context-hook": "^1.1.0",
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/netinfo": "11.4.1",
     "@react-navigation/native": "^7.1.6",
@@ -66,6 +69,8 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react-native": "0.545.0",
     "nativewind": "^4.1.23",
+    "pg": "^8.16.3",
+    "prisma": "^7.1.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.6",
@@ -80,7 +85,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@babel/plugin-syntax-import-meta": "^7.10.4",
     "@expo/ngrok": "^4.1.0",
+    "@types/pg": "^8.16.0",
     "@types/react": "~19.0.10",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
@@ -88,10 +95,16 @@
     "eslint": "^8.57.0",
     "eslint-config-expo": "~9.2.0",
     "eslint-plugin-react-hooks": "^7.0.0",
+    "express": "^5.2.1",
+    "http-proxy-middleware": "^3.0.5",
     "pm2": "^5.3.0",
+    "pngjs": "^7.0.0",
     "serve": "^14.2.1",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3"
   },
-  "private": true
+  "private": true,
+  "prisma": {
+    "seed": "ts-node backend/seed.ts"
+  }
 }

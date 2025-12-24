@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Pressable, Image, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useTranslation } from '@/constants/translations';
 import { useUserStore } from '@/store/userStore';
@@ -10,9 +10,11 @@ import { initiateSocialLogin, showSocialLoginError } from '@/utils/socialAuth';
 import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
 import { validateEmail } from '@/utils/inputValidation';
-import { users } from '@/mocks/users';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
+  console.log('[Login] Component mounted');
+
   const router = useRouter();
   const { t, language } = useTranslation();
   const { login } = useUserStore();
@@ -26,10 +28,14 @@ export default function LoginScreen() {
   const loginMutation = trpc.auth.login.useMutation();
 
   const handleLogin = async () => {
+    console.log('[Login] handleLogin called', { email, hasPassword: !!password });
+    logger.info('[Login] Login button clicked', { email: email?.substring(0, 5) + '...' });
+    
     // ===== VALIDATION START =====
     
     // 1. Email validation
     if (!email || typeof email !== 'string' || email.trim().length === 0) {
+      console.log('[Login] Email validation failed');
       Alert.alert(
         t('error'),
         t("emailRequired") || 'Email tələb olunur'
@@ -81,34 +87,90 @@ export default function LoginScreen() {
     
     // ===== VALIDATION END =====
     
+    setIsLoading(true);
+    console.log('[Login] Starting login mutation...');
+    
     try {
-
-      // const result = await authService.login(email.trim().toLowerCase(), password);
+      // ✅ Use tRPC mutation for real backend login
+      console.log('[Login] Calling loginMutation.mutateAsync');
+      const result = await loginMutation.mutateAsync({
+        email: email.trim().toLowerCase(),
+        password: password,
+      });
+      console.log('[Login] Login mutation result:', result ? 'Success' : 'No result');
       
-      // Mock authentication
-      const mockUser = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-      
-      if (!mockUser) {
-        Alert.alert(
-          t('error'),
-          'Email və ya şifrə səhvdir'
-        );
-        return;
-      }
-      
-      login(mockUser);
-      
-      if (router.canGoBack()) {
-        router.back();
+      if (result && result.user && result.tokens) {
+        // ✅ Convert role to lowercase (backend returns uppercase: ADMIN, MODERATOR, USER)
+        const normalizedRole = (result.user.role || 'USER').toLowerCase() as 'user' | 'moderator' | 'admin';
+        
+        // ✅ Create user object for store
+        const user = {
+          ...result.user,
+          role: normalizedRole, // Convert to lowercase
+          rating: 0,
+          totalRatings: 0,
+          memberSince: new Date().toISOString(),
+          location: { az: '', ru: '', en: '' },
+          privacySettings: {
+            hidePhoneNumber: false,
+            allowDirectContact: true,
+            onlyAppMessaging: false,
+          },
+          analytics: {
+            lastOnline: new Date().toISOString(),
+            messageResponseRate: 0,
+            averageResponseTime: 0,
+            totalMessages: 0,
+            totalResponses: 0,
+            isOnline: true,
+          },
+        };
+        
+        // ✅ Save tokens
+        await AsyncStorage.setItem('auth_tokens', JSON.stringify(result.tokens));
+        
+        // ✅ Login user
+        login(user);
+        console.log('[Login] User logged in successfully', { role: user.role, userId: user.id, email: user.email });
+        
+        // ✅ Redirect based on user role
+        if (user.role === 'admin') {
+          console.log('[Login] Redirecting admin to tabs');
+          router.replace('/(tabs)');
+        } else if (user.role === 'moderator') {
+          console.log('[Login] Redirecting moderator to tabs');
+          router.replace('/(tabs)');
+        } else {
+          console.log('[Login] Redirecting user to tabs');
+          router.replace('/(tabs)');
+        }
       } else {
-        router.replace('/');
+        throw new Error('Invalid response from server');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Login error:', error);
+      console.error('[Login] Full error:', error);
+      
+      // Extract error message from tRPC error structure
+      let errorMessage = 'Giriş zamanı xəta baş verdi. Yenidən cəhd edin.';
+      
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.cause?.message) {
+        errorMessage = error.cause.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      console.log('[Login] Showing error alert:', errorMessage);
       Alert.alert(
         t('error'),
-        'Giriş zamanı xəta baş verdi. Yenidən cəhd edin.'
+        errorMessage
       );
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -135,19 +197,35 @@ export default function LoginScreen() {
     try {
       setLoadingSocial(provider);
       
-      // ✅ Use environment variable or config for base URL
-      const baseUrl = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
+      // ✅ Use correct backend URL (port 3000) - always use 3000 in dev
+      const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL || 
+                      process.env.EXPO_PUBLIC_BACKEND_URL || 
+                      (__DEV__ ? 'http://localhost:3000' : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'));
 
-      const statusResponse = await fetch(`${baseUrl}/api/auth/status`);
+      console.log('[Login] Checking social auth status at:', `${baseUrl}/api/auth/status`);
       
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        if (!statusData.configured[provider]) {
-          setLoadingSocial(null);
-          logger.warn('[Login] Provider not configured:', { provider });
-          showSocialLoginError(provider, `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not configured yet. Please contact support.`);
-          return;
+      try {
+        const statusResponse = await fetch(`${baseUrl}/api/auth/status`);
+        
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          console.log('[Login] Social auth status:', statusData);
+          if (!statusData.configured || !statusData.configured[provider]) {
+            setLoadingSocial(null);
+            logger.warn('[Login] Provider not configured:', { provider });
+            Alert.alert(
+              'Not Configured',
+              `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not configured yet. Please use email/password login.`
+            );
+            return;
+          }
+        } else {
+          console.warn('[Login] Status check failed:', statusResponse.status);
+          // Continue anyway - might work
         }
+      } catch (statusError) {
+        console.error('[Login] Status check error:', statusError);
+        // Continue anyway - might work
       }
       
       await initiateSocialLogin(
@@ -290,12 +368,19 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
+          <Pressable 
             style={[
               styles.loginButton,
               ((!email || !password) || isLoading) && styles.disabledButton
             ]} 
-            onPress={handleLogin}
+            onPress={() => {
+              if (!email || !password || isLoading) {
+                console.log('[Login] Button is disabled');
+                return;
+              }
+              console.log('[Login] Calling handleLogin...');
+              handleLogin();
+            }}
             disabled={!email || !password || isLoading}
           >
             {isLoading ? (
@@ -305,7 +390,8 @@ export default function LoginScreen() {
                 {t('login')}
               </Text>
             )}
-          </TouchableOpacity>
+          </Pressable>
+          
           
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -318,7 +404,10 @@ export default function LoginScreen() {
           <View style={styles.socialButtons}>
             <TouchableOpacity 
               style={[styles.socialButton, styles.googleButton]}
-              onPress={() => handleSocialLogin('google')}
+              onPress={() => {
+                console.log('[Login] Google button pressed');
+                handleSocialLogin('google');
+              }}
               disabled={loadingSocial !== null || isLoading}
             >
               {loadingSocial === 'google' ? (

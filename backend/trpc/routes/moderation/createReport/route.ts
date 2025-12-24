@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { protectedProcedure } from '../../../create-context';
 import { moderationDb } from '../../../../db/moderation';
-import { Report } from '@/types/moderation';
+import { Report } from '../../../../types/moderation';
 import { logger } from '../../../../utils/logger';
 
 export const createReportProcedure = protectedProcedure

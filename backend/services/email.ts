@@ -1,4 +1,4 @@
-import { logger } from '../../utils/logger';
+import { logger } from '../utils/logger';
 
 interface EmailOptions {
   to: string;
@@ -15,6 +15,11 @@ interface VerificationEmailData {
 interface PasswordResetEmailData {
   name: string;
   resetUrl: string;
+}
+
+interface PasswordResetOTPData {
+  name: string;
+  otp: string;
 }
 
 class EmailService {
@@ -369,6 +374,98 @@ Telefon: +994504801313
     return this.sendEmail({
       to: email,
       subject: 'Şifrə Sıfırlama - NaxtaPaz',
+      html,
+      text,
+    });
+  }
+
+  async sendPasswordResetOTP(email: string, data: PasswordResetOTPData): Promise<boolean> {
+    logger.info('[Email] Sending password reset OTP:', { 
+      to: email,
+      name: data.name
+    });
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Şifrə Sıfırlama OTP</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .container {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          .otp-code {
+            background: #F5F5F5;
+            border: 2px dashed #007AFF;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #007AFF;
+            margin: 20px 0;
+          }
+          .warning {
+            background: #FFF3CD;
+            border: 1px solid #FFE69C;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 20px 0;
+            color: #856404;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>NaxtaPaz</h1>
+          <h2>Salam ${data.name}!</h2>
+          <p>Şifrənizi sıfırlamaq üçün aşağıdakı OTP kodunu istifadə edin:</p>
+          
+          <div class="otp-code">${data.otp}</div>
+          
+          <div class="warning">
+            <strong>⚠️ Təhlükəsizlik Xəbərdarlığı:</strong><br>
+            Bu kod 10 dəqiqə ərzində etibarlıdır. Əgər siz bu sorğunu göndərməmisinizsə, dərhal bizimlə əlaqə saxlayın.
+          </div>
+          
+          <p>Hörmətlə,<br>NaxtaPaz Komandası</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+Salam ${data.name}!
+
+Şifrənizi sıfırlamaq üçün OTP kodunuz:
+
+${data.otp}
+
+Bu kod 10 dəqiqə ərzində etibarlıdır.
+
+⚠️ Əgər siz bu sorğunu göndərməmisinizsə, dərhal bizimlə əlaqə saxlayın.
+
+Hörmətlə,
+NaxtaPaz Komandası
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Şifrə Sıfırlama OTP - NaxtaPaz',
       html,
       text,
     });
