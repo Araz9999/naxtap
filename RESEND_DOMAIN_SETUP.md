@@ -195,3 +195,5 @@ If you encounter issues:
 3. Check Cloudflare DNS logs for any issues
 4. Contact Resend support if domain verification fails after 24 hours
 
+
+
