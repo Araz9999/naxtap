@@ -5,6 +5,8 @@ const conversations: Map<string, LiveChatConversation> = new Map();
 const messages: Map<string, LiveChatMessage[]> = new Map();
 const messageIndex: Map<string, LiveChatMessage> = new Map();
 
+export type LiveChatViewerType = 'user' | 'support';
+
 const supportAgents: SupportAgent[] = [
   {
     id: 'agent-1',
@@ -156,14 +158,23 @@ export const liveChatDb = {
       logger.warn('[LiveChatDB] Message not found:', id);
       return false;
     },
-    markAsRead: (conversationId: string) => {
-      logger.info('[LiveChatDB] Marking messages as read for conversation:', conversationId);
+    markAsRead: (conversationId: string, viewerType: LiveChatViewerType = 'user') => {
+      logger.info('[LiveChatDB] Marking messages as read for conversation:', { conversationId, viewerType });
       const convMessages = messages.get(conversationId);
       if (convMessages) {
+        const shouldMarkSeen = (msg: LiveChatMessage) => {
+          // Viewer marks the opposite side's messages as seen.
+          // - user sees support messages
+          // - support sees user messages
+          return viewerType === 'user' ? msg.isSupport : !msg.isSupport;
+        };
+
+        let updatedCount = 0;
         convMessages.forEach(msg => {
-          if (!msg.isSupport && msg.status !== 'seen') {
+          if (shouldMarkSeen(msg) && msg.status !== 'seen') {
             msg.status = 'seen';
             messageIndex.set(msg.id, msg);
+            updatedCount += 1;
           }
         });
         messages.set(conversationId, convMessages);
@@ -174,10 +185,10 @@ export const liveChatDb = {
           const updated = { ...conversation, unreadCount: 0 };
           conversations.set(conversationId, updated);
         }
-        return true;
+        return updatedCount;
       }
       logger.warn('[LiveChatDB] Conversation not found:', conversationId);
-      return false;
+      return 0;
     },
   },
 
