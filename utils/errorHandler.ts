@@ -218,3 +218,130 @@ export function getUserFriendlyError(error: unknown): string {
   
   return 'Naməlum xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.';
 }
+
+/**
+ * Extract and format validation-style errors from tRPC/Zod payloads.
+ *
+ * Why: Sometimes backend validation issues reach the client as a JSON-stringified
+ * array/object (e.g. Zod issues), and showing that raw JSON in an alert is a bad UX.
+ */
+export function getUserFriendlyTRPCError(
+  error: unknown,
+  fallback: string = 'Naməlum xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
+): string {
+  const seen = new WeakSet<object>();
+
+  const uniq = (items: string[]) => {
+    const out: string[] = [];
+    const set = new Set<string>();
+    for (const raw of items) {
+      const s = String(raw ?? '').trim();
+      if (!s) continue;
+      if (set.has(s)) continue;
+      set.add(s);
+      out.push(s);
+    }
+    return out;
+  };
+
+  const collectFromUnknown = (val: unknown): string[] => {
+    if (!val) return [];
+
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      // Try parsing JSON payloads (common in validation errors)
+      if (
+        (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+        (trimmed.startsWith('{') && trimmed.endsWith('}'))
+      ) {
+        try {
+          const parsed = JSON.parse(trimmed) as unknown;
+          const fromParsed = collectFromUnknown(parsed);
+          if (fromParsed.length) return fromParsed;
+        } catch {
+          // ignore parse errors; fall back to raw string
+        }
+      }
+      return [trimmed];
+    }
+
+    if (Array.isArray(val)) {
+      return val.flatMap(collectFromUnknown);
+    }
+
+    if (typeof val === 'object') {
+      if (seen.has(val as object)) return [];
+      seen.add(val as object);
+
+      const obj: any = val;
+
+      // Zod issue: { message, path, ... }
+      const directMsg = typeof obj?.message === 'string' ? obj.message.trim() : '';
+      const pathArr = Array.isArray(obj?.path) ? obj.path : null;
+      const pathStr =
+        pathArr && pathArr.length
+          ? pathArr.map((p: any) => String(p)).filter(Boolean).join('.')
+          : '';
+
+      // Prefer explicit message fields
+      const messages: string[] = [];
+      if (directMsg) {
+        // If it's a system-y message and we have a field path, prefix with field name
+        messages.push(pathStr ? `${pathStr}: ${directMsg}` : directMsg);
+      }
+
+      // Common containers
+      if (Array.isArray(obj?.issues)) messages.push(...collectFromUnknown(obj.issues));
+      if (Array.isArray(obj?.errors)) messages.push(...collectFromUnknown(obj.errors));
+
+      // tRPC v11 zodError shape
+      const zodError = obj?.zodError ?? obj?.data?.zodError ?? obj?.shape?.data?.zodError;
+      if (zodError) {
+        if (Array.isArray(zodError)) {
+          messages.push(...collectFromUnknown(zodError));
+        } else if (typeof zodError === 'object') {
+          const fe = (zodError as any)?.fieldErrors;
+          const fo = (zodError as any)?.formErrors;
+          if (fe && typeof fe === 'object') {
+            for (const v of Object.values(fe)) {
+              messages.push(...collectFromUnknown(v));
+            }
+          }
+          if (Array.isArray(fo)) messages.push(...collectFromUnknown(fo));
+          if (Array.isArray((zodError as any)?.issues)) {
+            messages.push(...collectFromUnknown((zodError as any).issues));
+          }
+        }
+      }
+
+      // If we still don't have messages, try walking common nested fields
+      if (!messages.length) {
+        for (const k of ['cause', 'error', 'data', 'shape']) {
+          if (obj?.[k]) messages.push(...collectFromUnknown(obj[k]));
+        }
+      }
+
+      return messages;
+    }
+
+    return [];
+  };
+
+  const err: any = error as any;
+
+  // Prefer explicit tRPC zodError containers first, then fall back to message parsing.
+  const candidates: unknown[] = [
+    err?.data?.zodError,
+    err?.shape?.data?.zodError,
+    err?.zodError,
+    err?.message,
+    err,
+  ];
+
+  const collected = uniq(candidates.flatMap(collectFromUnknown));
+
+  if (collected.length === 0) return fallback;
+  if (collected.length === 1) return collected[0] || fallback;
+
+  return collected.map(m => `• ${m}`).join('\n');
+}
