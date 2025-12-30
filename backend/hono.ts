@@ -122,7 +122,8 @@ app.use('*', async (c, next) => {
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   // Permissions Policy
-  c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  // Allow camera/microphone on the frontend origin (needed for real-time calls on web)
+  c.header('Permissions-Policy', 'geolocation=(), microphone=(self), camera=(self)');
 });
 
 app.get('/', (c) => {

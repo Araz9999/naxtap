@@ -4,6 +4,7 @@ import { users } from '@/mocks/users';
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { Audio } from 'expo-av';
+import { trpcClient } from '@/lib/trpc';
 
 interface CallStore {
   calls: Call[];
@@ -44,6 +45,7 @@ interface CallStore {
 
   // Notifications
   simulateIncomingCall: () => void;
+  pollIncomingCalls: (currentUserId: string) => Promise<void>;
 }
 
 // Mock initial calls
@@ -135,8 +137,20 @@ export const useCallStore = create<CallStore>((set, get) => ({
   initiateCall: async (currentUserId: string, receiverId: string, listingId: string, type: CallType) => {
     logger.info('CallStore - initiating call to:', receiverId);
 
-    // ✅ Generate unique ID with random component
-    const callId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    // Create a server-side call invite so the receiver can join the same LiveKit room.
+    let callId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    try {
+      const res = await trpcClient.call.create.mutate({
+        callerId: currentUserId,
+        receiverId,
+        listingId,
+        type,
+      });
+      if (res?.callId) callId = res.callId;
+    } catch (e) {
+      logger.warn('[CallStore] Failed to create server call invite, using local callId fallback', e);
+    }
+
     const newCall: Call = {
       id: callId,
       callerId: 'user1', // Current user
@@ -229,6 +243,9 @@ export const useCallStore = create<CallStore>((set, get) => ({
     // Stop ringtone
     get().stopAllSounds();
 
+    // Inform server that call invite was accepted (clears pending invite)
+    trpcClient.call.answer.mutate({ callId }).catch(() => undefined);
+
     // Ensure native call audio session is active (ringtone stops, call audio starts)
     (async () => {
       const InCallManager = await getInCallManager();
@@ -281,6 +298,9 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
     // Stop ringtone
     get().stopAllSounds();
+
+    // Inform server that call invite was declined (clears pending invite)
+    trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
 
     // Stop native call audio session if it was started
     (async () => {
@@ -696,5 +716,39 @@ export const useCallStore = create<CallStore>((set, get) => ({
     set((state) => ({
       incomingCallTimeouts: new Map(state.incomingCallTimeouts).set(callId, timeout as unknown as NodeJS.Timeout),
     }));
+  },
+
+  pollIncomingCalls: async (currentUserId: string) => {
+    if (!currentUserId || typeof currentUserId !== 'string') return;
+    try {
+      const res = await trpcClient.call.getIncoming.query({ userId: currentUserId });
+      const next = res?.calls?.[0];
+      if (!next) return;
+
+      // If we already show this call, do nothing
+      const state = get();
+      if (state.incomingCall?.id === next.callId) return;
+
+      const incomingCall: Call = {
+        id: next.callId,
+        callerId: next.callerId,
+        receiverId: next.receiverId,
+        listingId: next.listingId,
+        type: next.type,
+        status: 'incoming',
+        startTime: next.createdAt,
+        isRead: false,
+      };
+
+      set((s) => ({
+        calls: [incomingCall, ...s.calls],
+        incomingCall,
+      }));
+
+      // Play ringtone for incoming call
+      get().playRingtone().catch(() => undefined);
+    } catch (e) {
+      logger.debug?.('[CallStore] pollIncomingCalls failed', e);
+    }
   },
 }));
