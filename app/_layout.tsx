@@ -6,6 +6,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useThemeStore } from '@/store/themeStore';
 import { useRatingStore } from '@/store/ratingStore';
 import { useCallStore } from '@/store/callStore';
+import { initListingStoreInterval, cleanupListingStoreInterval } from '@/store/listingStore';
+import { initStoreStoreInterval, cleanupStoreStoreInterval } from '@/store/storeStore';
 import { getColors } from '@/constants/colors';
 import IncomingCallModal from '@/components/IncomingCallModal';
 import { LanguageProvider } from '@/store/languageStore';
@@ -101,6 +103,17 @@ function RootLayoutNav() {
     initializeServices().catch((error) => {
       if (__DEV__) logger.error('Failed to initialize services:', error);
     });
+  }, []);
+
+  // Local real-time managers (store availability + listing expiration checks)
+  useEffect(() => {
+    initListingStoreInterval();
+    initStoreStoreInterval();
+
+    return () => {
+      cleanupListingStoreInterval();
+      cleanupStoreStoreInterval();
+    };
   }, []);
   
   return (
