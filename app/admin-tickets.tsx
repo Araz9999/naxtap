@@ -1,12 +1,23 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TextInput,
+  RefreshControl,
+  Platform,
+} from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
 import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
-import { Headphones, Clock, AlertCircle, CheckCircle, ChevronRight } from 'lucide-react-native';
+import { Headphones, Clock, AlertCircle, CheckCircle, ChevronRight, ExternalLink, Send, StickyNote } from 'lucide-react-native';
 
 type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 type StatusFilter = 'all' | TicketStatus;
@@ -23,15 +34,60 @@ export default function AdminTicketsScreen() {
     currentUser?.role === 'admin' ||
     (currentUser?.role === 'moderator' && currentUser?.moderatorInfo?.permissions?.includes('manage_tickets' as any));
 
-  const { tickets, updateTicketStatus } = useSupportStore();
+  const { tickets, categories, addResponse, updateTicketStatus } = useSupportStore();
   const [filter, setFilter] = useState<StatusFilter>('open');
+  const [search, setSearch] = useState('');
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [replyDraft, setReplyDraft] = useState('');
+  const [resolutionDraft, setResolutionDraft] = useState('');
+  const [pendingAction, setPendingAction] = useState<TicketStatus | null>(null);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  useEffect(() => {
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    };
+  }, []);
 
   const filtered = useMemo(() => {
-    if (filter === 'all') return tickets;
-    return tickets.filter((t) => t.status === filter);
-  }, [tickets, filter]);
+    const list = tickets || [];
+    const byStatus = filter === 'all' ? list : list.filter((t) => t.status === filter);
+    const q = search.trim().toLowerCase();
+    if (!q) return byStatus;
+    return byStatus.filter((t) => {
+      const hay = [
+        t?.id,
+        t?.userId,
+        t?.subject,
+        t?.message,
+        t?.category,
+        t?.priority,
+        t?.status,
+        t?.assignedModeratorId,
+        t?.moderatorNotes,
+        t?.resolution,
+        ...(t?.responses || []).map((r: any) => r?.message).filter(Boolean),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [tickets, filter, search]);
 
   if (!canAccess) return null;
+
+  const formatDateTime = (d?: Date) => {
+    if (!d) return '-';
+    const date = d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(date.getTime())) return '-';
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  };
 
   const statusTitle = (s: TicketStatus) => {
     if (language === 'az') {
@@ -51,6 +107,117 @@ export default function AdminTicketsScreen() {
     if (s === 'in_progress') return '#3B82F6';
     if (s === 'resolved') return '#10B981';
     return '#6B7280';
+  };
+
+  const priorityTitle = (p?: string) => {
+    if (language === 'az') {
+      if (p === 'low') return 'Aşağı';
+      if (p === 'medium') return 'Orta';
+      if (p === 'high') return 'Yüksək';
+      if (p === 'urgent') return 'Təcili';
+      return '-';
+    }
+    if (p === 'low') return 'Низкий';
+    if (p === 'medium') return 'Средний';
+    if (p === 'high') return 'Высокий';
+    if (p === 'urgent') return 'Срочный';
+    return '-';
+  };
+
+  const categoryTitle = (id?: string) => {
+    if (!id) return '-';
+    const c = (categories || []).find((x) => x.id === id);
+    if (!c) return id;
+    return language === 'az' ? c.name : c.nameRu;
+  };
+
+  const openDetails = (t: any) => {
+    setSelected(t);
+    setNotesDraft((t?.moderatorNotes || '').toString());
+    setResolutionDraft((t?.resolution || '').toString());
+    setReplyDraft('');
+    setPendingAction(null);
+    setDetailsOpen(true);
+  };
+
+  const closeDetails = () => {
+    setDetailsOpen(false);
+    setSelected(null);
+    setNotesDraft('');
+    setResolutionDraft('');
+    setReplyDraft('');
+    setPendingAction(null);
+  };
+
+  const goToUser = (userId?: string) => {
+    if (!userId) return;
+    try {
+      router.push(`/profile/${userId}` as any);
+    } catch {
+      // ignore
+    }
+  };
+
+  const ensureLoggedInModerator = () => {
+    if (!currentUser?.id) {
+      Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', language === 'az' ? 'İstifadəçi tapılmadı.' : 'Пользователь не найден.');
+      return false;
+    }
+    return true;
+  };
+
+  const sendAdminReply = (ticketId: string, message: string) => {
+    if (!ensureLoggedInModerator()) return;
+    const text = message.trim();
+    if (!text) return;
+    addResponse(ticketId, {
+      ticketId,
+      userId: currentUser!.id,
+      message: text,
+      isAdmin: true,
+    });
+    setReplyDraft('');
+  };
+
+  const applyStatus = (next: TicketStatus) => {
+    if (!selected?.id) return;
+    if (!ensureLoggedInModerator()) return;
+
+    const notes = notesDraft.trim();
+    const resolution = resolutionDraft.trim();
+
+    if ((next === 'resolved' || next === 'closed') && !resolution) {
+      Alert.alert(
+        language === 'az' ? 'Tələb olunur' : 'Требуется',
+        language === 'az' ? 'Həll/bağlama səbəbini yazın.' : 'Укажите причину решения/закрытия.'
+      );
+      return;
+    }
+
+    // Assign to the current moderator when taking into work
+    const moderatorId = currentUser!.id;
+
+    updateTicketStatus(selected.id, next, {
+      moderatorId,
+      moderatorNotes: notes || undefined,
+      resolution: (next === 'resolved' || next === 'closed') ? resolution : undefined,
+    });
+
+    // If no explicit reply is written, send a short system-like admin message on closing actions.
+    if (next === 'resolved' || next === 'closed') {
+      const hasReply = !!replyDraft.trim();
+      const autoText =
+        next === 'resolved'
+          ? (language === 'az' ? `Bilet həll edildi: ${resolution}` : `Тикет решен: ${resolution}`)
+          : (language === 'az' ? `Bilet bağlandı: ${resolution}` : `Тикет закрыт: ${resolution}`);
+
+      sendAdminReply(selected.id, hasReply ? replyDraft : autoText);
+      closeDetails();
+      return;
+    }
+
+    // For in_progress, keep the modal open; user might want to reply.
+    setPendingAction(null);
   };
 
   const StatusChip = ({ value, title }: { value: StatusFilter; title: string }) => {
@@ -109,11 +276,47 @@ export default function AdminTicketsScreen() {
             </ScrollView>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
+          <View style={styles.searchRow}>
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder={language === 'az' ? 'Axtar… (mövzu, mesaj, ID, userId)' : 'Поиск… (тема, текст, ID, userId)'}
+              placeholderTextColor={colors.textSecondary}
+              style={[
+                styles.searchInput,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              autoCapitalize="none"
+              autoCorrect={false}
+              clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
+            />
+          </View>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.list}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  if (refreshTimer.current) clearTimeout(refreshTimer.current);
+                  setRefreshing(true);
+                  refreshTimer.current = setTimeout(() => setRefreshing(false), 250);
+                }}
+                tintColor={colors.primary}
+              />
+            }
+          >
             {filtered.length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
                 <Text style={{ color: colors.textSecondary }}>
-                  {language === 'az' ? 'Bilet yoxdur.' : 'Тикетов нет.'}
+                  {search.trim()
+                    ? (language === 'az' ? 'Uyğun bilet tapılmadı.' : 'Ничего не найдено.')
+                    : (language === 'az' ? 'Bilet yoxdur.' : 'Тикетов нет.')}
                 </Text>
               </View>
             ) : (
@@ -126,16 +329,7 @@ export default function AdminTicketsScreen() {
                     style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
                     activeOpacity={0.85}
                     onPress={() => {
-                      Alert.alert(
-                        language === 'az' ? 'Bilet' : 'Тикет',
-                        `${language === 'az' ? 'Mövzu' : 'Тема'}: ${t.subject}\n\n${t.message}\n\n${language === 'az' ? 'Status' : 'Статус'}: ${statusTitle(t.status as TicketStatus)}`,
-                        [
-                          { text: language === 'az' ? 'İcrada' : 'В работе', onPress: () => updateTicketStatus(t.id, 'in_progress') },
-                          { text: language === 'az' ? 'Həll' : 'Решен', onPress: () => updateTicketStatus(t.id, 'resolved') },
-                          { text: language === 'az' ? 'Bağla' : 'Закрыть', style: 'destructive', onPress: () => updateTicketStatus(t.id, 'closed') },
-                          { text: language === 'az' ? 'Bağla (pəncərə)' : 'Закрыть (окно)', style: 'cancel' },
-                        ]
-                      );
+                      openDetails(t);
                     }}
                   >
                     <View style={styles.cardTop}>
@@ -145,6 +339,9 @@ export default function AdminTicketsScreen() {
                         </Text>
                         <Text style={[styles.preview, { color: colors.textSecondary }]} numberOfLines={2}>
                           {t.message}
+                        </Text>
+                        <Text style={[styles.meta, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {(language === 'az' ? 'Yenilənib: ' : 'Обновлено: ') + formatDateTime(t.updatedAt)}
                         </Text>
                       </View>
                       <View style={[styles.badge, { backgroundColor: `${c}20` }]}>
@@ -162,6 +359,212 @@ export default function AdminTicketsScreen() {
           </ScrollView>
         </>
       )}
+
+      <Modal visible={detailsOpen} transparent animationType="fade" onRequestClose={closeDetails}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]} numberOfLines={1}>
+                {language === 'az' ? 'Bilet detalları' : 'Детали тикета'}
+              </Text>
+              <TouchableOpacity onPress={closeDetails} style={styles.modalCloseBtn}>
+                <Text style={{ color: colors.textSecondary, fontWeight: '800' }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Mövzu' : 'Тема'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]} numberOfLines={2}>
+                  {selected?.subject || '-'}
+                </Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Status' : 'Статус'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>{selected?.status ? statusTitle(selected.status) : '-'}</Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Kateqoriya' : 'Категория'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>{categoryTitle(selected?.category)}</Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Prioritet' : 'Приоритет'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>{priorityTitle(selected?.priority)}</Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Tarix' : 'Дата'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>
+                  {formatDateTime(selected?.createdAt)}
+                </Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'İstifadəçi' : 'Пользователь'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>{selected?.userId || '-'}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.targetBtn, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+                onPress={() => goToUser(selected?.userId)}
+              >
+                <ExternalLink size={16} color={colors.primary} />
+                <Text style={[styles.targetBtnText, { color: colors.primary }]}>
+                  {language === 'az' ? 'İstifadəçi profilini aç' : 'Открыть профиль пользователя'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.sectionBlock}>
+                <Text style={[styles.blockTitle, { color: colors.text }]}>{language === 'az' ? 'Mesaj' : 'Сообщение'}</Text>
+                <Text style={[styles.blockText, { color: colors.textSecondary }]}>{selected?.message || '-'}</Text>
+              </View>
+
+              {selected?.attachments?.length ? (
+                <View style={styles.sectionBlock}>
+                  <Text style={[styles.blockTitle, { color: colors.text }]}>{language === 'az' ? 'Əlavələr' : 'Вложения'}</Text>
+                  <Text style={[styles.blockText, { color: colors.textSecondary }]}>
+                    {language === 'az'
+                      ? `${selected.attachments.length} fayl əlavə olunub`
+                      : `Добавлено файлов: ${selected.attachments.length}`}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View style={styles.sectionBlock}>
+                <Text style={[styles.blockTitle, { color: colors.text }]}>{language === 'az' ? 'Cavablar' : 'Ответы'}</Text>
+                {(selected?.responses || []).length === 0 ? (
+                  <Text style={[styles.blockText, { color: colors.textSecondary }]}>
+                    {language === 'az' ? 'Hələ cavab yoxdur.' : 'Пока нет ответов.'}
+                  </Text>
+                ) : (
+                  (selected.responses as any[])
+                    .slice()
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .slice(0, 8)
+                    .map((r) => (
+                      <View key={r.id} style={[styles.replyCard, { borderColor: colors.border }]}>
+                        <Text style={[styles.replyMeta, { color: colors.textSecondary }]}>
+                          {(r.isAdmin ? (language === 'az' ? 'Dəstək' : 'Поддержка') : (language === 'az' ? 'İstifadəçi' : 'Пользователь')) +
+                            ' • ' +
+                            formatDateTime(r.createdAt)}
+                        </Text>
+                        <Text style={[styles.replyText, { color: colors.text }]}>{r.message}</Text>
+                      </View>
+                    ))
+                )}
+              </View>
+
+              <View style={styles.sectionBlock}>
+                <Text style={[styles.blockTitle, { color: colors.text }]}>
+                  {language === 'az' ? 'Moderator qeydləri (opsional)' : 'Заметки модератора (опц.)'}
+                </Text>
+                <View style={[styles.textAreaWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <StickyNote size={16} color={colors.textSecondary} />
+                  <TextInput
+                    value={notesDraft}
+                    onChangeText={setNotesDraft}
+                    placeholder={language === 'az' ? 'Qeyd yazın…' : 'Добавьте заметку…'}
+                    placeholderTextColor={colors.textSecondary}
+                    style={[styles.textArea, { color: colors.text }]}
+                    multiline
+                  />
+                </View>
+              </View>
+
+              <View style={styles.sectionBlock}>
+                <Text style={[styles.blockTitle, { color: colors.text }]}>
+                  {language === 'az' ? 'Cavab yaz (istifadəçiyə)' : 'Ответ пользователю'}
+                </Text>
+                <View style={[styles.textAreaWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <TextInput
+                    value={replyDraft}
+                    onChangeText={setReplyDraft}
+                    placeholder={language === 'az' ? 'Cavab mesajı…' : 'Текст ответа…'}
+                    placeholderTextColor={colors.textSecondary}
+                    style={[styles.textArea, { color: colors.text }]}
+                    multiline
+                  />
+                </View>
+                <TouchableOpacity
+                  style={[styles.replyBtn, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+                  onPress={() => {
+                    if (!selected?.id) return;
+                    if (!replyDraft.trim()) return;
+                    sendAdminReply(selected.id, replyDraft);
+                  }}
+                >
+                  <Send size={16} color={colors.primary} />
+                  <Text style={[styles.replyBtnText, { color: colors.primary }]}>
+                    {language === 'az' ? 'Cavabı göndər' : 'Отправить ответ'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {(pendingAction === 'resolved' || pendingAction === 'closed') && (
+                <View style={styles.sectionBlock}>
+                  <Text style={[styles.blockTitle, { color: colors.text }]}>
+                    {pendingAction === 'resolved'
+                      ? (language === 'az' ? 'Həll (tələb olunur)' : 'Решение (обязательно)')
+                      : (language === 'az' ? 'Bağlama səbəbi (tələb olunur)' : 'Причина закрытия (обязательно)')}
+                  </Text>
+                  <View style={[styles.textAreaWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                    <TextInput
+                      value={resolutionDraft}
+                      onChangeText={setResolutionDraft}
+                      placeholder={language === 'az' ? 'Qısa və aydın yazın…' : 'Коротко и ясно…'}
+                      placeholderTextColor={colors.textSecondary}
+                      style={[styles.textArea, { color: colors.text }]}
+                      multiline
+                    />
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.actionPill, { backgroundColor: '#3B82F615' }]}
+                  onPress={() => applyStatus('in_progress')}
+                >
+                  <AlertCircle size={16} color="#3B82F6" />
+                  <Text style={[styles.actionPillText, { color: '#3B82F6' }]}>
+                    {language === 'az' ? 'İcraya al' : 'В работу'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionPill, { backgroundColor: '#10B98115' }]}
+                  onPress={() => {
+                    if (pendingAction !== 'resolved') {
+                      setPendingAction('resolved');
+                      return;
+                    }
+                    applyStatus('resolved');
+                  }}
+                >
+                  <CheckCircle size={16} color="#10B981" />
+                  <Text style={[styles.actionPillText, { color: '#10B981' }]}>
+                    {language === 'az' ? 'Həll et' : 'Решить'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionPill, { backgroundColor: '#6B728015' }]}
+                  onPress={() => {
+                    if (pendingAction !== 'closed') {
+                      setPendingAction('closed');
+                      return;
+                    }
+                    applyStatus('closed');
+                  }}
+                >
+                  <CheckCircle size={16} color="#6B7280" />
+                  <Text style={[styles.actionPillText, { color: '#6B7280' }]}>
+                    {language === 'az' ? 'Bağla' : 'Закрыть'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -182,6 +585,14 @@ const styles = StyleSheet.create({
   },
   chipsRow: { gap: 8, paddingRight: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
+  searchRow: { paddingHorizontal: 16, paddingBottom: 8 },
+  searchInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
   list: { paddingHorizontal: 16, paddingTop: 8 },
   emptyCard: { padding: 16, borderRadius: 12, alignItems: 'center' },
   card: { padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: 12 },
@@ -189,6 +600,118 @@ const styles = StyleSheet.create({
   left: { flex: 1 },
   subject: { fontSize: 16, fontWeight: '800' },
   preview: { marginTop: 6, fontSize: 13, lineHeight: 18 },
+  meta: { marginTop: 6, fontSize: 12 },
   badge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 999 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 520,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '800', flex: 1 },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBody: { paddingHorizontal: 14, paddingBottom: 14 },
+  kvRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 6,
+  },
+  kvKey: { fontSize: 12, fontWeight: '700' },
+  kvVal: { fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right' },
+  sectionBlock: { marginTop: 10 },
+  blockTitle: { fontSize: 13, fontWeight: '800', marginBottom: 6 },
+  blockText: { fontSize: 13, lineHeight: 18 },
+  targetBtn: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  targetBtnText: { fontSize: 12, fontWeight: '800', flex: 1 },
+  replyCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  replyMeta: { fontSize: 11, fontWeight: '700', marginBottom: 6 },
+  replyText: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
+  textAreaWrap: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-start',
+  },
+  textArea: {
+    flex: 1,
+    minHeight: 64,
+    fontSize: 13,
+    lineHeight: 18,
+    padding: 0,
+  },
+  replyBtn: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  replyBtnText: { fontSize: 12, fontWeight: '900' },
+  modalActions: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  actionPillText: { fontSize: 12, fontWeight: '900' },
 });
 

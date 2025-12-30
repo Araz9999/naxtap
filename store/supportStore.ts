@@ -19,7 +19,15 @@ interface SupportStore {
   // Ticket Actions
   createTicket: (ticket: Omit<SupportTicket, 'id' | 'createdAt' | 'updatedAt' | 'responses'>) => void;
   addResponse: (ticketId: string, response: Omit<SupportResponse, 'id' | 'createdAt'>) => void;
-  updateTicketStatus: (ticketId: string, status: SupportTicket['status']) => void;
+  updateTicketStatus: (
+    ticketId: string,
+    status: SupportTicket['status'],
+    options?: {
+      moderatorId?: string;
+      moderatorNotes?: string;
+      resolution?: string;
+    }
+  ) => void;
   getTicketsByUser: (userId: string) => SupportTicket[];
   getTicketById: (ticketId: string) => SupportTicket | undefined;
   
@@ -149,7 +157,10 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       createdAt: new Date(),
       updatedAt: new Date(),
       responses: [],
-      status: 'open'
+      status: 'open',
+      assignedModeratorId: ticketData.assignedModeratorId,
+      moderatorNotes: ticketData.moderatorNotes,
+      resolution: ticketData.resolution,
     };
 
     set((state) => ({
@@ -229,28 +240,47 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
     };
 
     set((state) => ({
-      tickets: state.tickets.map(ticket =>
-        ticket.id === ticketId
-          ? {
-              ...ticket,
-              responses: [...ticket.responses, newResponse],
-              updatedAt: new Date(),
-              status: responseData.isAdmin ? 'in_progress' : ticket.status
-            }
-          : ticket
-      )
+      tickets: (() => {
+        const updatedAt = new Date();
+        const next = state.tickets.map((ticket) =>
+          ticket.id === ticketId
+            ? {
+                ...ticket,
+                responses: [...ticket.responses, newResponse],
+                updatedAt,
+                status: responseData.isAdmin ? 'in_progress' : ticket.status,
+              }
+            : ticket
+        );
+        // Move updated ticket to top (newest activity)
+        return next.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      })(),
     }));
 
     logger.debug('Response added to ticket:', ticketId, newResponse);
   },
 
-  updateTicketStatus: (ticketId, status) => {
+  updateTicketStatus: (ticketId, status, options) => {
     set((state) => ({
-      tickets: state.tickets.map(ticket =>
-        ticket.id === ticketId
-          ? { ...ticket, status, updatedAt: new Date() }
-          : ticket
-      )
+      tickets: (() => {
+        const updatedAt = new Date();
+        const moderatorId = options?.moderatorId;
+        const moderatorNotes = options?.moderatorNotes?.trim();
+        const resolution = options?.resolution?.trim();
+
+        const next = state.tickets.map((ticket) => {
+          if (ticket.id !== ticketId) return ticket;
+          return {
+            ...ticket,
+            status,
+            updatedAt,
+            assignedModeratorId: moderatorId || ticket.assignedModeratorId,
+            moderatorNotes: typeof moderatorNotes === 'string' ? moderatorNotes : ticket.moderatorNotes,
+            resolution: typeof resolution === 'string' ? resolution : ticket.resolution,
+          };
+        });
+        return next.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      })(),
     }));
   },
 
@@ -639,5 +669,25 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         notif.id === notificationId ? { ...notif, isRead: true } : notif
       )
     }));
-  }
+  },
+
+  cleanupTimeouts: () => {
+    const { ticketTimeouts, chatTimeouts, messageTimeouts } = get();
+
+    try {
+      ticketTimeouts.forEach((t) => clearTimeout(t));
+      chatTimeouts.forEach((t) => clearTimeout(t));
+      messageTimeouts.forEach((t) => clearTimeout(t));
+    } catch (error) {
+      logger.debug('[SupportStore] cleanupTimeouts encountered an error:', error);
+    }
+
+    set({
+      ticketTimeouts: new Map(),
+      chatTimeouts: new Map(),
+      messageTimeouts: new Map(),
+    });
+
+    logger.debug('[SupportStore] Timeouts cleaned up');
+  },
 }));

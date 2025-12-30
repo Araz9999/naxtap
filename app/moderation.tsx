@@ -6,6 +6,7 @@ import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
 import { useModerationStore } from '@/store/moderationStore';
+import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { 
@@ -32,8 +33,8 @@ export default function ModerationScreen() {
     moderators, 
     stats,
     getReportsByStatus,
-    getTicketsByStatus
   } = useModerationStore();
+  const { tickets: supportTickets } = useSupportStore();
 
   const colors = getColors(themeMode, colorTheme);
 
@@ -118,8 +119,9 @@ export default function ModerationScreen() {
   // ✅ Get reports by status from backend data
   const pendingReports = actualReports?.filter((r: any) => r.status === 'pending') || [];
   const resolvedReports = actualReports?.filter((r: any) => r.status === 'resolved') || [];
-  const openTickets = getTicketsByStatus('open'); // Still using local store for tickets
-  const inProgressTickets = getTicketsByStatus('in_progress');
+  // ✅ Support tickets come from SupportStore (single source of truth)
+  const openTickets = (supportTickets || []).filter((t) => t.status === 'open');
+  const inProgressTickets = (supportTickets || []).filter((t) => t.status === 'in_progress');
   const pendingReportsCount = actualStats?.pendingReports ?? pendingReports.length ?? 0;
   const resolvedReportsCount = actualStats?.resolvedReports ?? resolvedReports.length ?? 0;
 
