@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -31,6 +31,7 @@ import {
 import { useStoreStore } from '@/store/storeStore';
 import { useUserStore } from '@/store/userStore';
 import { useListingStore } from '@/store/listingStore';
+import { useMessageStore } from '@/store/messageStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { getColors } from '@/constants/colors';
 import { useThemeStore } from '@/store/themeStore';
@@ -87,66 +88,100 @@ export default function StoreAnalyticsScreen() {
   const { currentUser } = useUserStore();
   const { stores, getUserStore } = useStoreStore();
   const { listings } = useListingStore();
+  const { conversations } = useMessageStore();
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
   const colors = getColors(themeMode, colorTheme);
 
   const [selectedTimeRange, setSelectedTimeRange] = useState('30d');
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
-    views: 12450,
-    viewsChange: 15.2,
-    favorites: 234,
-    favoritesChange: 8.7,
-    messages: 89,
-    messagesChange: -3.2,
-    followers: 156,
-    followersChange: 12.5,
-    sales: 45,
-    salesChange: 22.1,
-    revenue: 2340,
-    revenueChange: 18.9,
-    avgRating: 4.7,
-    ratingChange: 0.3,
-    activeListings: 23,
-    totalListings: 45
-  });
 
   const store = storeId ? stores.find(s => s.id === storeId) : getUserStore(currentUser?.id || '');
   const storeListings = listings.filter(l => l.storeId === store?.id);
   const [isExporting, setIsExporting] = useState(false);
 
-  useEffect(() => {
-    // ✅ Simulate loading analytics data based on time range
-    const loadAnalytics = () => {
-      try {
-        // In a real app, this would fetch data from API
-        const multiplier = selectedTimeRange === '7d' ? 0.3 : 
-                          selectedTimeRange === '30d' ? 1 : 
-                          selectedTimeRange === '90d' ? 2.5 : 8;
-        
-        // ✅ Use base values to prevent accumulation
-        const baseViews = 12450;
-        const baseFavorites = 234;
-        const baseMessages = 89;
-        const baseSales = 45;
-        const baseRevenue = 2340;
-        
-        setAnalyticsData(prev => ({
-          ...prev,
-          views: Math.floor(baseViews * multiplier),
-          favorites: Math.floor(baseFavorites * multiplier),
-          messages: Math.floor(baseMessages * multiplier),
-          sales: Math.floor(baseSales * multiplier),
-          revenue: Math.floor(baseRevenue * multiplier)
-        }));
-      } catch (error) {
-        // ✅ Fallback on error
-        setAnalyticsData(prev => prev);
+  // --- Local real-time analytics (derived from actual Zustand stores) ---
+  const activeStoreListings = useMemo(() => {
+    return storeListings.filter((l) => !l.deletedAt && !(l.isArchived || l.archivedAt));
+  }, [storeListings]);
+
+  const listingIdsForStore = useMemo(() => {
+    return new Set(activeStoreListings.map((l) => l.id));
+  }, [activeStoreListings]);
+
+  const totals = useMemo(() => {
+    const views = activeStoreListings.reduce((sum, l) => sum + (typeof l.views === 'number' ? l.views : 0), 0);
+    const favorites = activeStoreListings.reduce((sum, l) => sum + (typeof l.favorites === 'number' ? l.favorites : 0), 0);
+
+    // Messages: count all messages for conversations tied to store listings
+    let messages = 0;
+    for (const conv of conversations) {
+      if (conv?.listingId && listingIdsForStore.has(conv.listingId)) {
+        messages += Array.isArray(conv.messages) ? conv.messages.length : 0;
       }
+    }
+
+    const followers = Array.isArray(store?.followers) ? store.followers.length : 0;
+
+    // Sales & revenue are not persisted locally yet; keep consistent placeholders.
+    const sales = 0;
+    const revenue = 0;
+
+    const avgRating =
+      (store as any)?.ratingStats?.averageRating ??
+      (typeof (store as any)?.rating === 'number' && typeof (store as any)?.totalRatings === 'number' && (store as any).totalRatings > 0
+        ? (store as any).rating / Math.max((store as any).totalRatings, 1)
+        : 0);
+
+    return {
+      views,
+      favorites,
+      messages,
+      followers,
+      sales,
+      revenue,
+      avgRating: typeof avgRating === 'number' && isFinite(avgRating) ? avgRating : 0,
+      activeListings: activeStoreListings.length,
+      totalListings: storeListings.length,
+    };
+  }, [activeStoreListings, conversations, listingIdsForStore, store, storeListings.length]);
+
+  const baselineRef = useRef<Record<string, typeof totals>>({});
+
+  useEffect(() => {
+    if (!store?.id) return;
+    const key = `${store.id}:${selectedTimeRange}`;
+    baselineRef.current[key] = totals;
+  }, [selectedTimeRange, store?.id]);
+
+  const analyticsData: AnalyticsData = useMemo(() => {
+    const key = store?.id ? `${store.id}:${selectedTimeRange}` : 'no-store';
+    const baseline = baselineRef.current[key] || totals;
+
+    const pct = (current: number, base: number) => {
+      if (!isFinite(current) || !isFinite(base)) return 0;
+      if (base <= 0) return current > 0 ? 100 : 0;
+      return ((current - base) / base) * 100;
     };
 
-    loadAnalytics();
-  }, [selectedTimeRange, store?.id]);
+    return {
+      views: totals.views,
+      viewsChange: pct(totals.views, baseline.views),
+      favorites: totals.favorites,
+      favoritesChange: pct(totals.favorites, baseline.favorites),
+      messages: totals.messages,
+      messagesChange: pct(totals.messages, baseline.messages),
+      followers: totals.followers,
+      followersChange: pct(totals.followers, baseline.followers),
+      sales: totals.sales,
+      salesChange: pct(totals.sales, baseline.sales),
+      revenue: totals.revenue,
+      revenueChange: pct(totals.revenue, baseline.revenue),
+      avgRating: totals.avgRating,
+      ratingChange: pct(totals.avgRating, baseline.avgRating),
+      activeListings: totals.activeListings,
+      totalListings: totals.totalListings,
+    };
+  }, [selectedTimeRange, store?.id, totals]);
 
   const handleShareAnalytics = async () => {
     if (!store) {

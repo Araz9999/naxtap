@@ -3,6 +3,43 @@ import { Store, StorePlan, storePlans, StoreFollower, StoreNotification, StoreSt
 import { mockStores } from '@/mocks/stores';
 
 import { logger } from '@/utils/logger';
+
+let storeStatusInterval: ReturnType<typeof setInterval> | null = null;
+
+export const initStoreStoreInterval = () => {
+  // Ensure only one interval is active
+  if (storeStatusInterval) {
+    clearInterval(storeStatusInterval);
+  }
+
+  const tick = () => {
+    try {
+      const state = useStoreStore.getState();
+      const ids = state.stores.map((s) => s.id).filter(Boolean);
+      for (const storeId of ids) {
+        // Fire-and-forget; it internally updates Zustand state.
+        state.updateStoreStatus(storeId).catch((err) => {
+          logger.error('[StoreStore] Failed to update store status (interval):', { storeId, err });
+        });
+      }
+    } catch (err) {
+      logger.error('[StoreStore] Store status interval tick failed:', err);
+    }
+  };
+
+  // Run immediately so UI is correct without waiting.
+  tick();
+
+  // Update frequently in local/dev so "availability" feels live.
+  storeStatusInterval = setInterval(tick, 30_000);
+};
+
+export const cleanupStoreStoreInterval = () => {
+  if (storeStatusInterval) {
+    clearInterval(storeStatusInterval);
+    storeStatusInterval = null;
+  }
+};
 interface StoreState {
   stores: Store[];
   userStore: Store | null;
@@ -1231,19 +1268,19 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     if (store.status === 'active') {
       // Send notification 7 days before
       if (daysUntilExpiration === 7) {
-        sendExpirationNotification(storeId, 'warning').catch(err => 
+        get().sendExpirationNotification(storeId, 'warning').catch((err) => 
           logger.error('[getExpirationInfo] Failed to send 7-day notification:', err)
         );
       }
       // Send notification 3 days before
       else if (daysUntilExpiration === 3) {
-        sendExpirationNotification(storeId, 'warning').catch(err => 
+        get().sendExpirationNotification(storeId, 'warning').catch((err) => 
           logger.error('[getExpirationInfo] Failed to send 3-day notification:', err)
         );
       }
       // Send notification 1 day before
       else if (daysUntilExpiration === 1) {
-        sendExpirationNotification(storeId, 'warning').catch(err => 
+        get().sendExpirationNotification(storeId, 'warning').catch((err) => 
           logger.error('[getExpirationInfo] Failed to send 1-day notification:', err)
         );
       }
@@ -1253,7 +1290,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     if (store.status === 'grace_period' && daysInGracePeriod > 0 && daysInGracePeriod <= 7) {
       // Send on first day of grace period
       if (daysInGracePeriod === 7) {
-        sendExpirationNotification(storeId, 'grace_period').catch(err => 
+        get().sendExpirationNotification(storeId, 'grace_period').catch((err) => 
           logger.error('[getExpirationInfo] Failed to send grace period notification:', err)
         );
       }
@@ -1261,7 +1298,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     
     // Send deactivation notification
     if (store.status === 'deactivated' && daysSinceDeactivation === 0) {
-      sendExpirationNotification(storeId, 'deactivated').catch(err => 
+      get().sendExpirationNotification(storeId, 'deactivated').catch((err) => 
         logger.error('[getExpirationInfo] Failed to send deactivation notification:', err)
       );
     }

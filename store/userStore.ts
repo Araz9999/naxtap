@@ -115,11 +115,38 @@ export const useUserStore = create<UserState>()(
       }),
       toggleFavorite: (listingId) => {
         const { favorites } = get();
-        if (favorites.includes(listingId)) {
+
+        // ✅ Validate listingId
+        if (!listingId || typeof listingId !== 'string' || listingId.trim().length === 0) {
+          logger.error('[UserStore] Invalid listingId for toggleFavorite:', listingId);
+          return;
+        }
+
+        const isCurrentlyFavorite = favorites.includes(listingId);
+
+        // Update user's favorites list first (immediate UI feedback)
+        if (isCurrentlyFavorite) {
           set({ favorites: favorites.filter(id => id !== listingId) });
         } else {
           set({ favorites: [...favorites, listingId] });
         }
+
+        // Also update the listing-level favorites counter (local real-time analytics).
+        // Dynamic import avoids hard circular dependency issues (listingStore imports userStore).
+        setTimeout(async () => {
+          try {
+            const listingStoreModule = await import('@/store/listingStore');
+            const listingState = listingStoreModule.useListingStore.getState();
+            const listing = listingState.listings.find((l: any) => l?.id === listingId);
+            if (!listing) return;
+
+            const currentCount = typeof listing.favorites === 'number' && isFinite(listing.favorites) ? listing.favorites : 0;
+            const nextCount = Math.max(0, currentCount + (isCurrentlyFavorite ? -1 : 1));
+            listingState.updateListing(listingId, { favorites: nextCount });
+          } catch (err) {
+            logger.error('[UserStore] Failed to update listing favorites counter:', err);
+          }
+        }, 0);
       },
       canPostFreeAd: () => {
         const { freeAdsThisMonth, lastFreeAdDate } = get();
