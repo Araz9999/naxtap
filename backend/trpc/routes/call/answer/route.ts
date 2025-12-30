@@ -4,8 +4,8 @@ import { removePendingCall } from '../../../../backend/call/callRegistry';
 
 export const answerCallProcedure = publicProcedure
   .input(z.object({ callId: z.string().min(1) }))
-  .mutation(({ input }) => {
-    removePendingCall(input.callId);
+  .mutation(async ({ input }) => {
+    await removePendingCall(input.callId);
     return { ok: true };
   });
 

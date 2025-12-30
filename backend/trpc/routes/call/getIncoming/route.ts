@@ -4,9 +4,9 @@ import { getPendingCallsForReceiver } from '../../../../backend/call/callRegistr
 
 export const getIncomingCallsProcedure = publicProcedure
   .input(z.object({ userId: z.string().min(1) }))
-  .query(({ input }) => {
+  .query(async ({ input }) => {
     return {
-      calls: getPendingCallsForReceiver(input.userId),
+      calls: await getPendingCallsForReceiver(input.userId),
     };
   });
 

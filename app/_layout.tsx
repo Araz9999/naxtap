@@ -104,8 +104,50 @@ function RootLayoutNav() {
     if (!currentUser?.id) return;
     const interval = setInterval(() => {
       pollIncomingCalls(currentUser.id).catch(() => undefined);
-    }, 2000);
+    }, 5000);
     return () => clearInterval(interval);
+  }, [currentUser?.id, pollIncomingCalls]);
+
+  // Register device push token with backend (dev-build/standalone only)
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    (async () => {
+      try {
+        const { notificationService } = await import('@/services/notificationService');
+        const token = await notificationService.getExpoPushToken();
+        if (!token) return;
+        const { trpcClient } = await import('@/lib/trpc');
+        await trpcClient.user.updateMe.mutate({ expoPushToken: token });
+      } catch {
+        // ignore (not available in Expo Go / web)
+      }
+    })();
+  }, [currentUser?.id]);
+
+  // If a push notification is received while app is running, refresh incoming calls immediately
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    let subscription: any;
+    (async () => {
+      try {
+        const Notifications = await import('expo-notifications');
+        subscription = Notifications.addNotificationReceivedListener((notif: any) => {
+          const data = notif?.request?.content?.data;
+          if (data?.type === 'incoming_call') {
+            pollIncomingCalls(currentUser.id).catch(() => undefined);
+          }
+        });
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      try {
+        subscription?.remove?.();
+      } catch {
+        // ignore
+      }
+    };
   }, [currentUser?.id, pollIncomingCalls]);
 
   // Initialize services (only once)

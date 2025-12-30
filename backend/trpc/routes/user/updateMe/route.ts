@@ -9,13 +9,14 @@ export const updateMeProcedure = protectedProcedure
       name: z.string().min(2).max(100).optional(),
       phone: z.string().max(32).optional(),
       avatar: z.string().max(500).optional(),
+      expoPushToken: z.string().max(300).optional(),
     }),
   )
   .mutation(async ({ input, ctx }) => {
     const userId = ctx.user.userId;
 
     // Normalize updates
-    const data: { name?: string; phone?: string | null; avatar?: string | null } = {};
+    const data: { name?: string; phone?: string | null; avatar?: string | null; expoPushToken?: string | null } = {};
 
     if (typeof input.name === 'string') {
       data.name = input.name.trim();
@@ -31,6 +32,11 @@ export const updateMeProcedure = protectedProcedure
       data.avatar = normalizedAvatar.length ? normalizedAvatar : null;
     }
 
+    if (typeof input.expoPushToken === 'string') {
+      const normalized = input.expoPushToken.trim();
+      data.expoPushToken = normalized.length ? normalized : null;
+    }
+
     try {
       const updated = await prisma.user.update({
         where: { id: userId },
@@ -41,6 +47,7 @@ export const updateMeProcedure = protectedProcedure
           name: true,
           avatar: true,
           phone: true,
+          expoPushToken: true,
           verified: true,
           role: true,
           balance: true,
