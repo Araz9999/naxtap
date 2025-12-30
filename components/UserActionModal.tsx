@@ -40,6 +40,7 @@ import { useLanguageStore } from '@/store/languageStore';
 import { User } from '@/types/user';
 // import { Share } from 'react-native';
 import { logger } from '@/utils/logger';
+import { getProfileDeepLink, getProfileWebUrl } from '@/utils/shareLinks';
 interface UserActionModalProps {
   visible: boolean;
   onClose: () => void;
@@ -635,15 +636,51 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       // ✅ Safe location access
       const location = user.location?.[language] || user.location?.az || user.location?.en || '';
       
-      // ✅ Generate share message
-      const shareMessage = location 
-        ? `${user.name} profilini görün - ${location}`
-        : `${user.name} profilini görün`;
+      const profileWebUrl = getProfileWebUrl(user.id);
+      const profileDeepLink = getProfileDeepLink(user.id);
+
+      // Derive average rating if possible (do not leak private fields)
+      const averageRating =
+        typeof user.ratingStats?.averageRating === 'number'
+          ? user.ratingStats.averageRating
+          : user.totalRatings > 0
+            ? user.rating / user.totalRatings
+            : null;
+
+      const ratingText =
+        averageRating !== null && Number.isFinite(averageRating) && user.totalRatings > 0
+          ? `${averageRating.toFixed(1)} (${user.totalRatings})`
+          : '';
+
+      // ✅ Generate share message (include a real, clickable profile URL)
+      const shareMessage =
+        language === 'az'
+          ? [
+              user.name,
+              location ? `Yer: ${location}` : '',
+              ratingText ? `Reytinq: ${ratingText}` : '',
+              '',
+              `Profil linki: ${profileWebUrl}`,
+              `Tətbiqdə aç: ${profileDeepLink}`,
+            ]
+              .filter(Boolean)
+              .join('\n')
+          : [
+              user.name,
+              location ? `Место: ${location}` : '',
+              ratingText ? `Рейтинг: ${ratingText}` : '',
+              '',
+              `Ссылка на профиль: ${profileWebUrl}`,
+              `Открыть в приложении: ${profileDeepLink}`,
+            ]
+              .filter(Boolean)
+              .join('\n');
 
       logger.debug('[handleShare] Sharing user profile:', user.id);
       
       await Share.share({
         message: shareMessage,
+        url: profileWebUrl,
         title: user.name,
       });
       

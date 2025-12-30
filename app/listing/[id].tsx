@@ -20,6 +20,7 @@ import { SocialIcons } from '@/components/Icons';
 import CountdownTimer from '@/components/CountdownTimer';
 
 import { logger } from '@/utils/logger';
+import { getListingWebUrl } from '@/utils/shareLinks';
 const { width } = Dimensions.get('window');
 
 export default function ListingDetailScreen() {
@@ -219,11 +220,7 @@ export default function ListingDetailScreen() {
 
   // ✅ Helper: Generate share URL (moved to avoid hardcoding)
   const getShareUrl = () => {
-    // TODO: Replace with your actual production URL
-    const baseUrl = __DEV__ 
-      ? 'https://dev.yourapp.com/listing' 
-      : 'https://yourapp.com/listing';
-    return `${baseUrl}/${listing?.id || ''}`;
+    return listing?.id ? getListingWebUrl(listing.id) : '';
   };
 
   const generateShareText = () => {
