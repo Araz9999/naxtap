@@ -42,6 +42,7 @@ import { deleteUserProcedure } from "./routes/admin/deleteUser/route";
 import { getAnalyticsProcedure } from "./routes/admin/getAnalytics/route";
 import { getModeratorsProcedure } from "./routes/admin/getModerators/route";
 import { createModeratorProcedure } from "./routes/admin/createModerator/route";
+import { updateModeratorPermissionsProcedure } from "./routes/admin/updateModeratorPermissions/route";
 import { updateMeProcedure } from "./routes/user/updateMe/route";
 
 export const appRouter = createTRPCRouter({
@@ -99,6 +100,7 @@ export const appRouter = createTRPCRouter({
     getAnalytics: getAnalyticsProcedure,
     getModerators: getModeratorsProcedure,
     createModerator: createModeratorProcedure,
+    updateModeratorPermissions: updateModeratorPermissionsProcedure,
   }),
   user: createTRPCRouter({
     updateMe: updateMeProcedure,

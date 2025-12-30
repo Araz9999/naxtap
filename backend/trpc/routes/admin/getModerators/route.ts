@@ -18,6 +18,7 @@ export const getModeratorsProcedure = adminProcedure.query(async () => {
         phone: true,
         verified: true,
         role: true,
+        moderatorPermissions: true,
         createdAt: true,
         updatedAt: true,
         _count: {

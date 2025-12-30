@@ -19,7 +19,7 @@ import { useUserStore } from '@/store/userStore';
 import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
-import { RefreshCw, Shield, UserCheck, UserPlus, ExternalLink, BadgeCheck, BadgeX } from 'lucide-react-native';
+import { RefreshCw, Shield, UserCheck, UserPlus, ExternalLink, BadgeCheck, BadgeX, Square, CheckSquare } from 'lucide-react-native';
 
 export default function AdminModeratorsScreen() {
   const { language } = useLanguageStore();
@@ -36,6 +36,7 @@ export default function AdminModeratorsScreen() {
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
+  const [permissionsDraft, setPermissionsDraft] = useState<string[]>([]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -92,6 +93,25 @@ export default function AdminModeratorsScreen() {
     },
   });
 
+  const updatePermissions = trpc.admin.updateModeratorPermissions.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.admin.getModerators.invalidate(),
+        utils.admin.getUsers.invalidate(),
+        utils.admin.getAnalytics.invalidate(),
+      ]);
+      closeDetails();
+    },
+    onError: (e: any) => {
+      logger.error('[AdminModerators] update permissions failed:', e);
+      const msg =
+        typeof e?.message === 'string' && e.message.trim()
+          ? e.message
+          : (language === 'az' ? 'İcazələr yenilənmədi.' : 'Не удалось обновить права.');
+      Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
+    },
+  });
+
   if (!canAccess) return null;
 
   const moderators = (moderatorsQuery.data as any[]) || [];
@@ -135,12 +155,56 @@ export default function AdminModeratorsScreen() {
 
   const openDetails = (m: any) => {
     setSelected(m);
+    setPermissionsDraft((m?.moderatorPermissions || []) as string[]);
     setDetailsOpen(true);
   };
 
   const closeDetails = () => {
     setSelected(null);
     setDetailsOpen(false);
+    setPermissionsDraft([]);
+  };
+
+  const permissionDefs = useMemo(() => {
+    const az: Record<string, string> = {
+      manage_reports: 'Şikayətləri idarə et',
+      manage_tickets: 'Dəstək biletləri',
+      manage_users: 'İstifadəçiləri idarə et',
+      manage_listings: 'Elanları idarə et',
+      manage_stores: 'Mağazaları idarə et',
+      view_analytics: 'Analitikaya bax',
+      manage_moderators: 'Moderatorları idarə et',
+    };
+    const ru: Record<string, string> = {
+      manage_reports: 'Управление жалобами',
+      manage_tickets: 'Тикеты поддержки',
+      manage_users: 'Управление пользователями',
+      manage_listings: 'Управление объявлениями',
+      manage_stores: 'Управление магазинами',
+      view_analytics: 'Просмотр аналитики',
+      manage_moderators: 'Управление модераторами',
+    };
+    const map = language === 'az' ? az : ru;
+    return (Object.keys(az) as Array<keyof typeof az>).map((key) => ({
+      key,
+      label: map[key],
+    }));
+  }, [language]);
+
+  const togglePerm = (p: string) => {
+    setPermissionsDraft((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
+  };
+
+  const savePermissions = () => {
+    if (!selected?.id) return;
+    if (selected?.role !== 'MODERATOR') {
+      Alert.alert(
+        language === 'az' ? 'Məlumat' : 'Инфо',
+        language === 'az' ? 'Admin üçün icazələr tətbiq edilmir.' : 'Для админа права не применяются.'
+      );
+      return;
+    }
+    updatePermissions.mutate({ userId: selected.id, permissions: permissionsDraft } as any);
   };
 
   const goToProfile = (userId?: string) => {
@@ -361,6 +425,53 @@ export default function AdminModeratorsScreen() {
                   {language === 'az' ? 'Profilə keç' : 'Открыть профиль'}
                 </Text>
               </TouchableOpacity>
+
+              {selected?.role === 'MODERATOR' ? (
+                <View style={styles.sectionBlock}>
+                  <Text style={[styles.blockTitle, { color: colors.text }]}>
+                    {language === 'az' ? 'İcazələr' : 'Права'}
+                  </Text>
+                  {permissionDefs.map((p) => {
+                    const checked = permissionsDraft.includes(p.key);
+                    const Icon = checked ? CheckSquare : Square;
+                    return (
+                      <TouchableOpacity
+                        key={p.key}
+                        style={[styles.permRow, { borderColor: colors.border }]}
+                        onPress={() => togglePerm(p.key)}
+                      >
+                        <Icon size={18} color={checked ? colors.primary : colors.textSecondary} />
+                        <Text style={[styles.permText, { color: colors.text }]}>{p.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <TouchableOpacity
+                    style={[
+                      styles.primaryBtn,
+                      { backgroundColor: colors.primary, opacity: updatePermissions.isPending ? 0.6 : 1 },
+                    ]}
+                    disabled={updatePermissions.isPending}
+                    onPress={savePermissions}
+                  >
+                    <Text style={styles.primaryBtnText}>
+                      {updatePermissions.isPending
+                        ? (language === 'az' ? 'Yadda saxlanır…' : 'Сохранение…')
+                        : (language === 'az' ? 'İcazələri yadda saxla' : 'Сохранить права')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.sectionBlock}>
+                  <Text style={[styles.blockTitle, { color: colors.text }]}>
+                    {language === 'az' ? 'İcazələr' : 'Права'}
+                  </Text>
+                  <Text style={[styles.blockHint, { color: colors.textSecondary }]}>
+                    {language === 'az'
+                      ? 'Admin üçün icazələr məcburi deyil — admin bütün icazələrə malikdir.'
+                      : 'Для админа отдельные права не требуются — у админа есть все права.'}
+                  </Text>
+                </View>
+              )}
 
               <View style={styles.modalActions}>
                 <TouchableOpacity
@@ -623,5 +734,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryBtnText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  sectionBlock: { marginTop: 12 },
+  blockTitle: { fontSize: 13, fontWeight: '900', marginBottom: 10 },
+  blockHint: { fontSize: 12, fontWeight: '600', lineHeight: 18 },
+  permRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  permText: { flex: 1, fontSize: 13, fontWeight: '700' },
 });
 

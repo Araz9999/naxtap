@@ -49,6 +49,7 @@ export const loginProcedure = publicProcedure
           verified: user.verified,
           role: user.role,
           balance: user.balance,
+          moderatorPermissions: (user as any).moderatorPermissions || [],
         },
         tokens,
       };

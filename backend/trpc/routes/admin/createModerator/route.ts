@@ -12,6 +12,19 @@ export const createModeratorProcedure = adminProcedure
       name: z.string().min(1),
       password: z.string().min(8),
       phone: z.string().optional(),
+      permissions: z
+        .array(
+          z.enum([
+            'manage_reports',
+            'manage_users',
+            'manage_listings',
+            'manage_stores',
+            'manage_tickets',
+            'view_analytics',
+            'manage_moderators',
+          ])
+        )
+        .optional(),
     })
   )
   .mutation(async ({ input }) => {
@@ -32,6 +45,7 @@ export const createModeratorProcedure = adminProcedure
           role: 'MODERATOR',
           verified: true, // Moderators are auto-verified
           balance: 0,
+          moderatorPermissions: input.permissions ?? ['manage_reports', 'manage_tickets'],
         },
         select: {
           id: true,
@@ -41,6 +55,7 @@ export const createModeratorProcedure = adminProcedure
           phone: true,
           verified: true,
           role: true,
+          moderatorPermissions: true,
           createdAt: true,
         },
       });
