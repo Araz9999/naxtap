@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,22 @@ import { Flag, RefreshCw, CheckCircle2, XCircle, Eye, ExternalLink, StickyNote }
 import { useModerationSettingsStore } from '@/store/moderationSettingsStore';
 
 type ReportStatus = 'all' | 'pending' | 'in_review' | 'resolved' | 'dismissed';
+type ReportItem = {
+  id: string;
+  type?: string;
+  reason?: string;
+  description?: string;
+  reporterId?: string;
+  reportedUserId?: string;
+  reportedListingId?: string;
+  reportedStoreId?: string;
+  assignedModeratorId?: string;
+  moderatorNotes?: string;
+  resolution?: string;
+  status?: Exclude<ReportStatus, 'all'>;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 const statusLabelAz: Record<Exclude<ReportStatus, 'all'>, string> = {
   pending: 'Gözləyən',
@@ -70,7 +86,7 @@ export default function AdminReportsScreen() {
   const [search, setSearch] = useState('');
 
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<any | null>(null);
+  const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
   const [notesDraft, setNotesDraft] = useState('');
   const [resolutionDraft, setResolutionDraft] = useState('');
   const [pendingAction, setPendingAction] = useState<Exclude<ReportStatus, 'all'> | null>(null);
@@ -78,7 +94,7 @@ export default function AdminReportsScreen() {
   const canAccess = currentUser?.role === 'admin' || currentUser?.role === 'moderator';
   const canManageReports =
     currentUser?.role === 'admin' ||
-    (currentUser?.role === 'moderator' && currentUser?.moderatorInfo?.permissions?.includes('manage_reports' as any));
+    (currentUser?.role === 'moderator' && currentUser?.moderatorInfo?.permissions?.includes('manage_reports'));
 
   const queryInput = useMemo(() => {
     if (status === 'all') return undefined;
@@ -86,15 +102,10 @@ export default function AdminReportsScreen() {
   }, [status]);
 
   // Enforce moderation settings for visibility
-  useMemo(() => {
-    if (!settings.showResolvedReports && status === 'resolved') {
-      setStatus('pending');
-    }
-    if (!settings.showDismissedReports && status === 'dismissed') {
-      setStatus('pending');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.showResolvedReports, settings.showDismissedReports]);
+  useEffect(() => {
+    if (!settings.showResolvedReports && status === 'resolved') setStatus('pending');
+    if (!settings.showDismissedReports && status === 'dismissed') setStatus('pending');
+  }, [settings.showResolvedReports, settings.showDismissedReports, status]);
 
   const utils = trpc.useUtils();
   const reportsQuery = trpc.moderation.getReports.useQuery(queryInput, {
@@ -110,13 +121,15 @@ export default function AdminReportsScreen() {
       ]);
       closeDetails();
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       logger.error('[AdminReports] update status failed:', e);
+      const err = e as { message?: unknown };
+      const msgStr = typeof err?.message === 'string' ? err.message : '';
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
         language === 'az'
-          ? (e?.message?.includes('Resolution') ? 'Həll/Rədd səbəbi tələb olunur.' : 'Status yenilənmədi.')
-          : (e?.message?.includes('Resolution') ? 'Требуется причина/резолюция.' : 'Не удалось обновить статус.'),
+          ? (msgStr.includes('Resolution') ? 'Həll/Rədd səbəbi tələb olunur.' : 'Status yenilənmədi.')
+          : (msgStr.includes('Resolution') ? 'Требуется причина/резолюция.' : 'Не удалось обновить статус.'),
       );
     },
   });
@@ -153,7 +166,10 @@ export default function AdminReportsScreen() {
     );
   };
 
-  const reports = (reportsQuery.data as any[]) || [];
+  const reports = useMemo<ReportItem[]>(
+    () => (reportsQuery.data as unknown as ReportItem[] | undefined) ?? [],
+    [reportsQuery.data],
+  );
   const isRefreshing = reportsQuery.isFetching && !reportsQuery.isLoading;
 
   const filteredReports = useMemo(() => {
@@ -180,7 +196,7 @@ export default function AdminReportsScreen() {
     });
   }, [reports, search]);
 
-  const openDetails = (r: any) => {
+  const openDetails = (r: ReportItem) => {
     setSelectedReport(r);
     setNotesDraft((r?.moderatorNotes || '').toString());
     setResolutionDraft((r?.resolution || '').toString());
@@ -208,18 +224,18 @@ export default function AdminReportsScreen() {
     return language === 'az' ? (typeLabelAz[t] || t) : (typeLabelRu[t] || t);
   };
 
-  const goToTarget = (r: any) => {
+  const goToTarget = (r: ReportItem) => {
     try {
       if (r?.reportedListingId) {
-        router.push(`/listing/${r.reportedListingId}` as any);
+        router.push(`/listing/${r.reportedListingId}`);
         return;
       }
       if (r?.reportedStoreId) {
-        router.push(`/store/${r.reportedStoreId}` as any);
+        router.push(`/store/${r.reportedStoreId}`);
         return;
       }
       if (r?.reportedUserId) {
-        router.push(`/profile/${r.reportedUserId}` as any);
+        router.push(`/profile/${r.reportedUserId}`);
         return;
       }
       Alert.alert(
@@ -350,7 +366,7 @@ export default function AdminReportsScreen() {
                   </Text>
                 </View>
               ) : (
-                filteredReports.map((r: any) => {
+                filteredReports.map((r: ReportItem) => {
                   const s = (r.status || 'pending') as Exclude<ReportStatus, 'all'>;
                   const badgeColor = statusColor(s);
                   return (

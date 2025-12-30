@@ -21,6 +21,8 @@ export default function MessagesScreen() {
     refetchOnMount: true,
   });
 
+  type ConversationItem = NonNullable<typeof conversationsQuery.data>[number];
+
   const deleteAllFromUserMutation = trpc.chat.deleteAllMessagesFromUser.useMutation({
     onSuccess: async () => {
       await utils.chat.getConversations.invalidate();
@@ -76,12 +78,12 @@ export default function MessagesScreen() {
 
   // Get filtered conversations (excluding blocked users) and sort by last message date
   const sortedConversations = useMemo(() => {
-    const data = conversationsQuery.data || [];
-    const filtered = data.filter((c: any) => {
+    const data: ConversationItem[] = conversationsQuery.data ?? [];
+    const filtered = data.filter((c) => {
       const otherId = c?.otherUser?.id;
       return otherId ? !isUserBlocked(otherId) : true;
     });
-    return [...filtered].sort((a: any, b: any) => {
+    return [...filtered].sort((a, b) => {
       const dateA = new Date(a.lastMessageDate || 0).getTime();
       const dateB = new Date(b.lastMessageDate || 0).getTime();
       return dateB - dateA;
@@ -110,7 +112,7 @@ export default function MessagesScreen() {
     return listings.find(listing => listing.id === listingId);
   };
 
-  const renderItem = ({ item }: { item: any }) => {
+  const renderItem = ({ item }: { item: ConversationItem }) => {
     const otherUser = item.otherUser;
     const listing = getListing(item.listingId);
 

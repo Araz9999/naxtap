@@ -40,7 +40,7 @@ export default function CreateListingScreen() {
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
 
   // Category navigation state
-  const [categoryNavigationStack, setCategoryNavigationStack] = useState<any[]>([]);
+  const [categoryNavigationStack, setCategoryNavigationStack] = useState<Category[]>([]);
   const [currentCategoryLevel, setCurrentCategoryLevel] = useState<'main' | 'sub' | 'subsub'>('main');
 
   // New states for ad package selection
@@ -639,26 +639,33 @@ export default function CreateListingScreen() {
   // Category navigation functions
   const handleCategoryPress = (category: Category) => {
     if (currentCategoryLevel === 'main') {
-      // \u018fsas kateqoriya se\u00e7imi\n      setSelectedCategory(category.id);
+      // Əsas kateqoriya seçimi
+      setSelectedCategory(category.id);
       setSelectedSubcategory(null);
       setSelectedSubSubcategory(null);
       if (category.subcategories && category.subcategories.length > 0) {
-        // Alt kateqoriyalar var, naviqasiyan\u0131 davam etdir\n        setCategoryNavigationStack([category]);
+        // Alt kateqoriyalar var, naviqasiyanı davam etdir
+        setCategoryNavigationStack([category]);
         setCurrentCategoryLevel('sub');
       } else {
-        // Alt kateqoriya yoxdur, modal-\u0131 ba\u011fla\n        setShowCategoryModal(false);
+        // Alt kateqoriya yoxdur, modal-ı bağla
+        setShowCategoryModal(false);
       }
     } else if (currentCategoryLevel === 'sub') {
-      // Alt kateqoriya se\u00e7imi\n      setSelectedSubcategory(category.id);
+      // Alt kateqoriya seçimi
+      setSelectedSubcategory(category.id);
       setSelectedSubSubcategory(null);
       if (category.subcategories && category.subcategories.length > 0) {
-        // Daha alt kateqoriyalar var, naviqasiyan\u0131 davam etdir\n        setCategoryNavigationStack([...categoryNavigationStack, category]);
+        // Daha alt kateqoriyalar var, naviqasiyanı davam etdir
+        setCategoryNavigationStack([...categoryNavigationStack, category]);
         setCurrentCategoryLevel('subsub');
       } else {
-        // Daha alt kateqoriya yoxdur, modal-\u0131 ba\u011fla\n        setShowCategoryModal(false);
+        // Daha alt kateqoriya yoxdur, modal-ı bağla
+        setShowCategoryModal(false);
       }
     } else if (currentCategoryLevel === 'subsub') {
-      // Daha alt kateqoriya se\u00e7imi (3-c\u00fc s\u0259viyy\u0259)\n      setSelectedSubSubcategory(category.id);
+      // Daha alt kateqoriya seçimi (3-cü səviyyə)
+      setSelectedSubSubcategory(category.id);
       setShowCategoryModal(false);
     }
   };

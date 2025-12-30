@@ -5,6 +5,10 @@ import { useThemeStore } from './themeStore';
 import { useUserStore } from '@/store/userStore';
 import { logger } from '@/utils/logger';
 
+type ListingCreativeEffect = NonNullable<Listing['creativeEffects']>[number];
+type CreativeEffectInput = Omit<ListingCreativeEffect, 'endDate' | 'isActive'>;
+type CreativeEffectEndDateInput = { endDate: Date };
+
 interface ListingState {
   listings: Listing[];
   filteredListings: Listing[];
@@ -35,15 +39,14 @@ interface ListingState {
   incrementViewCount: (id: string) => void;
   checkExpiringListings: () => void;
   purchaseViews: (id: string, viewCount: number) => Promise<void>;
-  applyCreativeEffects: (id: string, effects: any[], effectEndDates: any[]) => Promise<void>;
+  applyCreativeEffects: (
+    id: string,
+    effects: CreativeEffectInput[],
+    effectEndDates: CreativeEffectEndDateInput[],
+  ) => Promise<void>;
   getUserUnusedViews: (userId: string) => number;
   transferUnusedViewsToNewListing: (userId: string, listingId: string) => void;
 }
-
-// Helper function to notify store followers when a new listing is added
-const notifyStoreFollowersIfNeeded = async (listing: Listing) => {
-  // Intentionally left for component-level implementation to avoid circular deps
-};
 
 let expiringListingsInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -823,13 +826,18 @@ export const useListingStore = create<ListingState>((set, get) =>
       );
     },
 
-    applyCreativeEffects: async (id: string, effects: any[], effectEndDates: any[]) => {
+    applyCreativeEffects: async (
+      id: string,
+      effects: CreativeEffectInput[],
+      effectEndDates: CreativeEffectEndDateInput[],
+    ) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const state = get();
       const listing = state.listings.find(l => l.id === id);
       if (!listing) return;
 
+      const nowIso = new Date().toISOString();
       set(state => ({
         listings: state.listings.map(l =>
           l.id === id
@@ -837,7 +845,9 @@ export const useListingStore = create<ListingState>((set, get) =>
               ...l,
               creativeEffects: effects.map((effect, index) => ({
                 ...effect,
-                endDate: effectEndDates[index].endDate.toISOString(),
+                endDate: effectEndDates[index]?.endDate instanceof Date
+                  ? effectEndDates[index].endDate.toISOString()
+                  : nowIso,
                 isActive: true,
               })),
             }
@@ -1005,7 +1015,7 @@ export const useListingStore = create<ListingState>((set, get) =>
           isArchived: false,
           archivedAt: undefined,
           expiresAt: newExpiresAt.toISOString(),
-          adType: renewalPackage.id as any,
+          adType: renewalPackage.id as Listing['adType'],
         });
 
         logger.info('[reactivateListing] Listing reactivated successfully:', {

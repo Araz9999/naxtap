@@ -166,7 +166,10 @@ export const useThemeStore = create<ThemeState>()(
         } else {
           // Web fallback - create audio context beep
           try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+            const Ctx = w.AudioContext || w.webkitAudioContext;
+            if (!Ctx) throw new Error('No AudioContext available');
+            const audioContext = new Ctx();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
 

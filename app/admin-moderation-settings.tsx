@@ -21,7 +21,17 @@ export default function AdminModerationSettingsScreen() {
 
   if (!canAccess) return null;
 
-  const Row = ({ title, subtitle, value, onValueChange }: any) => (
+  const Row = ({
+    title,
+    subtitle,
+    value,
+    onValueChange,
+  }: {
+    title: string;
+    subtitle: string;
+    value: boolean;
+    onValueChange: (v: boolean) => void;
+  }) => (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={{ flex: 1 }}>
         <Text style={[styles.rowTitle, { color: colors.text }]}>{title}</Text>
