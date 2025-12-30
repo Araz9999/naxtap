@@ -12,6 +12,10 @@ import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
 import { getColors } from '@/constants/colors';
 import { MessageCircle } from 'lucide-react-native';
+< cursor/live-chat-section-improvements-1e02
+import LiveChatWidget from './LiveChatWidget';
+
+> main
 import { trpc } from '@/lib/trpc';
 
 
@@ -31,6 +35,14 @@ export default function FloatingChatButton() {
     refetchInterval: 10000,
   });
 
+< cursor/live-chat-section-improvements-1e02
+  const hasActiveChat = userChats.length > 0;
+  const availableOperators = getAvailableOperators();
+  const { data: agentStats } = trpc.liveChat.getAgentStats.useQuery(undefined, {
+    refetchInterval: 10000,
+  });
+  const onlineOperatorsCount = agentStats?.availableCount ?? availableOperators.length;
+
   const conversationsQuery = trpc.liveChat.getConversations.useQuery(
     { userId: currentUser?.id || '' },
     {
@@ -43,6 +55,7 @@ export default function FloatingChatButton() {
   const activeConversations = userConversations.filter((c) => c.status !== 'closed');
   const hasActiveChat = activeConversations.length > 0;
   const availableCount = presenceQuery.data?.availableCount ?? 0;
+> main
 
   // Pulse animation for new messages
   React.useEffect(() => {
@@ -113,7 +126,11 @@ export default function FloatingChatButton() {
           )}
           
           {/* Online Indicator */}
+< cursor/live-chat-section-improvements-1e02
+          {onlineOperatorsCount > 0 && (
+
           {availableCount > 0 && (
+> main
             <View style={styles.onlineIndicator}>
               <View style={styles.onlineDot} />
             </View>
@@ -132,9 +149,15 @@ export default function FloatingChatButton() {
                 : 'Живая поддержка'
             }
           </Text>
+< cursor/live-chat-section-improvements-1e02
+          {onlineOperatorsCount > 0 && (
+            <Text style={[styles.tooltipSubtext, { color: colors.textSecondary }]}>
+              {onlineOperatorsCount} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+
           {availableCount > 0 && (
             <Text style={[styles.tooltipSubtext, { color: colors.textSecondary }]}>
               {availableCount} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+> main
             </Text>
           )}
         </View>
