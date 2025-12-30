@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,23 +13,19 @@ import {
 import { Stack } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
-import { useSupportStore } from '@/store/supportStore';
 import { useUserStore } from '@/store/userStore';
 import { getColors } from '@/constants/colors';
 import { prompt } from '@/utils/confirm';
 import { trpc } from '@/lib/trpc';
 import {
   MessageCircle,
-  Users,
   Clock,
   CheckCircle,
-  AlertCircle,
   Headphones,
   Star,
-  TrendingUp,
   Activity
 } from 'lucide-react-native';
-import { LiveChat, Operator } from '@/types/support';
+import type { LiveChatConversation, LiveChatMessage, SupportAgent } from '@/backend/types/liveChat';
 
 const { width } = Dimensions.get('window');
 
@@ -37,115 +33,150 @@ export default function OperatorDashboard() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
   const { currentUser } = useUserStore();
-  const { liveChats, operators, sendMessage, assignOperator, closeLiveChat } = useSupportStore();
   const colors = getColors(themeMode, colorTheme);
 
-  // ✅ For demo purposes, we'll simulate being the first operator
-  const currentOperator = operators && operators.length > 0 ? operators[0] : null;
-  const [selectedChat, setSelectedChat] = useState<LiveChat | null>(null);
+  const utils = trpc.useUtils();
 
-  // ✅ Fetch conversations from backend using tRPC
-  const { data: backendConversations, isLoading: conversationsLoading, refetch } = trpc.liveChat.getConversations.useQuery(
-    { userId: currentUser?.id || '' },
+  // Real presence + agent list (in-memory backend for now)
+  const presenceQuery = trpc.liveChat.getPresence.useQuery(undefined, {
+    refetchInterval: 5000,
+  });
+
+  // Real conversations for operator panel
+  const conversationsQuery = trpc.liveChat.getAllConversations.useQuery(undefined, {
+    refetchInterval: 5000,
+  });
+
+  const agents: SupportAgent[] = presenceQuery.data?.agents || [];
+  // Demo: first agent acts as “current operator”
+  const currentAgent: SupportAgent | null = agents.length > 0 ? agents[0] : null;
+
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
+  const allConversations: LiveChatConversation[] = conversationsQuery.data || [];
+  const selectedConversation = useMemo(
+    () => allConversations.find((c) => c.id === selectedConversationId) || null,
+    [allConversations, selectedConversationId]
+  );
+
+  const messagesQuery = trpc.liveChat.getMessages.useQuery(
+    { conversationId: selectedConversationId || '' },
     {
-      enabled: !!currentUser?.id,
-      refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
+      enabled: !!selectedConversationId,
+      refetchInterval: 2000,
     }
   );
 
-  // ✅ Use backend data if available, fallback to local store
-  const allChats = backendConversations || liveChats;
-  
-  // ✅ Get chats for current operator with null-safety
-  const operatorChats = currentOperator 
-    ? allChats.filter((chat: any) => 
-        chat.operatorId === currentOperator.id || chat.status === 'waiting'
-      )
-    : allChats.filter((chat: any) => chat.status === 'waiting'); // Show waiting chats if no operator assigned
+  const assignAgentMutation = trpc.liveChat.assignAgent.useMutation();
+  const updateAgentStatusMutation = trpc.liveChat.updateAgentStatus.useMutation();
+  const sendMessageMutation = trpc.liveChat.sendMessage.useMutation();
+  const closeConversationMutation = trpc.liveChat.closeConversation.useMutation();
 
-  const waitingChats = operatorChats.filter((chat: any) => chat.status === 'waiting');
-  const activeChats = operatorChats.filter((chat: any) => chat.status === 'active');
-  const closedChats = operatorChats.filter((chat: any) => chat.status === 'closed');
+  const waitingConversations = allConversations.filter((c) => c.status === 'open');
+  const activeConversations = currentAgent
+    ? allConversations.filter((c) => c.status === 'assigned' && c.supportAgentId === currentAgent.id)
+    : [];
+  const closedConversations = allConversations.filter((c) => c.status === 'closed');
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: LiveChatConversation['status']) => {
     switch (status) {
-      case 'waiting': return '#FFA500';
-      case 'active': return '#4CAF50';
-      case 'closed': return '#9E9E9E';
-      default: return '#FFA500';
+      case 'open':
+        return '#FFA500';
+      case 'assigned':
+        return '#4CAF50';
+      case 'closed':
+        return '#9E9E9E';
+      default:
+        return '#FFA500';
     }
   };
 
-  const handleTakeChat = (chat: LiveChat) => {
-    if (!currentOperator) return;
-    
-    assignOperator(chat.id, currentOperator.id);
+  const formatClock = (iso?: string) => {
+    if (!iso) return '--:--';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '--:--';
+    return d.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleTakeConversation = async (conv: LiveChatConversation) => {
+    if (!currentAgent) return;
+
+    const updated = await assignAgentMutation.mutateAsync({
+      conversationId: conv.id,
+      agentId: currentAgent.id,
+    });
+
+    await utils.liveChat.getAllConversations.invalidate();
+    await utils.liveChat.getPresence.invalidate();
+
     Alert.alert(
       language === 'az' ? 'Söhbət götürüldü' : 'Чат принят',
-      language === 'az' 
-        ? `${chat.subject} mövzusunda söhbət sizə təyin edildi`
-        : `Чат на тему "${chat.subject}" назначен вам`
+      language === 'az'
+        ? `Söhbət sizə təyin edildi${updated?.userName ? `: ${updated.userName}` : ''}`
+        : `Чат назначен вам${updated?.userName ? `: ${updated.userName}` : ''}`
     );
   };
 
-  const handleCloseChat = (chat: LiveChat) => {
+  const handleCloseConversation = (conv: LiveChatConversation) => {
     Alert.alert(
       language === 'az' ? 'Söhbəti bağla' : 'Закрыть чат',
-      language === 'az' ? 'Bu söhbəti bağlamaq istədiyinizə əminsiniz?' : 'Вы уверены, что хотите закрыть этот чат?',
+      language === 'az'
+        ? 'Bu söhbəti bağlamaq istədiyinizə əminsiniz?'
+        : 'Вы уверены, что хотите закрыть этот чат?',
       [
-        {
-          text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
-        },
+        { text: language === 'az' ? 'Ləğv et' : 'Отмена', style: 'cancel' },
         {
           text: language === 'az' ? 'Bağla' : 'Закрыть',
           style: 'destructive',
-          onPress: () => {
-            closeLiveChat(chat.id);
-            setSelectedChat(null);
-          }
-        }
+          onPress: async () => {
+            await closeConversationMutation.mutateAsync({ conversationId: conv.id });
+            await utils.liveChat.getAllConversations.invalidate();
+            await utils.liveChat.getPresence.invalidate();
+            setSelectedConversationId(null);
+          },
+        },
       ]
     );
   };
 
-  const ChatCard = ({ chat }: { chat: LiveChat }) => (
+  const ChatCard = ({ conv }: { conv: LiveChatConversation }) => (
     <TouchableOpacity
       style={[styles.chatCard, { backgroundColor: colors.card }]}
-      onPress={() => setSelectedChat(chat)}
+      onPress={() => setSelectedConversationId(conv.id)}
     >
       <View style={styles.chatHeader}>
         <View style={styles.chatInfo}>
           <Text style={[styles.chatSubject, { color: colors.text }]} numberOfLines={1}>
-            {chat.subject}
+            {conv.subject || (language === 'az' ? 'Yeni söhbət' : 'Новый чат')}
           </Text>
           <Text style={[styles.chatTime, { color: colors.textSecondary }]}>
-            {chat.createdAt.toLocaleTimeString('az-AZ', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
+            {formatClock(conv.createdAt)}
           </Text>
         </View>
         <View style={styles.chatStatus}>
           <View style={[
             styles.statusBadge,
-            { backgroundColor: `${getStatusColor(chat.status)}20` }
+            { backgroundColor: `${getStatusColor(conv.status)}20` }
           ]}>
             <View style={[
               styles.statusDot,
-              { backgroundColor: getStatusColor(chat.status) }
+              { backgroundColor: getStatusColor(conv.status) }
             ]} />
             <Text style={[
               styles.statusText,
-              { color: getStatusColor(chat.status) }
+              { color: getStatusColor(conv.status) }
             ]}>
               {language === 'az'
-                ? chat.status === 'waiting' ? 'Gözləyir'
-                  : chat.status === 'active' ? 'Aktiv'
-                  : 'Bağlı'
-                : chat.status === 'waiting' ? 'Ожидание'
-                  : chat.status === 'active' ? 'Активен'
-                  : 'Закрыт'
+                ? conv.status === 'open'
+                  ? 'Gözləyir'
+                  : conv.status === 'assigned'
+                    ? 'Aktiv'
+                    : 'Bağlı'
+                : conv.status === 'open'
+                  ? 'Ожидание'
+                  : conv.status === 'assigned'
+                    ? 'Активен'
+                    : 'Закрыт'
               }
             </Text>
           </View>
@@ -153,13 +184,13 @@ export default function OperatorDashboard() {
       </View>
       
       <Text style={[styles.messageCount, { color: colors.primary }]}>
-        {chat.messages.length} {language === 'az' ? 'mesaj' : 'сообщений'}
+        {conv.userName || (language === 'az' ? 'İstifadəçi' : 'Пользователь')}
       </Text>
       
-      {chat.status === 'waiting' && (
+      {conv.status === 'open' && (
         <TouchableOpacity
           style={[styles.takeButton, { backgroundColor: colors.primary }]}
-          onPress={() => handleTakeChat(chat)}
+          onPress={() => handleTakeConversation(conv)}
         >
           <Text style={styles.takeButtonText}>
             {language === 'az' ? 'Götür' : 'Принять'}
@@ -186,7 +217,7 @@ export default function OperatorDashboard() {
     </View>
   );
 
-  if (!currentOperator) {
+  if (!currentAgent) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Stack.Screen 
@@ -219,37 +250,71 @@ export default function OperatorDashboard() {
         {/* Operator Info */}
         <View style={[styles.operatorCard, { backgroundColor: colors.primary }]}>
           <Image 
-            source={{ uri: currentOperator.avatar || 'https://via.placeholder.com/80' }}
+            source={{ uri: currentAgent.avatar || 'https://via.placeholder.com/80' }}
             style={styles.operatorAvatar}
           />
           <View style={styles.operatorInfo}>
-            <Text style={styles.operatorName}>{currentOperator.name}</Text>
+            <Text style={styles.operatorName}>{currentAgent.name}</Text>
             <View style={styles.operatorStats}>
               <View style={styles.operatorStat}>
                 <Star size={16} color="#FFD700" />
-                <Text style={styles.operatorStatText}>{currentOperator.rating}</Text>
+                <Text style={styles.operatorStatText}>—</Text>
               </View>
               <View style={styles.operatorStat}>
                 <MessageCircle size={16} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.operatorStatText}>{currentOperator.totalChats}</Text>
+                <Text style={styles.operatorStatText}>{currentAgent.activeChats}</Text>
               </View>
               <View style={styles.operatorStat}>
                 <Clock size={16} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.operatorStatText}>{currentOperator.responseTime}s</Text>
+                <Text style={styles.operatorStatText}>
+                  {currentAgent.status === 'online' ? (language === 'az' ? 'Onlayn' : 'Онлайн') : currentAgent.status === 'busy' ? (language === 'az' ? 'Məşğul' : 'Занят') : (language === 'az' ? 'Oflayn' : 'Оффлайн')}
+                </Text>
               </View>
             </View>
             <View style={styles.onlineStatus}>
               <View style={styles.onlineDot} />
               <Text style={styles.onlineText}>
-                {language === 'az' ? 'Onlayn' : 'Онлайн'} • {currentOperator.activeChats}/{currentOperator.maxChats} {language === 'az' ? 'söhbət' : 'чатов'}
+                {(currentAgent.status === 'online' || currentAgent.status === 'busy') ? (language === 'az' ? 'Onlayn' : 'Онлайн') : (language === 'az' ? 'Oflayn' : 'Оффлайн')}
+                {' • '}
+                {currentAgent.activeChats} {language === 'az' ? 'aktiv söhbət' : 'активных чатов'}
               </Text>
+            </View>
+
+            <View style={styles.statusButtonsRow}>
+              <TouchableOpacity
+                style={[styles.statusButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                onPress={async () => {
+                  await updateAgentStatusMutation.mutateAsync({ agentId: currentAgent.id, status: 'online' });
+                  await utils.liveChat.getPresence.invalidate();
+                }}
+              >
+                <Text style={styles.statusButtonText}>{language === 'az' ? 'Onlayn' : 'Онлайн'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.statusButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                onPress={async () => {
+                  await updateAgentStatusMutation.mutateAsync({ agentId: currentAgent.id, status: 'busy' });
+                  await utils.liveChat.getPresence.invalidate();
+                }}
+              >
+                <Text style={styles.statusButtonText}>{language === 'az' ? 'Məşğul' : 'Занят'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.statusButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                onPress={async () => {
+                  await updateAgentStatusMutation.mutateAsync({ agentId: currentAgent.id, status: 'offline' });
+                  await utils.liveChat.getPresence.invalidate();
+                }}
+              >
+                <Text style={styles.statusButtonText}>{language === 'az' ? 'Oflayn' : 'Оффлайн'}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
 
         {/* Stats */}
         <View style={styles.statsContainer}>
-          {conversationsLoading ? (
+          {conversationsQuery.isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
@@ -261,19 +326,19 @@ export default function OperatorDashboard() {
               <StatsCard
                 icon={Clock}
                 title={language === 'az' ? 'Gözləyən' : 'Ожидающие'}
-                value={waitingChats.length}
+                value={waitingConversations.length}
                 color="#FFA500"
               />
               <StatsCard
                 icon={Activity}
                 title={language === 'az' ? 'Aktiv' : 'Активные'}
-                value={activeChats.length}
+                value={activeConversations.length}
                 color="#4CAF50"
               />
               <StatsCard
                 icon={CheckCircle}
                 title={language === 'az' ? 'Bağlı' : 'Закрытые'}
-                value={closedChats.length}
+                value={closedConversations.length}
                 color="#9E9E9E"
               />
             </>
@@ -281,53 +346,53 @@ export default function OperatorDashboard() {
         </View>
 
         {/* Waiting Chats */}
-        {waitingChats.length > 0 && (
+        {waitingConversations.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {language === 'az' ? 'Gözləyən Söhbətlər' : 'Ожидающие чаты'}
             </Text>
-            {waitingChats.map((chat) => (
-              <ChatCard key={chat.id} chat={chat} />
+            {waitingConversations.map((conv) => (
+              <ChatCard key={conv.id} conv={conv} />
             ))}
           </View>
         )}
 
         {/* Active Chats */}
-        {activeChats.length > 0 && (
+        {activeConversations.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {language === 'az' ? 'Aktiv Söhbətlər' : 'Активные чаты'}
             </Text>
-            {activeChats.map((chat) => (
-              <ChatCard key={chat.id} chat={chat} />
+            {activeConversations.map((conv) => (
+              <ChatCard key={conv.id} conv={conv} />
             ))}
           </View>
         )}
 
         {/* Recent Closed Chats */}
-        {closedChats.length > 0 && (
+        {closedConversations.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {language === 'az' ? 'Son Bağlanan Söhbətlər' : 'Недавно закрытые чаты'}
             </Text>
-            {closedChats.slice(0, 5).map((chat) => (
-              <ChatCard key={chat.id} chat={chat} />
+            {closedConversations.slice(0, 5).map((conv) => (
+              <ChatCard key={conv.id} conv={conv} />
             ))}
           </View>
         )}
       </ScrollView>
 
       {/* Chat Detail Modal */}
-      {selectedChat && (
+      {selectedConversation && (
         <View style={styles.chatDetailOverlay}>
           <View style={[styles.chatDetailModal, { backgroundColor: colors.card }]}>
             <View style={styles.chatDetailHeader}>
               <Text style={[styles.chatDetailTitle, { color: colors.text }]}>
-                {selectedChat.subject}
+                {selectedConversation.subject || (language === 'az' ? 'Söhbət' : 'Чат')}
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => setSelectedChat(null)}
+                onPress={() => setSelectedConversationId(null)}
               >
                 <Text style={[styles.closeButtonText, { color: colors.primary }]}>
                   {language === 'az' ? 'Bağla' : 'Закрыть'}
@@ -336,34 +401,31 @@ export default function OperatorDashboard() {
             </View>
             
             <ScrollView style={styles.messagesContainer}>
-              {selectedChat.messages.map((message) => (
+              {(messagesQuery.data || []).map((message: LiveChatMessage) => (
                 <View
                   key={message.id}
                   style={[
                     styles.messageItem,
-                    message.senderType === 'operator' ? styles.operatorMessage : styles.userMessage
+                    message.isSupport ? styles.operatorMessage : styles.userMessage
                   ]}
                 >
                   <Text style={[
                     styles.messageText,
-                    { color: message.senderType === 'operator' ? '#fff' : colors.text }
+                    { color: message.isSupport ? '#fff' : colors.text }
                   ]}>
                     {message.message}
                   </Text>
                   <Text style={[
                     styles.messageTime,
-                    { color: message.senderType === 'operator' ? 'rgba(255,255,255,0.7)' : colors.textSecondary }
+                    { color: message.isSupport ? 'rgba(255,255,255,0.7)' : colors.textSecondary }
                   ]}>
-                    {message.timestamp.toLocaleTimeString('az-AZ', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
+                    {formatClock(message.timestamp)}
                   </Text>
                 </View>
               ))}
             </ScrollView>
 
-            {selectedChat.status === 'active' && (
+            {selectedConversation.status === 'assigned' && (
               <View style={styles.chatActions}>
                 <TouchableOpacity
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
@@ -372,8 +434,17 @@ export default function OperatorDashboard() {
                       language === 'az' ? 'Mesajınızı yazın' : 'Напишите ваше сообщение',
                       language === 'az' ? 'Mesaj göndər' : 'Отправить сообщение'
                     );
-                    if (text && text.trim() && currentOperator) {
-                      sendMessage(selectedChat.id, currentOperator.id, 'operator', text.trim());
+                    if (text && text.trim() && currentAgent) {
+                      await sendMessageMutation.mutateAsync({
+                        conversationId: selectedConversation.id,
+                        senderId: currentAgent.id,
+                        senderName: currentAgent.name,
+                        senderAvatar: currentAgent.avatar || undefined,
+                        message: text.trim(),
+                        isSupport: true,
+                      });
+                      await utils.liveChat.getMessages.invalidate({ conversationId: selectedConversation.id });
+                      await utils.liveChat.getAllConversations.invalidate();
                     }
                   }}
                 >
@@ -384,7 +455,7 @@ export default function OperatorDashboard() {
                 
                 <TouchableOpacity
                   style={[styles.actionButton, { backgroundColor: '#FF5722' }]}
-                  onPress={() => handleCloseChat(selectedChat)}
+                  onPress={() => handleCloseConversation(selectedConversation)}
                 >
                   <Text style={styles.actionButtonText}>
                     {language === 'az' ? 'Söhbəti Bağla' : 'Закрыть чат'}
@@ -428,6 +499,22 @@ const styles = StyleSheet.create({
   operatorStats: {
     flexDirection: 'row',
     marginBottom: 8,
+  },
+  statusButtonsRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  statusButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  statusButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   operatorStat: {
     flexDirection: 'row',

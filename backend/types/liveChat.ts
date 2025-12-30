@@ -7,6 +7,7 @@ export interface LiveChatMessage {
   senderName: string;
   senderAvatar?: string;
   message: string;
+  attachments?: string[];
   timestamp: string;
   status: MessageStatus;
   isSupport: boolean;
@@ -19,6 +20,9 @@ export interface LiveChatConversation {
   userAvatar?: string;
   supportAgentId?: string;
   supportAgentName?: string;
+  subject?: string;
+  category?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   status: 'open' | 'assigned' | 'closed';
   lastMessage?: string;
   lastMessageTime?: string;
