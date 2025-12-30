@@ -18,10 +18,8 @@ import {
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
-import { useMessageStore } from '@/store/messageStore';
 import { useCallStore } from '@/store/callStore';
 import Colors from '@/constants/colors';
-import { users } from '@/mocks/users';
 import { listings } from '@/mocks/listings';
 import { Message, MessageAttachment, MessageType } from '@/types/message';
 import {
@@ -46,6 +44,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Audio } from 'expo-av';
 import UserActionModal from '@/components/UserActionModal';
+import { trpc } from '@/lib/trpc';
 
 import { logger } from '@/utils/logger';
 const { width: screenWidth } = Dimensions.get('window');
@@ -173,8 +172,55 @@ export default function ConversationScreen() {
 
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
-  const { conversations, getConversation, addMessage, markAsRead, getOrCreateConversation, deleteMessage } = useMessageStore();
   const { initiateCall } = useCallStore();
+  const trpcUtils = trpc.useUtils();
+  const getMessagesQuery = trpc.chat.getMessages.useQuery(
+    { conversationId: conversationId || '' },
+    {
+      enabled: !!conversationId && typeof conversationId === 'string' && conversationId.length > 0,
+      refetchInterval: (query) => {
+        const code = (query.state.error as any)?.data?.code;
+        if (code === 'NOT_FOUND') return false;
+        return 1500;
+      },
+      refetchOnReconnect: true,
+      refetchOnMount: true,
+    }
+  );
+  const getUserPreviewQuery = trpc.chat.getUserPreview.useQuery(
+    { userId: conversationId || '' },
+    {
+      enabled:
+        !!conversationId &&
+        typeof conversationId === 'string' &&
+        conversationId.length > 0 &&
+        (getMessagesQuery.error as any)?.data?.code === 'NOT_FOUND',
+    }
+  );
+  const sendMessageMutation = trpc.chat.sendMessage.useMutation({
+    onSuccess: async (res) => {
+      await Promise.all([
+        trpcUtils.chat.getConversations.invalidate(),
+        trpcUtils.chat.getMessages.invalidate({ conversationId: res.conversationId }),
+      ]);
+      // If this screen was opened with a userId (no conversation yet),
+      // replace route with real conversationId once created.
+      if (conversationId && res.conversationId && conversationId !== res.conversationId) {
+        router.replace(`/conversation/${res.conversationId}`);
+      }
+    },
+  });
+  const markAsReadMutation = trpc.chat.markAsRead.useMutation({
+    onSuccess: async () => {
+      await trpcUtils.chat.getConversations.invalidate();
+    },
+  });
+  const deleteMessageMutation = trpc.chat.deleteMessage.useMutation({
+    onSuccess: async (_res, vars) => {
+      await trpcUtils.chat.getMessages.invalidate({ conversationId: vars.conversationId });
+      await trpcUtils.chat.getConversations.invalidate();
+    },
+  });
   
   // All hooks must be called before any early returns
   const [inputText, setInputText] = useState<string>('');
@@ -199,52 +245,24 @@ export default function ConversationScreen() {
   const flatListRef = useRef<FlatList>(null);
   
   logger.debug('ConversationScreen - ID:', conversationId);
-  
-  // Get conversation data or try to find/create one
-  const [conversation, setConversation] = useState<any>(null);
-  
-  // Update conversation when conversations change or conversationId changes
-  useEffect(() => {
-    if (!conversationId || typeof conversationId !== 'string') {
-      setConversation(null);
-      return;
-    }
-    
-    let foundConversation = getConversation(conversationId);
-    
-    // If no conversation found, check if conversationId is actually a user ID
-    // and try to find an existing conversation with that user
-    if (!foundConversation && currentUser) {
-      const potentialUser = users.find(user => user.id === conversationId);
-      if (potentialUser) {
-        // Try to find existing conversation with this user
-        const existingConv = conversations.find(conv => 
-          conv.participants.includes(currentUser.id) && 
-          conv.participants.includes(conversationId)
-        );
-        if (existingConv) {
-          foundConversation = existingConv;
-          logger.debug('ConversationScreen - Found existing conversation:', existingConv.id);
+
+  const conversation = getMessagesQuery.data?.conversation || null;
+  const messages: Message[] = getMessagesQuery.data?.messages
+    ? [...getMessagesQuery.data.messages].sort((a: Message, b: Message) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    : [];
+
+  const otherUser =
+    (conversation as any)?.otherUser ||
+    (getUserPreviewQuery.data
+      ? {
+          ...getUserPreviewQuery.data,
+          privacySettings: {
+            hidePhoneNumber: false,
+            allowDirectContact: true,
+            onlyAppMessaging: false,
+          },
         }
-      }
-    }
-    
-    // Always update conversation state with a fresh copy to trigger re-render
-    if (foundConversation) {
-      setConversation({
-        ...foundConversation,
-        messages: [...(foundConversation.messages || [])]
-      });
-    } else {
-      setConversation(null);
-    }
-    logger.debug('ConversationScreen - Updated conversation', {
-      found: !!foundConversation,
-      messages: foundConversation?.messages?.length || 0,
-    });
-  }, [conversationId, conversations, currentUser, getConversation]);
-  
-  const messages = conversation?.messages ? [...conversation.messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) : [];
+      : null);
   
   const lastCountRef = useRef<number>(0);
   useEffect(() => {
@@ -259,18 +277,14 @@ export default function ConversationScreen() {
   logger.debug('ConversationScreen - Conversation found:', !!conversation);
   logger.debug('ConversationScreen - Messages count:', messages.length);
 
-  const otherUser = conversation ? users.find(user => 
-    conversation.participants.includes(user.id) && user.id !== currentUser?.id
-  ) : (conversationId ? users.find(user => user.id === conversationId) : null);
-  
-
-  
-  // Mark as read when conversation is opened
+  // Mark as read when conversation is opened / refreshed
   useEffect(() => {
-    if (conversationId && typeof conversationId === 'string' && conversation && conversation.unreadCount > 0) {
-      markAsRead(conversationId);
+    const unread = getMessagesQuery.data?.unreadCount || 0;
+    if (!conversation?.id) return;
+    if (unread > 0 && !markAsReadMutation.isPending) {
+      markAsReadMutation.mutate({ conversationId: conversation.id });
     }
-  }, [conversationId, conversation?.unreadCount, markAsRead, conversation?.id]);
+  }, [conversation?.id, getMessagesQuery.data?.unreadCount]);
   
   // ✅ Proper cleanup for audio and recording
   useEffect(() => {
@@ -355,68 +369,31 @@ export default function ConversationScreen() {
     }
 
     try {
-      // If no conversation exists, create one with a default listing
-      let actualConversationId = conversationId;
-      let currentConversation = conversation;
-      
-      if (!currentConversation) {
-        logger.debug('Creating new conversation');
-        // BUG FIX: Check if listings array is not empty before accessing first element
-        if (!listings || listings.length === 0) {
-          logger.error('No listings available to create conversation');
-          Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено');
-          return;
-        }
-        const defaultListing = listings[0]; // Use first listing as default
-        actualConversationId = getOrCreateConversation([currentUser.id, otherUser.id], defaultListing.id);
-        currentConversation = getConversation(actualConversationId);
-        logger.debug('Created conversation with ID:', actualConversationId);
-      }
-      
-      if (!actualConversationId || !currentConversation) {
-        logger.debug('Failed to get or create conversation');
+      if (!listings || listings.length === 0) {
+        logger.error('No listings available to send message');
+        Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено');
         return;
       }
 
-      const newMessage: Message = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`, // ✅ Use substring()
-        senderId: currentUser.id,
+      const listingIdToUse = conversation?.listingId || listings[0].id;
+      const res = await sendMessageMutation.mutateAsync({
+        conversationId: conversation?.id,
         receiverId: otherUser.id,
-        listingId: currentConversation.listingId,
+        listingId: listingIdToUse,
         text: trimmedText,
         type,
         attachments,
-        createdAt: new Date().toISOString(),
-        isRead: false,
-        isDelivered: true,
-      };
+      });
 
-      logger.debug('Adding message:', { id: newMessage.id, text: newMessage.text || '[empty]', type: newMessage.type });
-      addMessage(actualConversationId, newMessage);
-      
-      // Clear input immediately after adding message
+      logger.debug('[Conversation] Message sent:', res.message.id);
       setInputText('');
-      
-      // Force immediate re-render by updating conversation state
-      const updatedConversation = getConversation(actualConversationId);
-      if (updatedConversation) {
-        logger.debug('Updated conversation with new message, total messages:', updatedConversation.messages.length);
-        setConversation({
-          ...updatedConversation,
-          messages: [...updatedConversation.messages]
-        });
-      }
-      
-      // Scroll to bottom with a slight delay to ensure message is rendered
+
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      }, 150);
     } catch (error) {
       logger.error('Error sending message:', error);
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mesaj göndərilə bilmədi' : 'Не удалось отправить сообщение'
-      );
+      Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', language === 'az' ? 'Mesaj göndərilə bilmədi' : 'Не удалось отправить сообщение');
     }
   };
 
@@ -1189,7 +1166,7 @@ export default function ConversationScreen() {
 
   const confirmDeleteMessage = async () => {
     // ✅ Validate parameters
-    if (!selectedMessageId || !conversationId) {
+    if (!selectedMessageId || !conversation?.id) {
       logger.error('[confirmDeleteMessage] Missing required parameters');
       setShowDeleteModal(false);
       setSelectedMessageId(null);
@@ -1201,21 +1178,11 @@ export default function ConversationScreen() {
     
     try {
       logger.debug('[confirmDeleteMessage] Deleting message:', selectedMessageId);
-      
-      // ✅ Delete message from store
-      deleteMessage(conversationId, selectedMessageId);
-      
-      // ✅ Update local conversation state
-      const updatedConversation = getConversation(conversationId);
-      if (updatedConversation) {
-        setConversation({
-          ...updatedConversation,
-          messages: [...updatedConversation.messages]
-        });
-        logger.debug('[confirmDeleteMessage] Conversation updated, messages count:', updatedConversation.messages.length);
-      } else {
-        logger.warn('[confirmDeleteMessage] Updated conversation not found');
-      }
+
+      await deleteMessageMutation.mutateAsync({
+        conversationId: conversation.id,
+        messageId: selectedMessageId,
+      });
       
       // ✅ Show success feedback
       Alert.alert(
@@ -1254,7 +1221,6 @@ export default function ConversationScreen() {
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwnMessage = item.senderId === currentUser?.id;
-    const sender = users.find(user => user.id === item.senderId);
     const audioIconColor = isOwnMessage ? '#fff' : Colors.primary;
     const audioTextColor = isOwnMessage ? '#fff' : Colors.primary;
 
@@ -1268,7 +1234,7 @@ export default function ConversationScreen() {
         activeOpacity={0.7}
       >
         {!isOwnMessage && (
-          <Image source={{ uri: sender?.avatar }} style={styles.messageAvatar} />
+          <Image source={{ uri: otherUser?.avatar || 'https://i.pravatar.cc/150?img=1' }} style={styles.messageAvatar} />
         )}
         
         <View style={[
@@ -1482,6 +1448,16 @@ export default function ConversationScreen() {
   };
 
   if (!conversation && !otherUser) {
+    if (getMessagesQuery.isLoading || getUserPreviewQuery.isLoading) {
+      return (
+        <View style={styles.errorContainer}>
+          <ActivityIndicator size="small" color={Colors.primary} />
+          <Text style={[styles.errorText, { marginTop: 10 }]}>
+            {language === 'az' ? 'Yüklənir...' : 'Загрузка...'}
+          </Text>
+        </View>
+      );
+    }
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>
@@ -1669,7 +1645,7 @@ export default function ConversationScreen() {
         style={styles.messagesList}
         contentContainerStyle={styles.messagesContent}
         ListHeaderComponent={renderContactInfo}
-        extraData={`${messages.length}-${conversation?.id || 'no-conv'}-${conversation?.messages?.length || 0}`}
+        extraData={`${messages.length}-${conversation?.id || 'no-conv'}`}
         removeClippedSubviews={false}
         initialNumToRender={20}
         maxToRenderPerBatch={10}
