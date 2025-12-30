@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { Audio } from 'expo-av';
 import { useCallStore } from '@/store/callStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
@@ -22,6 +23,7 @@ import { logger } from '@/utils/logger'; // ✅ Import logger
 import {
   Phone,
   PhoneOff,
+  StopCircle,
   Mic,
   MicOff,
   Volume2,
@@ -29,6 +31,7 @@ import {
   Video,
   VideoOff,
   RotateCcw,
+  Circle,
 } from 'lucide-react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -37,7 +40,7 @@ export default function CallScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const callId = Array.isArray(id) ? id[0] : id;
 
-  const { activeCall, endCall, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
+  const { activeCall, endCall, setCallRecording, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
   const [permission, requestPermission] = useCameraPermissions();
@@ -45,6 +48,15 @@ export default function CallScreen() {
   const [callDuration, setCallDuration] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [cameraFacing, setCameraFacing] = useState<CameraType>('front');
+
+  // Recording state (local device recording)
+  const isMountedRef = useRef(true);
+  const cameraRef = useRef<any>(null);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
+  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [audioRecording, setAudioRecording] = useState<Audio.Recording | null>(null);
+  const videoRecordPromiseRef = useRef<Promise<any> | null>(null);
 
   useEffect(() => {
     if (!activeCall || activeCall.id !== callId) {
@@ -81,6 +93,30 @@ export default function CallScreen() {
     };
   }, [activeCall?.isVideoEnabled]); // ✅ Add dependency
 
+  // ✅ Cleanup recording on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+      if (Platform.OS !== 'web') {
+        if (audioRecording) {
+          audioRecording.stopAndUnloadAsync().catch(() => undefined);
+        }
+        if (cameraRef.current?.stopRecording) {
+          try {
+            cameraRef.current.stopRecording();
+          } catch {
+            // ignore
+          }
+        }
+      }
+    };
+  }, [audioRecording]);
+
   // ✅ Navigate back if other user can't be resolved (avoid conditional hooks)
   useEffect(() => {
     if (!activeCall || !callId) return;
@@ -116,8 +152,17 @@ export default function CallScreen() {
   }
 
   const handleEndCall = () => {
-    endCall(callId);
-    router.back();
+    const end = () => {
+      endCall(callId);
+      router.back();
+    };
+
+    if (!isRecording) return end();
+
+    // Best-effort stop recording before leaving
+    stopCallRecording()
+      .catch(() => undefined)
+      .finally(end);
   };
 
   // ✅ Handle camera permission request with error handling
@@ -143,6 +188,210 @@ export default function CallScreen() {
 
   const toggleCameraFacing = () => {
     setCameraFacing(current => (current === 'back' ? 'front' : 'back'));
+  };
+
+  const startRecordingTicker = () => {
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+    setRecordingSeconds(0);
+    recordingIntervalRef.current = setInterval(() => {
+      setRecordingSeconds((prev) => prev + 1);
+    }, 1000);
+  };
+
+  const stopRecordingTicker = () => {
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+  };
+
+  const startCallRecording = async () => {
+    if (!activeCall || !callId) return;
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
+        language === 'az'
+          ? 'Zəngin yazılması web versiyasında dəstəklənmir'
+          : 'Запись звонка не поддерживается в веб-версии',
+      );
+      return;
+    }
+    if (isRecording) return;
+
+    const startedAt = new Date().toISOString();
+    setCallRecording(callId, { startedAt });
+    startRecordingTicker();
+
+    if (activeCall.type === 'voice') {
+      try {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            language === 'az' ? 'İcazə lazımdır' : 'Требуется разрешение',
+            language === 'az' ? 'Səs yazmaq üçün mikrofona icazə verin' : 'Разрешите доступ к микрофону для записи',
+          );
+          stopRecordingTicker();
+          return;
+        }
+
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY,
+        );
+        setAudioRecording(recording);
+        setIsRecording(true);
+        return;
+      } catch (e) {
+        logger.error('Failed to start voice call recording:', e);
+        stopRecordingTicker();
+        setIsRecording(false);
+        setAudioRecording(null);
+        Alert.alert(
+          language === 'az' ? 'Xəta' : 'Ошибка',
+          language === 'az' ? 'Zəng yazısı başladıla bilmədi' : 'Не удалось начать запись звонка',
+        );
+        return;
+      }
+    }
+
+    // video call: record local camera
+    try {
+      if (!activeCall.isVideoEnabled) {
+        Alert.alert(
+          language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
+          language === 'az'
+            ? 'Video söndürülüb. Yazmaq üçün əvvəlcə videonu aktiv edin.'
+            : 'Видео выключено. Включите видео, чтобы начать запись.',
+        );
+        stopRecordingTicker();
+        return;
+      }
+
+      if (!permission?.granted) {
+        Alert.alert(
+          language === 'az' ? 'İcazə lazımdır' : 'Требуется разрешение',
+          language === 'az' ? 'Video yazmaq üçün kamera icazəsi lazımdır' : 'Для записи видео нужно разрешение камеры',
+        );
+        stopRecordingTicker();
+        return;
+      }
+
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          language === 'az' ? 'İcazə lazımdır' : 'Требуется разрешение',
+          language === 'az' ? 'Video yazmaq üçün mikrofona icazə verin' : 'Разрешите доступ к микрофону для записи видео',
+        );
+        stopRecordingTicker();
+        return;
+      }
+
+      const camera = cameraRef.current;
+      if (!camera?.recordAsync || !camera?.stopRecording) {
+        Alert.alert(
+          language === 'az' ? 'Xəta' : 'Ошибка',
+          language === 'az'
+            ? 'Kamera yazısı bu build-də dəstəklənmir (dev-build tələb oluna bilər)'
+            : 'Запись камеры не поддерживается в этой сборке (может потребоваться dev-build)',
+        );
+        stopRecordingTicker();
+        return;
+      }
+
+      setIsRecording(true);
+      videoRecordPromiseRef.current = camera.recordAsync({
+        quality: '720p',
+      });
+
+      const res = await videoRecordPromiseRef.current;
+      const uri = res?.uri as string | undefined;
+      setCallRecording(callId, {
+        videoUri: uri,
+        endedAt: new Date().toISOString(),
+      });
+      if (isMountedRef.current) {
+        setIsRecording(false);
+        stopRecordingTicker();
+      }
+    } catch (e) {
+      logger.error('Failed to start/finish video call recording:', e);
+      if (isMountedRef.current) {
+        setIsRecording(false);
+        stopRecordingTicker();
+      }
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        language === 'az' ? 'Video zəng yazısı alınmadı' : 'Не удалось записать видеозвонок',
+      );
+    } finally {
+      videoRecordPromiseRef.current = null;
+    }
+  };
+
+  const stopCallRecording = async () => {
+    if (!activeCall || !callId) return;
+    if (Platform.OS === 'web') return;
+    if (!isRecording) return;
+
+    stopRecordingTicker();
+
+    // voice recording
+    if (activeCall.type === 'voice') {
+      const rec = audioRecording;
+      setIsRecording(false);
+      setAudioRecording(null);
+      if (!rec) return;
+
+      try {
+        await rec.stopAndUnloadAsync();
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+
+        const uri = rec.getURI() || undefined;
+        setCallRecording(callId, {
+          audioUri: uri,
+          endedAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        logger.error('Failed to stop voice call recording:', e);
+      }
+      return;
+    }
+
+    // video recording: stopRecording resolves recordAsync promise
+    try {
+      const camera = cameraRef.current;
+      if (camera?.stopRecording) {
+        camera.stopRecording();
+      }
+    } catch (e) {
+      logger.warn('Failed to stop video recording:', e);
+    } finally {
+      setIsRecording(false);
+    }
+  };
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      await stopCallRecording();
+    } else {
+      await startCallRecording();
+    }
   };
 
   const renderVideoCall = () => {
@@ -207,6 +456,7 @@ export default function CallScreen() {
         {activeCall.isVideoEnabled && permission.granted && (
           <View style={styles.localVideo}>
             <CameraView
+              ref={cameraRef}
               style={styles.localCamera}
               facing={cameraFacing}
             />
@@ -288,6 +538,18 @@ export default function CallScreen() {
             )}
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={[styles.controlButton, isRecording && styles.recordingControl]}
+            onPress={toggleRecording}
+            testID="record-button"
+          >
+            {isRecording ? (
+              <StopCircle size={24} color="#fff" />
+            ) : (
+              <Circle size={24} color="#fff" />
+            )}
+          </TouchableOpacity>
+
           {activeCall.type === 'video' && (
             <>
               <TouchableOpacity
@@ -324,6 +586,12 @@ export default function CallScreen() {
             <PhoneOff size={28} color="#fff" />
           </TouchableOpacity>
         </View>
+
+        {isRecording && (
+          <Text style={styles.recordingText}>
+            {language === 'az' ? 'Yazılır' : 'Запись'} • {formatDuration(recordingSeconds)}
+          </Text>
+        )}
 
         <Text style={styles.privacyNote}>
           {language === 'az'
@@ -412,6 +680,10 @@ const styles = StyleSheet.create({
   activeControl: {
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
+  recordingControl: {
+    backgroundColor: 'rgba(244,67,54,0.35)',
+    borderColor: 'rgba(244,67,54,0.6)',
+  },
   endCallContainer: {
     alignItems: 'center',
     marginBottom: 20,
@@ -433,6 +705,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
+  },
+  recordingText: {
+    fontSize: 14,
+    color: '#fff',
+    opacity: 0.9,
+    marginBottom: 6,
+    marginTop: -8,
   },
   videoContainer: {
     flex: 1,
