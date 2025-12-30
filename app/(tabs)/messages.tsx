@@ -1,29 +1,34 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
-import { useMessageStore } from '@/store/messageStore';
 import Colors from '@/constants/colors';
-import { users } from '@/mocks/users';
 import { listings } from '@/mocks/listings';
-import { MessageCircle } from 'lucide-react-native';
+import { trpc } from '@/lib/trpc';
 
 import { logger } from '@/utils/logger';
 export default function MessagesScreen() {
   const router = useRouter();
   const { language } = useLanguageStore();
-  const { isAuthenticated, currentUser } = useUserStore();
-  const { conversations, simulateIncomingMessage, getFilteredConversations, deleteAllMessagesFromUser } = useMessageStore();
-  
-  // ✅ Use filtered conversations to hide blocked users
-  const displayConversations = useMemo(() => {
-    return getFilteredConversations();
-  }, [conversations, getFilteredConversations]);
+  const { isAuthenticated, currentUser, isUserBlocked } = useUserStore();
+
+  const utils = trpc.useUtils();
+  const conversationsQuery = trpc.chat.getConversations.useQuery(undefined, {
+    refetchInterval: 2000,
+    refetchOnReconnect: true,
+    refetchOnMount: true,
+  });
+
+  const deleteAllFromUserMutation = trpc.chat.deleteAllMessagesFromUser.useMutation({
+    onSuccess: async () => {
+      await utils.chat.getConversations.invalidate();
+    },
+  });
   
   logger.debug('MessagesScreen - isAuthenticated:', isAuthenticated);
   logger.debug('MessagesScreen - currentUser:', currentUser?.name);
-  logger.debug('MessagesScreen - conversations count:', conversations.length);
+  logger.debug('MessagesScreen - conversations count:', conversationsQuery.data?.length || 0);
 
   if (!isAuthenticated) {
     return (
@@ -86,23 +91,16 @@ export default function MessagesScreen() {
     return date.toLocaleDateString(language === 'az' ? 'az-AZ' : 'ru-RU');
   }, [language]);
 
-  const getOtherUser = (participants: string[]) => {
-    // ✅ No hardcoded fallback - return null if no currentUser
-    if (!currentUser?.id) return null;
-    
-    const otherUserId = participants.find(id => id !== currentUser.id);
-    return users.find(user => user.id === otherUserId);
-  };
-
   const getListing = (listingId: string) => {
     return listings.find(listing => listing.id === listingId);
   };
 
-  const renderItem = ({ item }: { item: typeof conversations[0] }) => {
-    const otherUser = getOtherUser(item.participants);
+  const renderItem = ({ item }: { item: any }) => {
+    const otherUser = item.otherUser;
     const listing = getListing(item.listingId);
     
     if (!otherUser || !listing) return null;
+    if (otherUser?.id && isUserBlocked(otherUser.id)) return null;
     
     const handlePress = () => {
       // ✅ Validate conversation ID before navigation
@@ -171,8 +169,7 @@ export default function MessagesScreen() {
             style: 'destructive',
             onPress: () => {
               logger.info('[Messages] Deleting all messages from user:', otherUser.id);
-              deleteAllMessagesFromUser(otherUser.id);
-              logger.info('[Messages] All messages deleted successfully');
+              deleteAllFromUserMutation.mutate({ userId: otherUser.id });
             },
           },
         ]
@@ -186,7 +183,7 @@ export default function MessagesScreen() {
         onLongPress={handleLongPress}
         activeOpacity={0.7}
       >
-        <Image source={{ uri: otherUser.avatar }} style={styles.avatar} />
+        <Image source={{ uri: otherUser.avatar || 'https://i.pravatar.cc/150?img=1' }} style={styles.avatar} />
         
         <View style={styles.conversationContent}>
           <View style={styles.conversationHeader}>
@@ -222,38 +219,44 @@ export default function MessagesScreen() {
 
   // Get filtered conversations (excluding blocked users) and sort by last message date
   const sortedConversations = useMemo(() => {
-    const filteredConversations = getFilteredConversations();
-    return [...filteredConversations].sort((a, b) => {
+    const data = conversationsQuery.data || [];
+    const filtered = data.filter((c: any) => {
+      const otherId = c?.otherUser?.id;
+      return otherId ? !isUserBlocked(otherId) : true;
+    });
+    return [...filtered].sort((a: any, b: any) => {
       const dateA = new Date(a.lastMessageDate || 0).getTime();
       const dateB = new Date(b.lastMessageDate || 0).getTime();
       return dateB - dateA;
     });
-  }, [getFilteredConversations]);
+  }, [conversationsQuery.data, isUserBlocked]);
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={sortedConversations}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        initialNumToRender={12}
-        maxToRenderPerBatch={12}
-        windowSize={5}
-        removeClippedSubviews
-        ListHeaderComponent={
-          <TouchableOpacity 
-            style={styles.simulateButton}
-            onPress={simulateIncomingMessage}
-          >
-            <MessageCircle size={16} color={Colors.primary} />
-            <Text style={styles.simulateButtonText}>
-              {language === 'az' ? 'Yeni mesaj simulyasiyası' : 'Симуляция нового сообщения'}
-            </Text>
-          </TouchableOpacity>
-        }
-      />
+      {conversationsQuery.isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={sortedConversations}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={5}
+          removeClippedSubviews
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {language === 'az' ? 'Hələ mesaj yoxdur' : 'Пока нет сообщений'}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
@@ -358,21 +361,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  simulateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 12,
-    backgroundColor: Colors.card,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.primary,
+    alignItems: 'center',
   },
-  simulateButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: Colors.primary,
-    fontWeight: '500',
+  emptyContainer: {
+    paddingTop: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: Colors.textSecondary,
   },
 });
