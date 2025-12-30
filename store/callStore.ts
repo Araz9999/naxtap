@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Call, ActiveCall, CallRecording, CallStatus, CallType } from '@/types/call';
-import { users } from '@/mocks/users';
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { Audio } from 'expo-av';

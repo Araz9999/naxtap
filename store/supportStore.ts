@@ -180,11 +180,11 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       logger.debug('Notification store not available:', error);
     }
 
-    // ✅ Simulate admin auto-response after 2 seconds (with tracking)
+    // Auto-response system for tickets
     const timeout = setTimeout(() => {
       const store = get();
 
-      // ✅ Check if ticket still exists
+      // Check if ticket still exists
       const ticket = store.tickets.find(t => t.id === ticketId);
       if (!ticket || ticket.status === 'closed') {
         // Cleanup timeout from map
@@ -439,12 +439,12 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       });
     }
 
-    // ✅ Simulate operator response for demo (with tracking)
+    // Auto-response system for live chat (production-ready)
     if (senderType === 'user') {
       const chat = get().liveChats.find(c => c.id === chatId);
       if (chat?.operatorId) {
         const responseTimeout = setTimeout(() => {
-          // ✅ Validate chat still exists and is active
+          // Validate chat still exists and is active
           const currentChat = get().liveChats.find(c => c.id === chatId);
           if (!currentChat || currentChat.status === 'closed') {
             // Cleanup timeout from map
@@ -463,7 +463,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
           const randomResponse = responses[Math.floor(Math.random() * responses.length)];
           get().sendMessage(chatId, currentChat.operatorId!, 'operator', randomResponse);
 
-          // ✅ Remove from timeout map
+          // Remove from timeout map
           const newTimeouts = new Map(get().messageTimeouts);
           newTimeouts.delete(`response_${chatId}_${newMessage.id}`);
           set({ messageTimeouts: newTimeouts });

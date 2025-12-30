@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { listings as mockListings } from '@/mocks/listings';
 import { Listing } from '@/types/listing';
 import { useThemeStore } from './themeStore';
 import { useUserStore } from '@/store/userStore';
 import { logger } from '@/utils/logger';
+import { trpcClient } from '@/lib/trpc';
 
 type ListingCreativeEffect = NonNullable<Listing['creativeEffects']>[number];
 type CreativeEffectInput = Omit<ListingCreativeEffect, 'endDate' | 'isActive'>;
@@ -18,6 +18,9 @@ interface ListingState {
   priceRange: { min: number | null; max: number | null };
   sortBy: 'date' | 'price-asc' | 'price-desc' | null;
   userUnusedViews: { [userId: string]: number };
+  isLoading: boolean;
+  error: string | null;
+  fetchListings: () => Promise<void>;
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (categoryId: number | null) => void;
   setSelectedSubcategory: (subcategoryId: number | null) => void;
@@ -71,14 +74,35 @@ export const useListingStore = create<ListingState>((set, get) =>
   // Cast to ListingState to ensure the returned object satisfies the interface.
   // This also helps TypeScript when implementations are lengthy and inferred types may be narrower.
   ({
-    listings: mockListings,
-    filteredListings: mockListings,
+    listings: [],
+    filteredListings: [],
     searchQuery: '',
     selectedCategory: null,
     selectedSubcategory: null,
     priceRange: { min: null, max: null },
     sortBy: null,
     userUnusedViews: {},
+    isLoading: false,
+    error: null,
+
+    fetchListings: async () => {
+      try {
+        set({ isLoading: true, error: null });
+        const listings = await trpcClient.listing.getAll.query();
+        set({ 
+          listings: listings as Listing[], 
+          filteredListings: listings as Listing[],
+          isLoading: false 
+        });
+        get().applyFilters();
+      } catch (error) {
+        logger.error('[ListingStore] Failed to fetch listings:', error);
+        set({ 
+          error: 'Failed to load listings',
+          isLoading: false 
+        });
+      }
+    },
 
     setSearchQuery: (query: string) => {
       set({ searchQuery: query });
