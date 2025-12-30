@@ -27,6 +27,7 @@ import {
 } from 'lucide-react-native';
 import FileAttachmentPicker, { FileAttachment } from '@/components/FileAttachmentPicker';
 import WebTextInput, { WebTextInputRef } from '@/components/WebTextInput';
+import { trpc } from '@/lib/trpc';
 
 import { logger } from '@/utils/logger';
 const { width } = Dimensions.get('window');
@@ -66,6 +67,12 @@ export default function LiveChatScreen() {
   const currentChat = currentChatId ? liveChats.find(chat => chat.id === currentChatId) : undefined;
   const operator = currentChat?.operatorId ? operators.find(op => op.id === currentChat.operatorId) : undefined;
   const availableOperators = getAvailableOperators();
+
+  // ✅ Real-time operator stats (backend)
+  const { data: agentStats } = trpc.liveChat.getAgentStats.useQuery(undefined, {
+    refetchInterval: 10000,
+  });
+  const onlineOperatorsCount = agentStats?.availableCount ?? availableOperators.length;
 
   // Check if user has an active chat
   useEffect(() => {
@@ -359,131 +366,143 @@ export default function LiveChatScreen() {
   };
 
   const StartChatForm = () => (
-    <View style={styles.startForm}>
-      <Text style={[styles.startTitle, { color: colors.text }]}>
-        {language === 'az' ? 'Canlı Dəstək' : 'Живая поддержка'}
-      </Text>
-      <Text style={[styles.startSubtitle, { color: colors.textSecondary }]}>
-        {language === 'az' 
-          ? 'Operatorumuzla birbaşa əlaqə saxlayın'
-          : 'Свяжитесь напрямую с нашим оператором'
-        }
-      </Text>
-      
-      {/* Operator Status */}
-      {availableOperators.length > 0 ? (
-        <View style={[styles.operatorStatusBanner, { backgroundColor: `${colors.primary}15` }]}>
-          <View style={styles.onlineDot} />
-          <Text style={[styles.operatorStatusText, { color: colors.primary }]}>
-            {availableOperators.length} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      style={styles.startFormWrapper}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.startFormScrollContent}
+      >
+        <View>
+          <Text style={[styles.startTitle, { color: colors.text }]}>
+            {language === 'az' ? 'Canlı Dəstək' : 'Живая поддержка'}
           </Text>
-        </View>
-      ) : (
-        <View style={[styles.operatorStatusBanner, { backgroundColor: '#FFF3E0' }]}>
-          <View style={[styles.onlineDot, { backgroundColor: '#FF9500' }]} />
-          <Text style={[styles.operatorStatusText, { color: '#FF9500' }]}>
-            {language === 'az' ? 'Operatorlar oflayn - mesaj buraxın' : 'Операторы оффлайн - оставьте сообщение'}
+          <Text style={[styles.startSubtitle, { color: colors.textSecondary }]}>
+            {language === 'az'
+              ? 'Operatorumuzla birbaşa əlaqə saxlayın'
+              : 'Свяжитесь напрямую с нашим оператором'
+            }
           </Text>
-        </View>
-      )}
 
-      <View style={styles.formSection}>
-        <Text style={[styles.formLabel, { color: colors.text }]}>
-          {language === 'az' ? 'Kateqoriya' : 'Категория'}
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.categoryRow}>
-            {categories.slice(0, 3).map((category) => (
-              <TouchableOpacity
-                key={category.id}
+          {/* Operator Status (real-time) */}
+          {onlineOperatorsCount > 0 ? (
+            <View style={[styles.operatorStatusBanner, { backgroundColor: `${colors.primary}15` }]}>
+              <View style={styles.onlineDot} />
+              <Text style={[styles.operatorStatusText, { color: colors.primary }]}>
+                {onlineOperatorsCount} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.operatorStatusBanner, { backgroundColor: '#FFF3E0' }]}>
+              <View style={[styles.onlineDot, { backgroundColor: '#FF9500' }]} />
+              <Text style={[styles.operatorStatusText, { color: '#FF9500' }]}>
+                {language === 'az' ? 'Operatorlar oflayn - mesaj buraxın' : 'Операторы оффлайн - оставьте сообщение'}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.formSection}>
+            <Text style={[styles.formLabel, { color: colors.text }]}>
+              {language === 'az' ? 'Kateqoriya' : 'Категория'}
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.categoryRow}>
+                {categories.slice(0, 3).map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryChip,
+                      {
+                        backgroundColor: selectedCategory === category.id ? colors.primary : colors.card,
+                        borderColor: colors.border
+                      }
+                    ]}
+                    onPress={() => {
+                      logger.info('[LiveChat] Category selected:', { categoryId: category.id });
+                      setSelectedCategory(category.id);
+                    }}
+                  >
+                    <Text style={[
+                      styles.categoryChipText,
+                      {
+                        color: selectedCategory === category.id ? '#fff' : colors.text
+                      }
+                    ]}>
+                      {language === 'az' ? category.name : category.nameRu}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={[styles.formLabel, { color: colors.text }]}>
+              {language === 'az' ? 'Mövzu' : 'Тема'}
+            </Text>
+            {Platform.OS === 'web' ? (
+              <WebTextInput
+                ref={webSubjectInputRef}
+                placeholder={language === 'az' ? 'Probleminizi qısaca yazın' : 'Кратко опишите проблему'}
+                placeholderTextColor={colors.textSecondary}
+                value={subject}
+                onChangeText={(text) => {
+                  setSubject(text);
+                }}
                 style={[
-                  styles.categoryChip,
+                  styles.subjectInput,
                   {
-                    backgroundColor: selectedCategory === category.id ? colors.primary : colors.card,
+                    backgroundColor: colors.card,
+                    color: colors.text,
                     borderColor: colors.border
                   }
                 ]}
-                onPress={() => {
-                  logger.info('[LiveChat] Category selected:', { categoryId: category.id });
-                  setSelectedCategory(category.id);
-                }}
-              >
-                <Text style={[
-                  styles.categoryChipText,
-                  { 
-                    color: selectedCategory === category.id ? '#fff' : colors.text 
-                  }
-                ]}>
-                  {language === 'az' ? category.name : category.nameRu}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
-
-      <View style={styles.formSection}>
-        <Text style={[styles.formLabel, { color: colors.text }]}>
-          {language === 'az' ? 'Mövzu' : 'Тема'}
-        </Text>
-        {Platform.OS === 'web' ? (
-          <WebTextInput
-            ref={webSubjectInputRef}
-            placeholder={language === 'az' ? 'Probleminizi qısaca yazın' : 'Кратко опишите проблему'}
-            placeholderTextColor={colors.textSecondary}
-            value={subject}
-            onChangeText={(text) => {
-              setSubject(text);
-            }}
-            style={[
-              styles.subjectInput,
-              {
-                backgroundColor: colors.card,
-                color: colors.text,
-                borderColor: colors.border
-              }
-            ]}
-            maxLength={100}
-          />
-        ) : (
-          <TextInput
-            style={[
-              styles.subjectInput,
-              {
-                backgroundColor: colors.card,
-                color: colors.text,
-                borderColor: colors.border
-              }
-            ]}
-            placeholder={language === 'az' ? 'Probleminizi qısaca yazın' : 'Кратко опишите проблему'}
-            placeholderTextColor={colors.textSecondary}
-            value={subject}
-            onChangeText={setSubject}
-            multiline={false}
-            maxLength={100}
-          />
-        )}
-      </View>
-
-              <TouchableOpacity
+                maxLength={100}
+              />
+            ) : (
+              <TextInput
                 style={[
-                  styles.startButton,
+                  styles.subjectInput,
                   {
-                    backgroundColor: colors.primary,
-                    opacity: (!selectedCategory || !subject.trim()) ? 0.5 : 1
+                    backgroundColor: colors.card,
+                    color: colors.text,
+                    borderColor: colors.border
                   }
                 ]}
-                onPress={() => {
-                  logger.info('[LiveChat] Start chat button clicked');
-                  handleStartChat();
-                }}
-                disabled={!selectedCategory || !subject.trim()}
-              >
-        <Text style={styles.startButtonText}>
-          {language === 'az' ? 'Söhbət Başlat' : 'Начать чат'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+                placeholder={language === 'az' ? 'Probleminizi qısaca yazın' : 'Кратко опишите проблему'}
+                placeholderTextColor={colors.textSecondary}
+                value={subject}
+                onChangeText={setSubject}
+                multiline={false}
+                maxLength={100}
+              />
+            )}
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.startButton,
+            {
+              backgroundColor: colors.primary,
+              opacity: (!selectedCategory || !subject.trim()) ? 0.5 : 1
+            }
+          ]}
+          onPress={() => {
+            logger.info('[LiveChat] Start chat button clicked');
+            handleStartChat();
+          }}
+          disabled={!selectedCategory || !subject.trim()}
+        >
+          <Text style={styles.startButtonText}>
+            {language === 'az' ? 'Söhbət Başlat' : 'Начать чат'}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 
   // Web input refs
@@ -536,10 +555,10 @@ export default function LiveChatScreen() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }}
-            maintainVisibleContentPosition={{
+            maintainVisibleContentPosition={Platform.OS === 'ios' ? {
               minIndexForVisible: 0,
               autoscrollToTopThreshold: 10
-            }}
+            } : undefined}
             onContentSizeChange={() => {
               if (shouldScrollToEnd && !isScrolling) {
                 scrollViewRef.current?.scrollToEnd({ animated: false });
@@ -578,8 +597,8 @@ export default function LiveChatScreen() {
 
           {currentChat.status !== 'closed' ? (
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              keyboardVerticalOffset={0}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
               style={styles.inputSection}
             >
               {showAttachments && (
@@ -943,6 +962,15 @@ const styles = StyleSheet.create({
     padding: 20,
     flex: 1,
   },
+  startFormWrapper: {
+    flex: 1,
+  },
+  startFormScrollContent: {
+    flexGrow: 1,
+    padding: 20,
+    paddingBottom: 24,
+    justifyContent: 'space-between',
+  },
   startTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -990,7 +1018,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderRadius: 12,
-    marginTop: 'auto',
   },
   startButtonText: {
     color: '#fff',

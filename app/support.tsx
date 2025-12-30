@@ -94,6 +94,10 @@ export default function SupportScreen() {
   const userTickets = (myTicketsQuery.data as any[]) || [];
   const userChats = currentUser ? liveChats.filter(chat => chat.userId === currentUser.id) : [];
   const availableOperators = getAvailableOperators();
+  const { data: agentStats } = trpc.liveChat.getAgentStats.useQuery(undefined, {
+    refetchInterval: 10000,
+  });
+  const onlineOperatorsCount = agentStats?.availableCount ?? availableOperators.length;
 
   const getCategoryIcon = (iconName: string) => {
     switch (iconName) {
@@ -467,11 +471,11 @@ export default function SupportScreen() {
                   <Text style={[styles.quickActionSubtitle, { color: colors.textSecondary }]}>
                     {language === 'az' ? 'Operatorla birbaşa söhbət' : 'Прямой чат с оператором'}
                   </Text>
-                  {availableOperators.length > 0 ? (
+                  {onlineOperatorsCount > 0 ? (
                     <View style={styles.operatorStatus}>
                       <View style={styles.onlineDot} />
                       <Text style={[styles.operatorStatusText, { color: colors.primary }]}>
-                        {availableOperators.length} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+                        {onlineOperatorsCount} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
                       </Text>
                     </View>
                   ) : (

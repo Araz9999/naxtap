@@ -14,6 +14,7 @@ import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
 import { MessageCircle } from 'lucide-react-native';
 import LiveChatWidget from './LiveChatWidget';
+import { trpc } from '@/lib/trpc';
 
 
 
@@ -36,6 +37,10 @@ export default function FloatingChatButton() {
 
   const hasActiveChat = userChats.length > 0;
   const availableOperators = getAvailableOperators();
+  const { data: agentStats } = trpc.liveChat.getAgentStats.useQuery(undefined, {
+    refetchInterval: 10000,
+  });
+  const onlineOperatorsCount = agentStats?.availableCount ?? availableOperators.length;
 
   // Pulse animation for new messages
   React.useEffect(() => {
@@ -106,7 +111,7 @@ export default function FloatingChatButton() {
           )}
           
           {/* Online Indicator */}
-          {availableOperators.length > 0 && (
+          {onlineOperatorsCount > 0 && (
             <View style={styles.onlineIndicator}>
               <View style={styles.onlineDot} />
             </View>
@@ -125,9 +130,9 @@ export default function FloatingChatButton() {
                 : 'Живая поддержка'
             }
           </Text>
-          {availableOperators.length > 0 && (
+          {onlineOperatorsCount > 0 && (
             <Text style={[styles.tooltipSubtext, { color: colors.textSecondary }]}>
-              {availableOperators.length} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+              {onlineOperatorsCount} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
             </Text>
           )}
         </View>

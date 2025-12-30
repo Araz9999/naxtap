@@ -6,6 +6,7 @@ import createConversation from "./routes/liveChat/createConversation/route";
 import sendMessage from "./routes/liveChat/sendMessage/route";
 import markAsRead from "./routes/liveChat/markAsRead/route";
 import closeConversation from "./routes/liveChat/closeConversation/route";
+import getAgentStats from "./routes/liveChat/getAgentStats/route";
 import { registerProcedure } from "./routes/auth/register/route";
 import { loginProcedure } from "./routes/auth/login/route";
 import { verifyEmailProcedure } from "./routes/auth/verifyEmail/route";
@@ -73,6 +74,7 @@ export const appRouter = createTRPCRouter({
     sendMessage,
     markAsRead,
     closeConversation,
+    getAgentStats,
   }),
   payriff: createTRPCRouter({
     createPayment: createPaymentProcedure,
