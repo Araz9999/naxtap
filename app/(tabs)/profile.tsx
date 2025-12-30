@@ -6,8 +6,7 @@ import { useUserStore } from '@/store/userStore';
 import { useListingStore } from '@/store/listingStore';
 import { useStoreStore } from '@/store/storeStore';
 import Colors from '@/constants/colors';
-import { users } from '@/mocks/users';
-import { Star, LogOut, Heart, Settings, Bell, HelpCircle, Shield, Package, MessageCircle, ChevronRight, Wallet, Store, Trash2, Headphones, User as UserIcon } from 'lucide-react-native';
+import { Star, LogOut, Heart, Settings, Bell, HelpCircle, Package, MessageCircle, ChevronRight, Wallet, Store, Trash2, Headphones, User as UserIcon } from 'lucide-react-native';
 import LiveChatWidget from '@/components/LiveChatWidget';
 import { authService } from '@/services/authService';
 import { useSupportStore } from '@/store/supportStore';
@@ -22,7 +21,7 @@ export default function ProfileScreen() {
   const { isAuthenticated, logout, favorites, freeAdsThisMonth, walletBalance, bonusBalance, currentUser, updateUserProfile } = useUserStore(); // ✅ Get real currentUser
   const { listings } = useListingStore();
   const { getUserStore } = useStoreStore();
-  const { liveChats, getAvailableOperators } = useSupportStore();
+  const { liveChats } = useSupportStore();
 
   const [showLiveChat, setShowLiveChat] = React.useState<boolean>(false);
   const [isDeletingAccount, setIsDeletingAccount] = React.useState<boolean>(false); // ✅ Loading state
@@ -37,7 +36,6 @@ export default function ProfileScreen() {
   const userChats = isAuthenticated ? liveChats.filter(chat =>
     chat.userId === currentUser?.id && chat.status !== 'closed',
   ) : [];
-  const availableOperators = getAvailableOperators();
   const hasActiveChat = userChats.length > 0;
 
   const favoriteListings = listings.filter(listing => favorites.includes(listing.id));

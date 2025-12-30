@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Report, ModerationAction, ModerationStats, SupportTicket, SupportResponse, ReportType, ReportStatus, ReportPriority, ModerationActionType, SupportCategory, TicketStatus } from '@/types/moderation';
+import { Report, ModerationAction, ModerationStats, SupportTicket, SupportResponse, ReportType, ReportStatus, ReportPriority, SupportCategory, TicketStatus } from '@/types/moderation';
 import { User, ModeratorPermission } from '@/types/user';
 
 interface ModerationState {
@@ -827,7 +827,7 @@ export const useModerationStore = create<ModerationState>()(
       },
 
       updateStats: () => {
-        const { reports, moderationActions, moderators } = get();
+        const { reports, moderators } = get();
 
         // ✅ Validate reports array
         if (!reports || !Array.isArray(reports)) {

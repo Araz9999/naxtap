@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Store, StorePlan, storePlans, StoreFollower, StoreNotification, StoreStatus } from '@/types/store';
 import { mockStores } from '@/mocks/stores';
+import type { Listing } from '@/types/listing';
 
 import { logger } from '@/utils/logger';
 
@@ -44,7 +45,7 @@ interface StoreState {
   stores: Store[];
   userStore: Store | null;
   activeStoreId: string | null;
-  userStoreSettings: Record<string, Record<string, any>>; // userId -> storeId -> settings
+  userStoreSettings: Record<string, Record<string, unknown>>; // userId -> storeId -> settings
   followers: StoreFollower[];
   notifications: StoreNotification[];
   isLoading: boolean;
@@ -708,11 +709,11 @@ export const useStoreStore = create<StoreState>((set, get) => ({
 
       // ✅ Validate contactInfo if provided
       if ('contactInfo' in updates && updates.contactInfo) {
-        const contactInfo = updates.contactInfo as any;
+        const contactInfo = updates.contactInfo as Store['contactInfo'];
 
         // Email validation
         if (contactInfo.email) {
-          const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+          const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
           if (!emailRegex.test(contactInfo.email) || contactInfo.email.length > 255) {
             logger.error('[StoreStore] Invalid email format');
             throw new Error('Invalid email format');
@@ -998,12 +999,15 @@ export const useStoreStore = create<StoreState>((set, get) => ({
 
       // Access listingStore if available
       try {
-        // This is a workaround for type safety - in production, use proper state management
-        const listingStoreModule = require('@/store/listingStore');
-        if (listingStoreModule && listingStoreModule.useListingStore) {
+        // This is a workaround (sync function). Prefer proper state management if refactoring.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const listingStoreModule = require('@/store/listingStore') as {
+          useListingStore?: { getState: () => { listings: Listing[] } };
+        };
+        if (listingStoreModule?.useListingStore) {
           const { listings } = listingStoreModule.useListingStore.getState();
 
-          const discountedListings = listings.filter((l: any) =>
+          const discountedListings = listings.filter((l: Listing) =>
             l.storeId === storeId &&
             l.hasDiscount &&
             !l.deletedAt &&
@@ -1011,12 +1015,12 @@ export const useStoreStore = create<StoreState>((set, get) => ({
             l.discountPercentage,
           );
 
-          discountedListings.forEach((listing: any) => {
+          discountedListings.forEach((listing: Listing) => {
             discounts.push({
               listingId: listing.id,
-              originalPrice: listing.originalPrice,
+              originalPrice: listing.originalPrice || listing.price,
               discountedPrice: listing.price,
-              discountPercentage: listing.discountPercentage,
+              discountPercentage: listing.discountPercentage || 0,
             });
           });
 

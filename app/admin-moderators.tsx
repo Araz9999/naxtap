@@ -35,7 +35,18 @@ export default function AdminModeratorsScreen() {
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selected, setSelected] = useState<any | null>(null);
+  type ModeratorItem = {
+    id: string;
+    role: 'ADMIN' | 'MODERATOR' | string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    verified?: boolean;
+    moderatorPermissions?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+  };
+  const [selected, setSelected] = useState<ModeratorItem | null>(null);
   const [permissionsDraft, setPermissionsDraft] = useState<string[]>([]);
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -56,11 +67,12 @@ export default function AdminModeratorsScreen() {
       await utils.admin.getUsers.invalidate();
       await utils.admin.getAnalytics.invalidate();
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       logger.error('[AdminModerators] update failed:', e);
+      const err = e as { message?: unknown };
       const msg =
-        typeof e?.message === 'string' && e.message.trim()
-          ? e.message
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
           : (language === 'az' ? 'Yenilənmə alınmadı.' : 'Не удалось обновить.');
       Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
     },
@@ -83,11 +95,12 @@ export default function AdminModeratorsScreen() {
         language === 'az' ? 'Moderator yaradıldı.' : 'Модератор создан.',
       );
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       logger.error('[AdminModerators] create failed:', e);
+      const err = e as { message?: unknown };
       const msg =
-        typeof e?.message === 'string' && e.message.trim()
-          ? e.message
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
           : (language === 'az' ? 'Yaradılma alınmadı.' : 'Не удалось создать.');
       Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
     },
@@ -102,17 +115,21 @@ export default function AdminModeratorsScreen() {
       ]);
       closeDetails();
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       logger.error('[AdminModerators] update permissions failed:', e);
+      const err = e as { message?: unknown };
       const msg =
-        typeof e?.message === 'string' && e.message.trim()
-          ? e.message
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
           : (language === 'az' ? 'İcazələr yenilənmədi.' : 'Не удалось обновить права.');
       Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
     },
   });
 
-  const moderators = (moderatorsQuery.data as any[]) || [];
+  const moderators = useMemo<ModeratorItem[]>(
+    () => (moderatorsQuery.data as unknown as ModeratorItem[] | undefined) ?? [],
+    [moderatorsQuery.data],
+  );
 
   useEffect(() => {
     return () => {
@@ -136,7 +153,7 @@ export default function AdminModeratorsScreen() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return moderators.filter((m: any) => {
+    return moderators.filter((m) => {
       if (roleFilter !== 'all' && m.role !== roleFilter) return false;
       if (!q) return true;
       const hay = [m.id, m.name, m.email, m.phone].filter(Boolean).join(' ').toLowerCase();
@@ -151,7 +168,7 @@ export default function AdminModeratorsScreen() {
     refreshTimer.current = setTimeout(() => setIsRefreshing(false), 450);
   };
 
-  const openDetails = (m: any) => {
+  const openDetails = (m: ModeratorItem) => {
     setSelected(m);
     setPermissionsDraft((m?.moderatorPermissions || []) as string[]);
     setDetailsOpen(true);
@@ -202,13 +219,13 @@ export default function AdminModeratorsScreen() {
       );
       return;
     }
-    updatePermissions.mutate({ userId: selected.id, permissions: permissionsDraft } as any);
+    updatePermissions.mutate({ userId: selected.id, permissions: permissionsDraft });
   };
 
   const goToProfile = (userId?: string) => {
     if (!userId) return;
     try {
-      router.push(`/profile/${userId}` as any);
+      router.push(`/profile/${userId}`);
     } catch (e) {
       logger.error('[AdminModerators] profile navigation failed:', e);
     }
@@ -229,7 +246,7 @@ export default function AdminModeratorsScreen() {
       );
       return;
     }
-    createModerator.mutate({ email, name, password, phone: phone || undefined } as any);
+    createModerator.mutate({ email, name, password, phone: phone || undefined });
   };
 
   if (!canAccess) return null;
@@ -333,7 +350,7 @@ export default function AdminModeratorsScreen() {
               </Text>
             </View>
           ) : (
-            filtered.map((m: any) => {
+            filtered.map((m) => {
               const c = roleColor(m.role);
               return (
                 <TouchableOpacity
@@ -476,7 +493,10 @@ export default function AdminModeratorsScreen() {
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={[styles.actionPill, { backgroundColor: '#10B98115' }]}
-                  onPress={() => updateUser.mutate({ userId: selected?.id, verified: !selected?.verified } as any)}
+                  onPress={() => {
+                    if (!selected?.id) return;
+                    updateUser.mutate({ userId: selected.id, verified: !selected.verified });
+                  }}
                 >
                   {selected?.verified ? <BadgeX size={16} color="#10B981" /> : <BadgeCheck size={16} color="#10B981" />}
                   <Text style={[styles.actionPillText, { color: '#10B981' }]}>
@@ -491,7 +511,7 @@ export default function AdminModeratorsScreen() {
                   onPress={() => {
                     if (!selected?.id) return;
                     const nextRole = selected.role === 'ADMIN' ? 'MODERATOR' : 'ADMIN';
-                    updateUser.mutate({ userId: selected.id, role: nextRole } as any);
+                    updateUser.mutate({ userId: selected.id, role: nextRole });
                   }}
                 >
                   <Shield size={16} color="#3B82F6" />

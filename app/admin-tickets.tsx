@@ -25,6 +25,40 @@ import { logger } from '@/utils/logger';
 type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 type StatusFilter = 'all' | TicketStatus;
 
+type TicketResponseItem = {
+  id: string;
+  ticketId?: string;
+  responderId?: string;
+  responderRole?: string;
+  message: string;
+  createdAt?: string;
+  isAdmin?: boolean;
+  isInternal?: boolean;
+};
+
+type TicketItem = {
+  id: string;
+  userId?: string;
+  subject?: string;
+  message?: string;
+  category?: string;
+  priority?: string;
+  status: TicketStatus;
+  createdAt?: string;
+  updatedAt?: string;
+  assignedModeratorId?: string;
+  moderatorNotes?: string;
+  resolution?: string;
+  responses?: TicketResponseItem[];
+  attachments?: unknown[];
+  user?: { id: string; name?: string; email?: string };
+};
+
+type TicketsQueryResult = {
+  tickets: TicketItem[];
+  pagination?: { totalPages?: number; page?: number; limit?: number; totalCount?: number };
+};
+
 export default function AdminTicketsScreen() {
   const router = useRouter();
   const { language } = useLanguageStore();
@@ -35,7 +69,7 @@ export default function AdminTicketsScreen() {
   const canAccess = currentUser?.role === 'admin' || currentUser?.role === 'moderator';
   const canManageTickets =
     currentUser?.role === 'admin' ||
-    (currentUser?.role === 'moderator' && currentUser?.moderatorInfo?.permissions?.includes('manage_tickets' as any));
+    (currentUser?.role === 'moderator' && currentUser?.moderatorInfo?.permissions?.includes('manage_tickets'));
 
   const { categories } = useSupportStore();
   const [filter, setFilter] = useState<StatusFilter>('open');
@@ -44,7 +78,7 @@ export default function AdminTicketsScreen() {
   const limit = 20;
 
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selected, setSelected] = useState<any | null>(null);
+  const [selected, setSelected] = useState<TicketItem | null>(null);
   const [notesDraft, setNotesDraft] = useState('');
   const [replyDraft, setReplyDraft] = useState('');
   const [resolutionDraft, setResolutionDraft] = useState('');
@@ -73,10 +107,14 @@ export default function AdminTicketsScreen() {
   }, [page, limit, filter, search]);
 
   const utils = trpc.useUtils();
-  const ticketsQuery = trpc.support.getTickets.useQuery(ticketsQueryInput as any, {
+  const ticketsQuery = trpc.support.getTickets.useQuery(ticketsQueryInput, {
     enabled: canAccess && canManageTickets,
     refetchInterval: 30000,
   });
+
+  const ticketsData = ticketsQuery.data as unknown as TicketsQueryResult | undefined;
+  const tickets: TicketItem[] = ticketsData?.tickets ?? [];
+  // pagination is currently unused in UI, keep data available via ticketsData if needed
 
   const updateStatusMutation = trpc.support.updateTicketStatus.useMutation({
     onSuccess: async () => {
@@ -85,12 +123,13 @@ export default function AdminTicketsScreen() {
         utils.moderation.getStats.invalidate(),
       ]);
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       logger.error('[AdminTickets] update status failed:', e);
+      const err = e as { message?: unknown };
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        typeof e?.message === 'string' && e.message.trim()
-          ? e.message
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
           : (language === 'az' ? 'Status yenilənmədi.' : 'Не удалось обновить статус.'),
       );
     },
@@ -103,12 +142,13 @@ export default function AdminTicketsScreen() {
         utils.moderation.getStats.invalidate(),
       ]);
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       logger.error('[AdminTickets] add response failed:', e);
+      const err = e as { message?: unknown };
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        typeof e?.message === 'string' && e.message.trim()
-          ? e.message
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
           : (language === 'az' ? 'Cavab göndərilmədi.' : 'Не удалось отправить ответ.'),
       );
     },
@@ -165,7 +205,7 @@ export default function AdminTicketsScreen() {
     return language === 'az' ? c.name : c.nameRu;
   };
 
-  const openDetails = (t: any) => {
+  const openDetails = (t: TicketItem) => {
     setSelected(t);
     setNotesDraft((t?.moderatorNotes || '').toString());
     setResolutionDraft((t?.resolution || '').toString());
@@ -186,7 +226,7 @@ export default function AdminTicketsScreen() {
   const goToUser = (userId?: string) => {
     if (!userId) return;
     try {
-      router.push(`/profile/${userId}` as any);
+      router.push(`/profile/${userId}`);
     } catch {
       // ignore
     }
@@ -207,7 +247,7 @@ export default function AdminTicketsScreen() {
     addResponseMutation.mutate({
       ticketId,
       message: text,
-    } as any);
+    });
     setReplyDraft('');
   };
 
@@ -231,7 +271,7 @@ export default function AdminTicketsScreen() {
       status: next,
       moderatorNotes: notes || undefined,
       resolution: next === 'resolved' || next === 'closed' ? resolution : undefined,
-    } as any);
+    });
 
     // If no explicit reply is written, send a short system-like admin message on closing actions.
     if (next === 'resolved' || next === 'closed') {
@@ -357,7 +397,7 @@ export default function AdminTicketsScreen() {
                     : 'Не удалось загрузить данные. Проверьте доступ или сеть.'}
                 </Text>
               </View>
-            ) : ((ticketsQuery.data as any)?.tickets || []).length === 0 ? (
+            ) : tickets.length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
                 <Text style={{ color: colors.textSecondary }}>
                   {search.trim()
@@ -366,7 +406,7 @@ export default function AdminTicketsScreen() {
                 </Text>
               </View>
             ) : (
-              ((ticketsQuery.data as any)?.tickets || []).map((t: any) => {
+              tickets.map((t: TicketItem) => {
                 const c = statusColor(t.status as TicketStatus);
                 const Icon = t.status === 'open' ? Clock : t.status === 'in_progress' ? AlertCircle : CheckCircle;
                 return (
@@ -481,9 +521,9 @@ export default function AdminTicketsScreen() {
                     {language === 'az' ? 'Hələ cavab yoxdur.' : 'Пока нет ответов.'}
                   </Text>
                 ) : (
-                  (selected.responses as any[])
+                  (selected.responses ?? [])
                     .slice()
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
                     .slice(0, 8)
                     .map((r) => (
                       <View key={r.id} style={[styles.replyCard, { borderColor: colors.border }]}>

@@ -16,17 +16,15 @@ import { useListingStore } from '@/store/listingStore';
 import { useUserStore } from '@/store/userStore';
 import { adPackages } from '@/constants/adPackages';
 import Colors from '@/constants/colors';
+import type { Listing } from '@/types/listing';
 import {
   ArrowLeft,
   Archive,
   RefreshCw,
-  Calendar,
   Eye,
   MapPin,
-  Package,
   Trash2,
 } from 'lucide-react-native';
-import { logger } from '@/utils/logger';
 
 export default function ArchivedListingsScreen() {
   const router = useRouter();
@@ -154,11 +152,11 @@ export default function ArchivedListingsScreen() {
               );
             } catch (error) {
               // Rollback payment
-              const { addToWallet, addToBonus } = useUserStore.getState() as any;
+              const { addToWallet, addBonus } = useUserStore.getState();
 
               // call rollback functions only if they exist to avoid runtime/type errors
-              if (spentFromBonusAmount > 0 && typeof addToBonus === 'function') {
-                addToBonus(spentFromBonusAmount);
+              if (spentFromBonusAmount > 0) {
+                addBonus(spentFromBonusAmount);
               }
 
               if (spentFromWalletAmount > 0 && typeof addToWallet === 'function') {
@@ -219,7 +217,7 @@ export default function ArchivedListingsScreen() {
                 language === 'az' ? 'Uğurlu!' : 'Успешно!',
                 language === 'az' ? 'Elan silindi' : 'Объявление удалено',
               );
-            } catch (error) {
+            } catch {
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
                 language === 'az' ? 'Elan silinə bilmədi' : 'Не удалось удалить объявление',
@@ -233,7 +231,7 @@ export default function ArchivedListingsScreen() {
     );
   };
 
-  const renderListing = ({ item }: { item: any }) => {
+  const renderListing = ({ item }: { item: Listing }) => {
     const isReactivatingThis = isReactivating === item.id;
     const isDeletingThis = isDeleting === item.id;
     const isProcessing = isReactivatingThis || isDeletingThis;

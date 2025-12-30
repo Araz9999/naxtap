@@ -141,7 +141,7 @@ export const useNotificationStore = create<NotificationState>()(
                     Haptics.NotificationFeedbackType.Success,
                   );
               }
-            } catch (error) {
+            } catch {
               // Haptics not available - silent fail (optional feature)
             }
           })();

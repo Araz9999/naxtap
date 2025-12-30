@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { User } from '@/types/user';
+import type { Listing } from '@/types/listing';
 
 import { logger } from '@/utils/logger';
 interface UserState {
@@ -137,7 +138,7 @@ export const useUserStore = create<UserState>()(
           try {
             const listingStoreModule = await import('@/store/listingStore');
             const listingState = listingStoreModule.useListingStore.getState();
-            const listing = listingState.listings.find((l: any) => l?.id === listingId);
+            const listing = listingState.listings.find((l: Listing) => l?.id === listingId);
             if (!listing) return;
 
             const currentCount = typeof listing.favorites === 'number' && isFinite(listing.favorites) ? listing.favorites : 0;
@@ -453,17 +454,20 @@ export const useUserStore = create<UserState>()(
 
         // ✅ 2. Validate allowed keys only
         const allowedKeys = ['hidePhoneNumber', 'allowDirectContact', 'onlyAppMessaging'];
-        const invalidKeys = Object.keys(settings).filter(key => !allowedKeys.includes(key));
+        const nextSettings: Partial<User['privacySettings']> = { ...settings };
+        const invalidKeys = Object.keys(nextSettings).filter(key => !allowedKeys.includes(key));
 
         if (invalidKeys.length > 0) {
           logger.warn('[UserStore] Invalid privacy settings keys:', invalidKeys);
           // Remove invalid keys
-          invalidKeys.forEach(key => delete (settings as any)[key]);
+          invalidKeys.forEach((key) => {
+            delete (nextSettings as Record<string, unknown>)[key];
+          });
         }
 
         // ✅ 3. Validate values are booleans
-        for (const key of Object.keys(settings)) {
-          const value = (settings as any)[key];
+        for (const key of Object.keys(nextSettings)) {
+          const value = (nextSettings as Record<string, unknown>)[key];
           if (typeof value !== 'boolean') {
             logger.error('[UserStore] Privacy setting value must be boolean:', key, value);
             throw new Error(`Tənzimləmə dəyəri yanlışdır: ${key}`);
@@ -471,11 +475,11 @@ export const useUserStore = create<UserState>()(
         }
 
         // ✅ 4. Check conflicting settings
-        if ('onlyAppMessaging' in settings && 'allowDirectContact' in settings) {
-          if (settings.onlyAppMessaging === true && settings.allowDirectContact === true) {
+        if ('onlyAppMessaging' in nextSettings && 'allowDirectContact' in nextSettings) {
+          if (nextSettings.onlyAppMessaging === true && nextSettings.allowDirectContact === true) {
             logger.warn('[UserStore] Conflicting privacy settings: both onlyAppMessaging and allowDirectContact are true');
             // Resolve conflict: onlyAppMessaging takes precedence
-            settings.allowDirectContact = false;
+            nextSettings.allowDirectContact = false;
           }
         }
 
@@ -495,7 +499,7 @@ export const useUserStore = create<UserState>()(
             ...currentUser,
             privacySettings: {
               ...currentUser.privacySettings,
-              ...settings,
+              ...nextSettings,
             },
           },
         });
@@ -791,18 +795,19 @@ export const useUserStore = create<UserState>()(
           logger.debug('Subscribed to user:', userId);
 
           // ✅ Add notification to inform user
-          try {
-            const { useNotificationStore } = require('./notificationStore');
-            const { addNotification } = useNotificationStore.getState();
-            addNotification({
-              type: 'general',
-              title: 'Abunəlik uğurlu',
-              message: 'İstifadəçiyə abunə oldunuz. Onların yeni elanlarından xəbərdar olacaqsınız.',
-              data: { subscribedUserId: userId },
+          void import('./notificationStore')
+            .then(({ useNotificationStore }) => {
+              const { addNotification } = useNotificationStore.getState();
+              addNotification({
+                type: 'general',
+                title: 'Abunəlik uğurlu',
+                message: 'İstifadəçiyə abunə oldunuz. Onların yeni elanlarından xəbərdar olacaqsınız.',
+                data: { subscribedUserId: userId },
+              });
+            })
+            .catch((error) => {
+              logger.debug('Could not send subscription notification:', error);
             });
-          } catch (error) {
-            logger.debug('Could not send subscription notification:', error);
-          }
         } else {
           logger.debug('Already subscribed to user:', userId);
         }

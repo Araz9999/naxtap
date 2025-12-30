@@ -39,19 +39,25 @@ export function sanitizeInput(input: unknown): string {
     .replace(/[<>]/g, '');
 }
 
-export function validateListingData(listing: any): { valid: boolean; errors?: string[] } {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function validateListingData(listing: unknown): { valid: boolean; errors?: string[] } {
   const errors: string[] = [];
+  const obj = isRecord(listing) ? listing : null;
 
-  if (!listing?.title) errors.push('title');
-  if (!listing?.description) errors.push('description');
+  if (!obj?.title) errors.push('title');
+  if (!obj?.description) errors.push('description');
 
-  const price = Number(listing?.price);
+  const price = Number(obj?.price);
   if (!Number.isFinite(price) || price <= 0) errors.push('price');
 
-  if (listing?.categoryId === undefined || listing?.categoryId === null) errors.push('categoryId');
-  if (listing?.subcategoryId === undefined || listing?.subcategoryId === null) errors.push('subcategoryId');
+  if (obj?.categoryId === undefined || obj?.categoryId === null) errors.push('categoryId');
+  if (obj?.subcategoryId === undefined || obj?.subcategoryId === null) errors.push('subcategoryId');
 
-  if (!Array.isArray(listing?.images) || listing.images.length === 0) errors.push('images');
+  const images = obj?.images;
+  if (!Array.isArray(images) || images.length === 0) errors.push('images');
 
   return errors.length ? { valid: false, errors } : { valid: true };
 }
@@ -65,7 +71,8 @@ export function validateEmail(email: string): boolean {
   }
 
   // Stricter email validation with length limits
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  // Note: '/' does not need escaping inside a character class in JS regex literals.
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
   // Length validation
   if (email.length > 254) {
@@ -232,7 +239,7 @@ export function sanitizeString(input: string, maxLength: number = 1000): string 
   return input
     .trim()
     // Remove HTML tags and dangerous characters
-    .replace(/[<>\"'`]/g, '')
+    .replace(/[<>"'`]/g, '')
     // Remove script tags and event handlers
     .replace(/javascript:/gi, '')
     .replace(/on\w+\s*=/gi, '')
@@ -260,7 +267,7 @@ export function sanitizeHTML(input: string): string {
 /**
  * Validate and sanitize JSON input
  */
-export function safeJSONParse<T = any>(
+export function safeJSONParse<T = unknown>(
   jsonString: string,
   fallback: T,
 ): T {

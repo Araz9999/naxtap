@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 import { Message } from '@/types/message';
-import { users } from '@/mocks/users';
-import { listings } from '@/mocks/listings';
 import { useUserStore } from './userStore';
 
 import { logger } from '@/utils/logger';

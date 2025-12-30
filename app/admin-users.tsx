@@ -24,6 +24,24 @@ import { RefreshCw, UserCog, Shield, BadgeCheck, BadgeX, Trash2, ExternalLink, E
 type RoleFilter = 'all' | 'USER' | 'MODERATOR' | 'ADMIN';
 type VerifiedFilter = 'all' | 'verified' | 'unverified';
 
+type AdminUserItem = {
+  id: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: 'USER' | 'MODERATOR' | 'ADMIN' | string;
+  verified?: boolean;
+  balance?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  moderatorPermissions?: string[];
+};
+
+type AdminUsersQueryResult = {
+  users: AdminUserItem[];
+  pagination?: { totalPages?: number; page?: number; limit?: number; totalCount?: number };
+};
+
 export default function AdminUsersScreen() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
@@ -38,12 +56,12 @@ export default function AdminUsersScreen() {
   const [verified, setVerified] = useState<VerifiedFilter>('all');
   const [page, setPage] = useState(1);
   const limit = 20;
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<AdminUserItem[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selected, setSelected] = useState<any | null>(null);
+  const [selected, setSelected] = useState<AdminUserItem | null>(null);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -61,10 +79,11 @@ export default function AdminUsersScreen() {
   }, [page, limit, role, search, verified]);
 
   const utils = trpc.useUtils();
-  const usersQuery = trpc.admin.getUsers.useQuery(input as any, {
+  const usersQuery = trpc.admin.getUsers.useQuery(input, {
     enabled: canAccess,
     refetchInterval: 30000,
   });
+  const usersData = usersQuery.data as unknown as AdminUsersQueryResult | undefined;
 
   const updateUser = trpc.admin.updateUser.useMutation({
     onSuccess: async () => {
@@ -72,11 +91,12 @@ export default function AdminUsersScreen() {
       await utils.admin.getModerators.invalidate();
       await utils.admin.getAnalytics.invalidate();
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       logger.error('[AdminUsers] update user failed:', e);
+      const err = e as { message?: unknown };
       const msg =
-        typeof e?.message === 'string' && e.message.trim()
-          ? e.message
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
           : (language === 'az' ? 'Yenilənmə alınmadı.' : 'Не удалось обновить.');
       Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
     },
@@ -87,18 +107,19 @@ export default function AdminUsersScreen() {
       await utils.admin.getUsers.invalidate();
       await utils.admin.getAnalytics.invalidate();
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       logger.error('[AdminUsers] delete user failed:', e);
+      const err = e as { message?: unknown };
       const msg =
-        typeof e?.message === 'string' && e.message.trim()
-          ? e.message
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
           : (language === 'az' ? 'Silinmə alınmadı.' : 'Не удалось удалить.');
       Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
     },
   });
 
-  const pageData = usersQuery.data?.users || [];
-  const pagination = usersQuery.data?.pagination;
+  const pageData: AdminUserItem[] = usersData?.users ?? [];
+  const pagination = usersData?.pagination;
   const totalPages = pagination?.totalPages || 1;
   const canLoadMore = page < totalPages;
 
@@ -115,7 +136,7 @@ export default function AdminUsersScreen() {
       const base = page === 1 ? [] : prev;
       const merged = [...base, ...pageData];
       const seen = new Set<string>();
-      return merged.filter((u: any) => {
+      return merged.filter((u: AdminUserItem) => {
         if (!u?.id) return false;
         if (seen.has(u.id)) return false;
         seen.add(u.id);
@@ -181,7 +202,7 @@ export default function AdminUsersScreen() {
     );
   };
 
-  const openDetails = (u: any) => {
+  const openDetails = (u: AdminUserItem) => {
     setSelected(u);
     setEditName((u?.name || '').toString());
     setEditEmail((u?.email || '').toString());
@@ -213,7 +234,7 @@ export default function AdminUsersScreen() {
   const goToProfile = (userId?: string) => {
     if (!userId) return;
     try {
-      router.push(`/profile/${userId}` as any);
+      router.push(`/profile/${userId}`);
     } catch (e) {
       logger.error('[AdminUsers] profile navigation failed:', e);
     }
@@ -236,7 +257,7 @@ export default function AdminUsersScreen() {
         email: editEmail.trim() || undefined,
         phone: editPhone.trim() ? editPhone.trim() : null,
         balance: balanceNum,
-      } as any);
+      });
       closeDetails();
     } catch {
       setSaving(false);
@@ -312,7 +333,7 @@ export default function AdminUsersScreen() {
               </Text>
             </View>
           ) : (
-            items.map((u: any) => {
+            items.map((u: AdminUserItem) => {
               const roleColor = u.role === 'ADMIN' ? '#F59E0B' : u.role === 'MODERATOR' ? '#10B981' : colors.textSecondary;
               return (
                 <TouchableOpacity
@@ -486,7 +507,10 @@ export default function AdminUsersScreen() {
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={[styles.actionPill, { backgroundColor: '#10B98115' }]}
-                  onPress={() => updateUser.mutate({ userId: selected?.id, verified: !selected?.verified } as any)}
+                  onPress={() => {
+                    if (!selected?.id) return;
+                    updateUser.mutate({ userId: selected.id, verified: !selected.verified });
+                  }}
                 >
                   <BadgeCheck size={16} color="#10B981" />
                   <Text style={[styles.actionPillText, { color: '#10B981' }]}>
@@ -504,9 +528,9 @@ export default function AdminUsersScreen() {
                       language === 'az' ? 'Rol seçin' : 'Выберите роль',
                       title,
                       [
-                        { text: language === 'az' ? 'İstifadəçi' : 'Пользователь', onPress: () => updateUser.mutate({ userId: selected?.id, role: 'USER' } as any) },
-                        { text: language === 'az' ? 'Moderator' : 'Модератор', onPress: () => updateUser.mutate({ userId: selected?.id, role: 'MODERATOR' } as any) },
-                        { text: language === 'az' ? 'Admin' : 'Админ', onPress: () => updateUser.mutate({ userId: selected?.id, role: 'ADMIN' } as any) },
+                        { text: language === 'az' ? 'İstifadəçi' : 'Пользователь', onPress: () => selected?.id && updateUser.mutate({ userId: selected.id, role: 'USER' }) },
+                        { text: language === 'az' ? 'Moderator' : 'Модератор', onPress: () => selected?.id && updateUser.mutate({ userId: selected.id, role: 'MODERATOR' }) },
+                        { text: language === 'az' ? 'Admin' : 'Админ', onPress: () => selected?.id && updateUser.mutate({ userId: selected.id, role: 'ADMIN' }) },
                         { text: language === 'az' ? 'Ləğv et' : 'Отмена', style: 'cancel' },
                       ],
                     );
@@ -532,7 +556,7 @@ export default function AdminUsersScreen() {
                           text: language === 'az' ? 'Sil' : 'Удалить',
                           style: 'destructive',
                           onPress: () => {
-                            deleteUser.mutate({ userId: selected?.id } as any);
+                            if (selected?.id) deleteUser.mutate({ userId: selected.id });
                             closeDetails();
                           },
                         },

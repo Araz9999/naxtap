@@ -4,6 +4,8 @@
  * Fixes bugs #123-#720 (598 console.log instances)
  */
 
+/* eslint-disable no-console */
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LoggerConfig {
@@ -13,9 +15,13 @@ interface LoggerConfig {
 }
 
 // Determine dev mode in both React Native / web (__DEV__) and Node.js
+const IS_TEST: boolean = process.env.NODE_ENV === 'test';
 const IS_DEV: boolean =
   // @ts-ignore - __DEV__ is provided by React Native / Expo on the client
-  typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
+  !IS_TEST &&
+  (typeof __DEV__ !== 'undefined'
+    ? __DEV__
+    : process.env.NODE_ENV !== 'production');
 
 const LOG_LEVELS: Record<LogLevel, number> = {
   debug: 0,
@@ -29,7 +35,8 @@ class Logger {
 
   constructor(config?: Partial<LoggerConfig>) {
     this.config = {
-      enabled: IS_DEV,
+      // Keep logs minimal in tests (prevents noisy Jest output)
+      enabled: IS_DEV || IS_TEST,
       minLevel: IS_DEV ? 'debug' : 'error',
       prefix: '',
       ...config,
@@ -41,31 +48,31 @@ class Logger {
     return LOG_LEVELS[level] >= LOG_LEVELS[this.config.minLevel];
   }
 
-  private formatMessage(level: LogLevel, message: string, ...args: any[]): string {
+  private formatMessage(level: LogLevel, message: string): string {
     const timestamp = new Date().toISOString();
     const prefix = this.config.prefix ? `[${this.config.prefix}]` : '';
     return `${timestamp} ${prefix}[${level.toUpperCase()}] ${message}`;
   }
 
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
       console.debug(this.formatMessage('debug', message), ...args);
     }
   }
 
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
       console.info(this.formatMessage('info', message), ...args);
     }
   }
 
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: unknown[]): void {
     if (this.shouldLog('warn')) {
       console.warn(this.formatMessage('warn', message), ...args);
     }
   }
 
-  error(message: string, error?: Error | unknown, ...args: any[]): void {
+  error(message: string, error?: unknown, ...args: unknown[]): void {
     if (this.shouldLog('error')) {
       console.error(this.formatMessage('error', message), error || '', ...args);
 
@@ -76,11 +83,11 @@ class Logger {
     }
   }
 
-  auth(message: string, metadata?: any): void {
+  auth(message: string, metadata?: unknown): void {
     this.info(`[Auth] ${message}`, metadata);
   }
 
-  security(message: string, metadata?: any): void {
+  security(message: string, metadata?: unknown): void {
     this.warn(`[Security] ${message}`, metadata);
   }
 
@@ -109,7 +116,7 @@ class Logger {
     }
   }
 
-  table(data: any): void {
+  table(data: unknown): void {
     if (this.config.enabled && IS_DEV) {
       console.table(data);
     }

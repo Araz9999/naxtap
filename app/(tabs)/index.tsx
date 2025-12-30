@@ -17,7 +17,7 @@ import { Store } from 'lucide-react-native';
 import { logger } from '@/utils/logger';
 export default function HomeScreen() {
   const router = useRouter();
-  const { resetFilters, listings } = useListingStore();
+  const { resetFilters } = useListingStore();
   const { stores } = useStoreStore();
   const languageStore = useLanguageStore();
   const language = languageStore?.language || 'az';
@@ -37,7 +37,6 @@ export default function HomeScreen() {
   const naxcivanScaleAnim = useRef(new Animated.Value(0.8)).current;
 
   // Memoize expensive filtering operations
-  const featuredListings = React.useMemo(() => listings.slice(0, 6), [listings]);
   const activeStores = React.useMemo(
     () => stores.filter(store => store.isActive).slice(0, 4),
     [stores],
@@ -179,7 +178,7 @@ export default function HomeScreen() {
       naxcivanFadeAnim.stopAnimation();
       naxcivanScaleAnim.stopAnimation();
     };
-  }, []); // ✅ Empty deps - animation refs are stable, only run once on mount
+  }, [fadeAnim, naxcivanFadeAnim, naxcivanScaleAnim, naxcivanSlideAnim, scaleAnim, slideAnim]); // animation refs are stable
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

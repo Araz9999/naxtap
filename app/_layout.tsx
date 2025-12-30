@@ -18,7 +18,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc, trpcClient } from '@/lib/trpc';
 
 import { logger } from '@/utils/logger';
-import React from 'react';
 export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
@@ -46,7 +45,7 @@ const queryClient = new QueryClient({
 
 export default function RootLayout() {
   // Skip font loading - use system fonts for better performance
-  const [loaded] = useFonts({});
+  useFonts({});
   const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
@@ -85,7 +84,7 @@ function RootLayoutNav() {
     loadRatings().catch((error) => {
       if (__DEV__) logger.error('Failed to load ratings:', error);
     });
-  }, []); // Safe to ignore loadRatings dependency as it's stable
+  }, [loadRatings]);
 
   // Initialize call sounds (delayed for better startup performance)
   useEffect(() => {
@@ -96,7 +95,7 @@ function RootLayoutNav() {
     }, 2000); // Increased delay for better startup
 
     return () => clearTimeout(timer);
-  }, []); // Safe to ignore initializeSounds dependency as it's stable
+  }, [initializeSounds]);
 
   // Initialize services (only once)
   useEffect(() => {

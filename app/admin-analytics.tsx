@@ -8,6 +8,35 @@ import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { RefreshCw, Users, Shield, BadgeCheck, Wallet, Flag, HelpCircle } from 'lucide-react-native';
 
+type RoleBreakdownItem = { role: string; count: number };
+type AdminAnalyticsData = {
+  users?: {
+    total?: number;
+    verified?: number;
+    unverified?: number;
+    withSocial?: number;
+    last24h?: number;
+    last7d?: number;
+    last30d?: number;
+  };
+  roles?: {
+    admins?: number;
+    moderators?: number;
+    regular?: number;
+    byRole?: RoleBreakdownItem[];
+  };
+  balance?: { total?: number };
+};
+
+type ModerationStatsData = {
+  pendingReports?: number;
+  inReviewReports?: number;
+  resolvedReports?: number;
+  openTickets?: number;
+  inProgressTickets?: number;
+  resolvedTickets?: number;
+};
+
 export default function AdminAnalyticsScreen() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
@@ -27,8 +56,8 @@ export default function AdminAnalyticsScreen() {
     refetchInterval: 60000,
   });
 
-  const data: any = analyticsQuery.data;
-  const mod: any = moderationStatsQuery.data;
+  const data = analyticsQuery.data as unknown as AdminAnalyticsData | undefined;
+  const mod = moderationStatsQuery.data as unknown as ModerationStatsData | undefined;
 
   const onRefresh = () => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -49,7 +78,17 @@ export default function AdminAnalyticsScreen() {
 
   if (!canAccess) return null;
 
-  const Card = ({ icon: Icon, title, value, color }: any) => (
+  const Card = ({
+    icon: Icon,
+    title,
+    value,
+    color,
+  }: {
+    icon: React.ComponentType<{ size?: number; color?: string }>;
+    title: string;
+    value: string | number;
+    color: string;
+  }) => (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.iconWrap, { backgroundColor: `${color}15` }]}>
         <Icon size={22} color={color} />
@@ -126,7 +165,7 @@ export default function AdminAnalyticsScreen() {
               <Text style={[styles.breakdownTitle, { color: colors.text }]}>
                 {language === 'az' ? 'Rol bölgüsü' : 'Распределение ролей'}
               </Text>
-              {(roles.byRole as any[]).map((r) => (
+              {(roles.byRole as RoleBreakdownItem[]).map((r) => (
                 <View key={r.role} style={styles.breakdownRow}>
                   <Text style={[styles.breakdownKey, { color: colors.textSecondary }]}>{r.role}</Text>
                   <Text style={[styles.breakdownVal, { color: colors.text }]}>{r.count}</Text>
