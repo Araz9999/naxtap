@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useCallStore } from '@/store/callStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
@@ -20,7 +19,6 @@ import { listings } from '@/mocks/listings';
 import Colors from '@/constants/colors';
 import { logger } from '@/utils/logger'; // ✅ Import logger
 import {
-  Phone,
   PhoneOff,
   Mic,
   MicOff,
@@ -28,10 +26,259 @@ import {
   VolumeX,
   Video,
   VideoOff,
-  RotateCcw,
+  Circle,
+  Square,
 } from 'lucide-react-native';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+import {
+  AudioSession,
+  LiveKitRoom,
+  VideoTrack,
+  isTrackReference,
+  registerGlobals,
+  useConnectionState,
+  useRoomContext,
+  useTracks,
+  type TrackReferenceOrPlaceholder,
+} from '@livekit/react-native';
+import { ConnectionState, Track } from 'livekit-client';
+import { trpc } from '@/lib/trpc';
+
+if (Platform.OS !== 'web') {
+  // Must be called before using LiveKit (safe to call multiple times).
+  registerGlobals();
+}
+
+function formatDuration(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function CallRoomView({
+  callId,
+  roomName,
+  type,
+  isMuted,
+  isSpeakerOn,
+  isVideoEnabled,
+  onToggleMute,
+  onToggleSpeaker,
+  onToggleVideo,
+  otherUserAvatar,
+  otherUserName,
+  listingTitle,
+}: {
+  callId: string;
+  roomName: string;
+  type: 'voice' | 'video';
+  isMuted: boolean;
+  isSpeakerOn: boolean;
+  isVideoEnabled: boolean;
+  onToggleMute: () => void;
+  onToggleSpeaker: () => void;
+  onToggleVideo: () => void;
+  otherUserAvatar?: string;
+  otherUserName?: string;
+  listingTitle?: string;
+}) {
+  const { language } = useLanguageStore();
+  const room = useRoomContext();
+  const connectionState = useConnectionState();
+  const isConnected = connectionState === ConnectionState.Connected;
+
+  const [callDuration, setCallDuration] = useState<number>(0);
+
+  const startRecordingMutation = trpc.call.startRecording.useMutation();
+  const stopRecordingMutation = trpc.call.stopRecording.useMutation();
+  const [egressId, setEgressId] = useState<string | null>(null);
+  const isRecording = !!egressId && startRecordingMutation.status === 'success';
+
+  useEffect(() => {
+    if (!isConnected) return;
+    setCallDuration(0);
+    const interval = setInterval(() => setCallDuration((prev) => prev + 1), 1000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
+  // Sync UI toggles -> LiveKit media state
+  useEffect(() => {
+    if (!room) return;
+    room.localParticipant.setMicrophoneEnabled(!isMuted).catch(() => undefined);
+  }, [room, isMuted]);
+
+  useEffect(() => {
+    if (!room) return;
+    if (type !== 'video') return;
+    room.localParticipant.setCameraEnabled(!!isVideoEnabled).catch(() => undefined);
+  }, [room, type, isVideoEnabled]);
+
+  // Start/stop audio session for best call behavior
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    AudioSession.startAudioSession().catch(() => undefined);
+    return () => {
+      AudioSession.stopAudioSession().catch(() => undefined);
+    };
+  }, []);
+
+  const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
+  const { remoteCamera, localCamera } = useMemo(() => {
+    let local: TrackReferenceOrPlaceholder | undefined;
+    let remote: TrackReferenceOrPlaceholder | undefined;
+    for (const t of tracks) {
+      if (!isTrackReference(t)) continue;
+      if (t.participant.isLocal && !local) local = t;
+      if (!t.participant.isLocal && !remote) remote = t;
+    }
+    return { localCamera: local, remoteCamera: remote };
+  }, [tracks]);
+
+  const toggleServerRecording = async () => {
+    if (!roomName) return;
+    if (!isConnected) {
+      Alert.alert(
+        language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
+        language === 'az' ? 'Əvvəlcə zəngə qoşulun' : 'Сначала подключитесь к звонку',
+      );
+      return;
+    }
+
+    try {
+      if (!egressId) {
+        const res = await startRecordingMutation.mutateAsync({ roomName, callId });
+        setEgressId(res.egressId);
+      } else {
+        await stopRecordingMutation.mutateAsync({ egressId });
+        setEgressId(null);
+      }
+    } catch (e) {
+      logger.error('[Call] Recording toggle failed:', e);
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        language === 'az'
+          ? 'Zəng yazısı başlatmaq/dayandırmaq mümkün olmadı (server recording konfiqurasiya olunmayıb ola bilər)'
+          : 'Не удалось запустить/остановить запись (возможно, не настроена серверная запись)',
+      );
+    }
+  };
+
+  return (
+    <View style={styles.content}>
+      <View style={styles.header}>
+        <Text style={styles.statusText}>
+          {isConnected ? formatDuration(callDuration) : (language === 'az' ? 'Qoşulur...' : 'Соединение...')}
+        </Text>
+        <Text style={styles.listingTitle}>{listingTitle || ''}</Text>
+      </View>
+
+      {type === 'video' ? (
+        <View style={styles.videoContainer}>
+          <View style={styles.remoteVideo}>
+            {isTrackReference(remoteCamera) ? (
+              <VideoTrack trackRef={remoteCamera} style={styles.remoteVideoTrack} />
+            ) : (
+              <View style={styles.remoteVideoFallback}>
+                <Image source={{ uri: otherUserAvatar }} style={styles.remoteVideoPlaceholder} />
+                <Text style={styles.remoteVideoText}>{otherUserName}</Text>
+              </View>
+            )}
+          </View>
+
+          {isVideoEnabled && isTrackReference(localCamera) && (
+            <View style={styles.localVideo}>
+              <VideoTrack
+                trackRef={localCamera}
+                mirror
+                style={styles.localVideoTrack}
+              />
+            </View>
+          )}
+
+          {!isVideoEnabled && (
+            <View style={styles.localVideoOff}>
+              <VideoOff size={24} color="#fff" />
+            </View>
+          )}
+        </View>
+      ) : (
+        <View style={styles.userInfo}>
+          <Image source={{ uri: otherUserAvatar }} style={styles.userAvatar} />
+          <Text style={styles.userName}>{otherUserName}</Text>
+          <Text style={styles.callType}>
+            {language === 'az' ? 'Səsli zəng' : 'Голосовой звонок'}
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.controls}>
+        <TouchableOpacity
+          style={[styles.controlButton, isMuted && styles.activeControl]}
+          onPress={onToggleMute}
+          testID="mute-button"
+        >
+          {isMuted ? <MicOff size={24} color="#fff" /> : <Mic size={24} color="#fff" />}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.controlButton, isSpeakerOn && styles.activeControl]}
+          onPress={onToggleSpeaker}
+          testID="speaker-button"
+        >
+          {isSpeakerOn ? <Volume2 size={24} color="#fff" /> : <VolumeX size={24} color="#fff" />}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.controlButton, isRecording && styles.recordingControl]}
+          onPress={toggleServerRecording}
+          testID="record-button"
+        >
+          {isRecording ? <Square size={22} color="#fff" /> : <Circle size={22} color="#fff" />}
+        </TouchableOpacity>
+
+        {type === 'video' && (
+          <TouchableOpacity
+            style={[styles.controlButton, !isVideoEnabled && styles.activeControl]}
+            onPress={onToggleVideo}
+            testID="video-button"
+          >
+            {isVideoEnabled ? <Video size={24} color="#fff" /> : <VideoOff size={24} color="#fff" />}
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.endCallContainer}>
+        <TouchableOpacity
+          style={styles.endCallButton}
+          onPress={() => {
+            // ensure recording stops if user hangs up
+            if (egressId) {
+              stopRecordingMutation.mutate({ egressId });
+              setEgressId(null);
+            }
+            room?.disconnect();
+            router.back();
+          }}
+          testID="end-call-button"
+        >
+          <PhoneOff size={28} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      {isRecording && (
+        <Text style={styles.recordingText}>
+          {language === 'az' ? 'Server yazısı aktivdir' : 'Серверная запись активна'}
+        </Text>
+      )}
+
+      <Text style={styles.privacyNote}>
+        {language === 'az'
+          ? 'Bu zəng LiveKit vasitəsilə real vaxtda həyata keçirilir'
+          : 'Этот звонок выполняется в реальном времени через LiveKit'}
+      </Text>
+    </View>
+  );
+}
 
 export default function CallScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,46 +287,17 @@ export default function CallScreen() {
   const { activeCall, endCall, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
-  const [permission, requestPermission] = useCameraPermissions();
 
-  const [callDuration, setCallDuration] = useState<number>(0);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [cameraFacing, setCameraFacing] = useState<CameraType>('front');
+  const tokenMutation = trpc.call.getToken.useMutation();
+  const [lkToken, setLkToken] = useState<string | undefined>(undefined);
+  const [lkServerUrl, setLkServerUrl] = useState<string | undefined>(undefined);
+  const [lkRoomName, setLkRoomName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!activeCall || activeCall.id !== callId) {
       router.back();
-      return;
     }
-
-    // Simulate connection after 3 seconds
-    const connectionTimer = setTimeout(() => {
-      setIsConnected(true);
-    }, 3000);
-
-    return () => clearTimeout(connectionTimer);
   }, [activeCall, callId]);
-
-  useEffect(() => {
-    if (!isConnected) return;
-
-    const interval = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isConnected]);
-
-  // ✅ Cleanup camera and resources when component unmounts
-  useEffect(() => {
-    return () => {
-      // Cleanup camera when leaving call screen
-      if (activeCall?.isVideoEnabled) {
-        // Camera will be automatically released when CameraView unmounts
-        logger.info('Call screen unmounting, camera will be released');
-      }
-    };
-  }, [activeCall?.isVideoEnabled]); // ✅ Add dependency
 
   // ✅ Navigate back if other user can't be resolved (avoid conditional hooks)
   useEffect(() => {
@@ -90,7 +308,38 @@ export default function CallScreen() {
     if (!otherUser) {
       router.back();
     }
-  }, [activeCall, callId, currentUser?.id, router]);
+  }, [activeCall, callId, currentUser?.id]);
+
+  // Fetch LiveKit token once per call (requires backend env LIVEKIT_*)
+  useEffect(() => {
+    if (!callId || !activeCall || !currentUser?.id) return;
+    if (lkToken && lkServerUrl && lkRoomName) return;
+
+    tokenMutation.mutate(
+      {
+        callId,
+        userId: currentUser.id,
+        name: currentUser.name,
+        type: activeCall.type,
+      },
+      {
+        onSuccess: (res) => {
+          setLkServerUrl(res.serverUrl);
+          setLkToken(res.token);
+          setLkRoomName(res.roomName);
+        },
+        onError: (err) => {
+          logger.error('[Call] Failed to get LiveKit token:', err);
+          Alert.alert(
+            language === 'az' ? 'Xəta' : 'Ошибка',
+            language === 'az'
+              ? 'Zəng serverinə qoşulmaq mümkün olmadı. LIVEKIT_URL/API_KEY/API_SECRET konfiqurasiyasını yoxlayın.'
+              : 'Не удалось подключиться к серверу звонков. Проверьте LIVEKIT_URL/API_KEY/API_SECRET.',
+          );
+        },
+      },
+    );
+  }, [callId, activeCall, currentUser?.id, currentUser?.name, lkToken, lkServerUrl, lkRoomName, tokenMutation, language]);
 
   if (!activeCall || !callId) {
     return null;
@@ -115,119 +364,6 @@ export default function CallScreen() {
     );
   }
 
-  const handleEndCall = () => {
-    endCall(callId);
-    router.back();
-  };
-
-  // ✅ Handle camera permission request with error handling
-  const handleRequestPermission = async () => {
-    try {
-      const result = await requestPermission();
-      if (!result.granted) {
-        Alert.alert(
-          language === 'az' ? 'İcazə verilmədi' : 'Разрешение отклонено',
-          language === 'az'
-            ? 'Video zəng üçün kamera icazəsi tələb olunur'
-            : 'Для видеозвонка требуется разрешение камеры',
-        );
-      }
-    } catch (error) {
-      logger.error('Failed to request camera permission:', error);
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İcazə tələbi zamanı xəta' : 'Ошибка при запросе разрешения',
-      );
-    }
-  };
-
-  const toggleCameraFacing = () => {
-    setCameraFacing(current => (current === 'back' ? 'front' : 'back'));
-  };
-
-  const renderVideoCall = () => {
-    if (Platform.OS === 'web') {
-      return (
-        <View style={styles.videoContainer}>
-          <View style={styles.remoteVideo}>
-            <Image
-              source={{ uri: otherUser?.avatar }}
-              style={styles.remoteVideoPlaceholder}
-            />
-            <Text style={styles.remoteVideoText}>
-              {otherUser?.name}
-            </Text>
-            <Text style={[styles.permissionText, { marginTop: 12 }]}>
-              {language === 'az' ? 'Video zəng web versiyasında məhdud dəstəklənir' : 'Видеозвонок ограниченно поддерживается в веб-версии'}
-            </Text>
-          </View>
-        </View>
-      );
-    }
-
-    if (!permission) {
-      return (
-        <View style={styles.videoContainer}>
-          <Text style={styles.permissionText}>
-            {language === 'az' ? 'Kamera icazəsi yoxlanılır...' : 'Проверка разрешения камеры...'}
-          </Text>
-        </View>
-      );
-    }
-
-    if (!permission.granted) {
-      return (
-        <View style={styles.videoContainer}>
-          <Text style={styles.permissionText}>
-            {language === 'az' ? 'Video zəng üçün kamera icazəsi lazımdır' : 'Для видеозвонка требуется разрешение камеры'}
-          </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={handleRequestPermission}>
-            <Text style={styles.permissionButtonText}>
-              {language === 'az' ? 'İcazə ver' : 'Разрешить'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.videoContainer}>
-        {/* Remote user video (simulated) */}
-        <View style={styles.remoteVideo}>
-          <Image
-            source={{ uri: otherUser?.avatar }}
-            style={styles.remoteVideoPlaceholder}
-          />
-          <Text style={styles.remoteVideoText}>
-            {otherUser?.name}
-          </Text>
-        </View>
-
-        {/* Local user video */}
-        {activeCall.isVideoEnabled && permission.granted && (
-          <View style={styles.localVideo}>
-            <CameraView
-              style={styles.localCamera}
-              facing={cameraFacing}
-            />
-          </View>
-        )}
-
-        {!activeCall.isVideoEnabled && (
-          <View style={styles.localVideoOff}>
-            <VideoOff size={24} color="#fff" />
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
@@ -235,103 +371,35 @@ export default function CallScreen() {
 
       <View style={styles.backgroundOverlay} />
 
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.statusText}>
-            {isConnected
-              ? formatDuration(callDuration)
-              : (language === 'az' ? 'Qoşulur...' : 'Соединение...')
-            }
-          </Text>
-          <Text style={styles.listingTitle}>
-            {listing?.title ? (typeof listing.title === 'string' ? listing.title : listing.title[language]) : ''}
-          </Text>
-        </View>
-
-        {activeCall.type === 'video' ? (
-          renderVideoCall()
-        ) : (
-          <View style={styles.userInfo}>
-            <Image
-              source={{ uri: otherUser?.avatar }}
-              style={styles.userAvatar}
-            />
-            <Text style={styles.userName}>{otherUser?.name}</Text>
-            <Text style={styles.callType}>
-              {language === 'az' ? 'Səsli zəng' : 'Голосовой звонок'}
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={[styles.controlButton, activeCall.isMuted && styles.activeControl]}
-            onPress={toggleMute}
-            testID="mute-button"
-          >
-            {activeCall.isMuted ? (
-              <MicOff size={24} color="#fff" />
-            ) : (
-              <Mic size={24} color="#fff" />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.controlButton, activeCall.isSpeakerOn && styles.activeControl]}
-            onPress={toggleSpeaker}
-            testID="speaker-button"
-          >
-            {activeCall.isSpeakerOn ? (
-              <Volume2 size={24} color="#fff" />
-            ) : (
-              <VolumeX size={24} color="#fff" />
-            )}
-          </TouchableOpacity>
-
-          {activeCall.type === 'video' && (
-            <>
-              <TouchableOpacity
-                style={[styles.controlButton, !activeCall.isVideoEnabled && styles.activeControl]}
-                onPress={toggleVideo}
-                testID="video-button"
-              >
-                {activeCall.isVideoEnabled ? (
-                  <Video size={24} color="#fff" />
-                ) : (
-                  <VideoOff size={24} color="#fff" />
-                )}
-              </TouchableOpacity>
-
-              {activeCall.isVideoEnabled && (
-                <TouchableOpacity
-                  style={styles.controlButton}
-                  onPress={toggleCameraFacing}
-                  testID="flip-camera-button"
-                >
-                  <RotateCcw size={24} color="#fff" />
-                </TouchableOpacity>
-              )}
-            </>
-          )}
-        </View>
-
-        <View style={styles.endCallContainer}>
-          <TouchableOpacity
-            style={styles.endCallButton}
-            onPress={handleEndCall}
-            testID="end-call-button"
-          >
-            <PhoneOff size={28} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.privacyNote}>
-          {language === 'az'
-            ? 'Bu zəng tətbiq üzərindən həyata keçirilir'
-            : 'Этот звонок осуществляется через приложение'
-          }
-        </Text>
-      </View>
+      <LiveKitRoom
+        serverUrl={lkServerUrl}
+        token={lkToken}
+        connect={true}
+        audio={true}
+        video={activeCall.type === 'video'}
+        options={{
+          adaptiveStream: { pixelDensity: 'screen' },
+        }}
+        onDisconnected={() => {
+          // Persist call end in store when LiveKit disconnects
+          endCall(callId);
+        }}
+      >
+        <CallRoomView
+          callId={callId}
+          roomName={lkRoomName || `call_${callId}`}
+          type={activeCall.type}
+          isMuted={activeCall.isMuted}
+          isSpeakerOn={activeCall.isSpeakerOn}
+          isVideoEnabled={activeCall.type === 'video' ? activeCall.isVideoEnabled : false}
+          onToggleMute={toggleMute}
+          onToggleSpeaker={toggleSpeaker}
+          onToggleVideo={toggleVideo}
+          otherUserAvatar={otherUser.avatar}
+          otherUserName={otherUser.name}
+          listingTitle={listing?.title ? (typeof listing.title === 'string' ? listing.title : listing.title[language]) : ''}
+        />
+      </LiveKitRoom>
     </View>
   );
 }
@@ -412,6 +480,10 @@ const styles = StyleSheet.create({
   activeControl: {
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
+  recordingControl: {
+    backgroundColor: 'rgba(244,67,54,0.35)',
+    borderColor: 'rgba(244,67,54,0.6)',
+  },
   endCallContainer: {
     alignItems: 'center',
     marginBottom: 20,
@@ -434,6 +506,13 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
   },
+  recordingText: {
+    fontSize: 14,
+    color: '#fff',
+    opacity: 0.9,
+    marginBottom: 6,
+    marginTop: -8,
+  },
   videoContainer: {
     flex: 1,
     width: '100%',
@@ -449,6 +528,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  remoteVideoTrack: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  remoteVideoFallback: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   remoteVideoPlaceholder: {
     width: 120,
@@ -472,8 +560,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  localCamera: {
-    flex: 1,
+  localVideoTrack: {
+    width: '100%',
+    height: '100%',
   },
   localVideoOff: {
     position: 'absolute',
@@ -494,16 +583,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     paddingHorizontal: 20,
-  },
-  permissionButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  permissionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

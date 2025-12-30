@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import { Call, ActiveCall, CallStatus, CallType } from '@/types/call';
+import { Call, ActiveCall, CallRecording, CallStatus, CallType } from '@/types/call';
 import { users } from '@/mocks/users';
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { Audio } from 'expo-av';
+import { trpcClient } from '@/lib/trpc';
 
 interface CallStore {
   calls: Call[];
@@ -21,6 +22,7 @@ interface CallStore {
   answerCall: (callId: string) => void;
   declineCall: (callId: string) => void;
   endCall: (callId: string) => void;
+  setCallRecording: (callId: string, recording: Partial<CallRecording>) => void;
 
   // Active call controls
   toggleMute: () => void;
@@ -43,6 +45,7 @@ interface CallStore {
 
   // Notifications
   simulateIncomingCall: () => void;
+  pollIncomingCalls: (currentUserId: string) => Promise<void>;
 }
 
 // Mock initial calls
@@ -84,6 +87,42 @@ const initialCalls: Call[] = [
   },
 ];
 
+async function getInCallManager(): Promise<any | null> {
+  if (Platform.OS === 'web') return null;
+  try {
+    const mod: any = await import('react-native-incall-manager');
+    return mod?.default ?? mod ?? null;
+  } catch (error) {
+    logger.debug?.('[CallStore] InCallManager not available', error);
+    return null;
+  }
+}
+
+function webBeep(frequency = 440, durationMs = 250, gain = 0.2) {
+  try {
+    const w = globalThis as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+    const Ctx = w.AudioContext || w.webkitAudioContext;
+    if (!Ctx) return;
+    const audioContext = new Ctx();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = frequency;
+    oscillator.type = 'sine';
+
+    gainNode.gain.setValueAtTime(gain, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + durationMs / 1000);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + durationMs / 1000);
+  } catch {
+    // ignore
+  }
+}
+
 export const useCallStore = create<CallStore>((set, get) => ({
   calls: initialCalls,
   activeCall: null,
@@ -98,8 +137,20 @@ export const useCallStore = create<CallStore>((set, get) => ({
   initiateCall: async (currentUserId: string, receiverId: string, listingId: string, type: CallType) => {
     logger.info('CallStore - initiating call to:', receiverId);
 
-    // ✅ Generate unique ID with random component
-    const callId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    // Create a server-side call invite so the receiver can join the same LiveKit room.
+    let callId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    try {
+      const res = await trpcClient.call.create.mutate({
+        callerId: currentUserId,
+        receiverId,
+        listingId,
+        type,
+      });
+      if (res?.callId) callId = res.callId;
+    } catch (e) {
+      logger.warn('[CallStore] Failed to create server call invite, using local callId fallback', e);
+    }
+
     const newCall: Call = {
       id: callId,
       callerId: 'user1', // Current user
@@ -139,6 +190,17 @@ export const useCallStore = create<CallStore>((set, get) => ({
       const currentState = get();
       if (currentState.activeCall?.id === callId) {
         get().stopAllSounds();
+        (async () => {
+          const InCallManager = await getInCallManager();
+          if (InCallManager?.start) {
+            try {
+              // Route audio properly and keep audio session active during call
+              InCallManager.start({ media: 'audio' });
+            } catch (e) {
+              logger.debug?.('[CallStore] InCallManager.start failed', e);
+            }
+          }
+        })();
         set((state) => ({
           calls: state.calls.map(call =>
             call.id === callId
@@ -181,6 +243,21 @@ export const useCallStore = create<CallStore>((set, get) => ({
     // Stop ringtone
     get().stopAllSounds();
 
+    // Inform server that call invite was accepted (clears pending invite)
+    trpcClient.call.answer.mutate({ callId }).catch(() => undefined);
+
+    // Ensure native call audio session is active (ringtone stops, call audio starts)
+    (async () => {
+      const InCallManager = await getInCallManager();
+      if (InCallManager?.start) {
+        try {
+          InCallManager.start({ media: 'audio' });
+        } catch (e) {
+          logger.debug?.('[CallStore] InCallManager.start failed', e);
+        }
+      }
+    })();
+
     // Update call status
     set((state) => ({
       calls: state.calls.map(c =>
@@ -222,6 +299,21 @@ export const useCallStore = create<CallStore>((set, get) => ({
     // Stop ringtone
     get().stopAllSounds();
 
+    // Inform server that call invite was declined (clears pending invite)
+    trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
+
+    // Stop native call audio session if it was started
+    (async () => {
+      const InCallManager = await getInCallManager();
+      if (InCallManager?.stop) {
+        try {
+          InCallManager.stop();
+        } catch (e) {
+          logger.debug?.('[CallStore] InCallManager.stop failed', e);
+        }
+      }
+    })();
+
     set((state) => ({
       calls: state.calls.map(call =>
         call.id === callId
@@ -240,6 +332,18 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
     // Stop all sounds
     get().stopAllSounds();
+
+    // Stop native call audio session
+    (async () => {
+      const InCallManager = await getInCallManager();
+      if (InCallManager?.stop) {
+        try {
+          InCallManager.stop();
+        } catch (e) {
+          logger.debug?.('[CallStore] InCallManager.stop failed', e);
+        }
+      }
+    })();
 
     const endTime = new Date().toISOString();
     const startTime = new Date(activeCall.startTime).getTime();
@@ -268,20 +372,59 @@ export const useCallStore = create<CallStore>((set, get) => ({
     }));
   },
 
+  setCallRecording: (callId: string, recording: Partial<CallRecording>) => {
+    if (!callId) return;
+    set((state) => ({
+      calls: state.calls.map((call) =>
+        call.id === callId
+          ? {
+            ...call,
+            recording: {
+              ...(call.recording || {}),
+              ...recording,
+            },
+          }
+          : call,
+      ),
+    }));
+  },
+
   toggleMute: () => {
+    const nextMuted = !get().activeCall?.isMuted;
     set((state) => ({
       activeCall: state.activeCall
         ? { ...state.activeCall, isMuted: !state.activeCall.isMuted }
         : null,
     }));
+    (async () => {
+      const InCallManager = await getInCallManager();
+      if (InCallManager?.setMicrophoneMute) {
+        try {
+          InCallManager.setMicrophoneMute(!!nextMuted);
+        } catch (e) {
+          logger.debug?.('[CallStore] setMicrophoneMute failed', e);
+        }
+      }
+    })();
   },
 
   toggleSpeaker: () => {
+    const nextSpeakerOn = !get().activeCall?.isSpeakerOn;
     set((state) => ({
       activeCall: state.activeCall
         ? { ...state.activeCall, isSpeakerOn: !state.activeCall.isSpeakerOn }
         : null,
     }));
+    (async () => {
+      const InCallManager = await getInCallManager();
+      if (InCallManager?.setSpeakerphoneOn) {
+        try {
+          InCallManager.setSpeakerphoneOn(!!nextSpeakerOn);
+        } catch (e) {
+          logger.debug?.('[CallStore] setSpeakerphoneOn failed', e);
+        }
+      }
+    })();
   },
 
   toggleVideo: () => {
@@ -344,34 +487,26 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   playRingtone: async () => {
-    if (Platform.OS === 'web') {
-      logger.info('Ringtone playback skipped for web platform');
-      return;
-    }
-
     try {
-      logger.info('Playing ringtone with haptic feedback...');
-      const Haptics = await import('expo-haptics');
+      logger.info('Playing ringtone...');
 
-      if (Haptics && Haptics.notificationAsync) {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        logger.info('Initial ringtone haptic feedback played');
-
-        // Create a repeating pattern for incoming call
-        const ringtoneInterval = setInterval(async () => {
-          try {
-            if (Haptics && Haptics.impactAsync) {
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            }
-          } catch (error) {
-            logger.warn('Haptic feedback interval error:', error);
-          }
-        }, 1000);
-
-        // Store interval for cleanup
+      if (Platform.OS === 'web') {
+        // Web fallback (best-effort). Autoplay might be blocked if not user-initiated.
+        webBeep(880, 180, 0.15);
+        const ringtoneInterval = setInterval(() => webBeep(880, 180, 0.15), 1000);
         set({ ringtoneInterval: ringtoneInterval as unknown as NodeJS.Timeout });
-      } else {
-        logger.warn('Haptics not available, using console notification');
+        return;
+      }
+
+      const InCallManager = await getInCallManager();
+      if (InCallManager?.startRingtone) {
+        InCallManager.startRingtone();
+      }
+
+      // Keep haptics as secondary feedback
+      const Haptics = await import('expo-haptics');
+      if (Haptics?.notificationAsync) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error) {
       logger.error('Failed to play ringtone, using fallback:', error);
@@ -379,34 +514,25 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   playDialTone: async () => {
-    if (Platform.OS === 'web') {
-      logger.info('Dial tone playback skipped for web platform');
-      return;
-    }
-
     try {
-      logger.info('Playing dial tone with haptic feedback...');
-      const Haptics = await import('expo-haptics');
+      logger.info('Playing dial tone (ringback)...');
 
-      if (Haptics && Haptics.impactAsync) {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        logger.info('Initial dial tone haptic feedback played');
-
-        // Create a repeating pattern for outgoing call
-        const dialToneInterval = setInterval(async () => {
-          try {
-            if (Haptics && Haptics.impactAsync) {
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-          } catch (error) {
-            logger.warn('Haptic feedback interval error:', error);
-          }
-        }, 2000);
-
-        // Store interval for cleanup
+      if (Platform.OS === 'web') {
+        webBeep(440, 220, 0.12);
+        const dialToneInterval = setInterval(() => webBeep(440, 220, 0.12), 2000);
         set({ dialToneInterval: dialToneInterval as unknown as NodeJS.Timeout });
-      } else {
-        logger.warn('Haptics not available, using console notification');
+        return;
+      }
+
+      const InCallManager = await getInCallManager();
+      if (InCallManager?.startRingback) {
+        InCallManager.startRingback();
+      }
+
+      // Secondary haptic feedback
+      const Haptics = await import('expo-haptics');
+      if (Haptics?.impactAsync) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (error) {
       logger.error('Failed to play dial tone, using fallback:', error);
@@ -414,15 +540,28 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   stopAllSounds: async () => {
-    if (Platform.OS === 'web') {
-      logger.info('[CallStore] Sound stopping skipped for web platform');
-      return;
-    }
-
     const state = get();
 
     try {
       logger.info('[CallStore] Stopping all sounds and haptic patterns...');
+
+      if (Platform.OS !== 'web') {
+        const InCallManager = await getInCallManager();
+        if (InCallManager?.stopRingtone) {
+          try {
+            InCallManager.stopRingtone();
+          } catch (e) {
+            logger.debug?.('[CallStore] stopRingtone failed', e);
+          }
+        }
+        if (InCallManager?.stopRingback) {
+          try {
+            InCallManager.stopRingback();
+          } catch (e) {
+            logger.debug?.('[CallStore] stopRingback failed', e);
+          }
+        }
+      }
 
       // Clear haptic intervals
       if (state.ringtoneInterval) {
@@ -577,5 +716,39 @@ export const useCallStore = create<CallStore>((set, get) => ({
     set((state) => ({
       incomingCallTimeouts: new Map(state.incomingCallTimeouts).set(callId, timeout as unknown as NodeJS.Timeout),
     }));
+  },
+
+  pollIncomingCalls: async (currentUserId: string) => {
+    if (!currentUserId || typeof currentUserId !== 'string') return;
+    try {
+      const res = await trpcClient.call.getIncoming.query({ userId: currentUserId });
+      const next = res?.calls?.[0];
+      if (!next) return;
+
+      // If we already show this call, do nothing
+      const state = get();
+      if (state.incomingCall?.id === next.callId) return;
+
+      const incomingCall: Call = {
+        id: next.callId,
+        callerId: next.callerId,
+        receiverId: next.receiverId,
+        listingId: next.listingId,
+        type: next.type,
+        status: 'incoming',
+        startTime: next.createdAt,
+        isRead: false,
+      };
+
+      set((s) => ({
+        calls: [incomingCall, ...s.calls],
+        incomingCall,
+      }));
+
+      // Play ringtone for incoming call
+      get().playRingtone().catch(() => undefined);
+    } catch (e) {
+      logger.debug?.('[CallStore] pollIncomingCalls failed', e);
+    }
   },
 }));

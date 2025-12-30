@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useThemeStore } from '@/store/themeStore';
 import { useRatingStore } from '@/store/ratingStore';
 import { useCallStore } from '@/store/callStore';
+import { useUserStore } from '@/store/userStore';
 import { initListingStoreInterval, cleanupListingStoreInterval } from '@/store/listingStore';
 import { initStoreStoreInterval, cleanupStoreStoreInterval } from '@/store/storeStore';
 import { getColors } from '@/constants/colors';
@@ -74,7 +75,8 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { themeMode, colorTheme } = useThemeStore();
   const { loadRatings } = useRatingStore();
-  const { initializeSounds } = useCallStore();
+  const { initializeSounds, pollIncomingCalls } = useCallStore();
+  const { currentUser } = useUserStore();
 
   // Memoize colors to prevent recalculation
   const colors = useMemo(() => getColors(themeMode, colorTheme), [themeMode, colorTheme]);
@@ -96,6 +98,15 @@ function RootLayoutNav() {
 
     return () => clearTimeout(timer);
   }, [initializeSounds]);
+
+  // Poll backend for incoming calls (simple in-memory invite flow)
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const interval = setInterval(() => {
+      pollIncomingCalls(currentUser.id).catch(() => undefined);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id, pollIncomingCalls]);
 
   // Initialize services (only once)
   useEffect(() => {

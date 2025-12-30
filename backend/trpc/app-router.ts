@@ -61,6 +61,13 @@ import { getMyTicketsProcedure } from './routes/support/getMyTickets/route';
 import { getTicketsProcedure } from './routes/support/getTickets/route';
 import { addTicketResponseProcedure } from './routes/support/addTicketResponse/route';
 import { updateTicketStatusProcedure } from './routes/support/updateTicketStatus/route';
+import { getCallTokenProcedure } from './routes/call/getToken/route';
+import { startCallRecordingProcedure } from './routes/call/startRecording/route';
+import { stopCallRecordingProcedure } from './routes/call/stopRecording/route';
+import { createCallProcedure } from './routes/call/create/route';
+import { getIncomingCallsProcedure } from './routes/call/getIncoming/route';
+import { answerCallProcedure } from './routes/call/answer/route';
+import { declineCallProcedure } from './routes/call/decline/route';
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -142,6 +149,15 @@ export const appRouter = createTRPCRouter({
   }),
   user: createTRPCRouter({
     updateMe: updateMeProcedure,
+  }),
+  call: createTRPCRouter({
+    create: createCallProcedure,
+    getIncoming: getIncomingCallsProcedure,
+    answer: answerCallProcedure,
+    decline: declineCallProcedure,
+    getToken: getCallTokenProcedure,
+    startRecording: startCallRecordingProcedure,
+    stopRecording: stopCallRecordingProcedure,
   }),
 });
 
