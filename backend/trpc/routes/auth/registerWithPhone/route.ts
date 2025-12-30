@@ -4,14 +4,12 @@ import { prisma } from '../../../../db/client';
 import { generateTokenPair } from '../../../../utils/jwt';
 import { logger } from '../../../../utils/logger';
 import { validatePhone } from '../../../../utils/validation';
+import { checkThrottle } from '../../../../utils/throttle';
+import { generatePhoneOTP, phoneOtpStore } from '../phoneOtpStore';
 
-// Simple OTP storage (in production, use Redis or database)
-const otpStore = new Map<string, { code: string; expiresAt: number; phone: string }>();
-
-// Generate 6-digit OTP
-function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
+const OTP_COOLDOWN_MS = 60 * 1000; // 60s between sends
+const OTP_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+const OTP_MAX_IN_WINDOW = 5; // max 5 sends/hour per phone
 
 import { smsService } from '../../../../services/sms';
 
@@ -39,13 +37,27 @@ export const registerWithPhoneProcedure = publicProcedure
       if (existingUser) {
         throw new Error('Bu telefon nömrəsi artıq qeydiyyatdan keçib');
       }
+
+      const throttle = checkThrottle(`otp:phone:verification:${phone}`, {
+        cooldownMs: OTP_COOLDOWN_MS,
+        windowMs: OTP_WINDOW_MS,
+        maxInWindow: OTP_MAX_IN_WINDOW,
+      });
+      if (throttle.allowed === false) {
+        const seconds = throttle.retryAfterSeconds;
+        throw new Error(
+          throttle.reason === 'cooldown'
+            ? `Zəhmət olmasa yenidən göndərmək üçün ${seconds} saniyə gözləyin.`
+            : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`
+        );
+      }
       
       // Generate OTP
-      const otp = generateOTP();
+      const otp = generatePhoneOTP();
       const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
       
       // Store OTP
-      otpStore.set(phone, { code: otp, expiresAt, phone });
+      phoneOtpStore.set(phone, { code: otp, expiresAt, phone });
       
       // Send SMS
       await smsService.sendOTP(phone, otp, 'verification');
@@ -56,6 +68,7 @@ export const registerWithPhoneProcedure = publicProcedure
         success: true,
         message: 'OTP göndərildi',
         phone,
+        retryAfterSeconds: throttle.retryAfterSeconds,
       };
     } catch (error) {
       logger.error('[Phone Registration] Error:', error);

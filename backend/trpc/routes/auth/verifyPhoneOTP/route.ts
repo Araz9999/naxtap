@@ -5,9 +5,7 @@ import { createUser } from '../../../../db/userPrisma';
 import { generateTokenPair } from '../../../../utils/jwt';
 import { logger } from '../../../../utils/logger';
 import { validatePhone } from '../../../../utils/validation';
-
-// OTP store (same as in registerWithPhone)
-const otpStore = new Map<string, { code: string; expiresAt: number; phone: string }>();
+import { phoneOtpStore } from '../phoneOtpStore';
 
 export const verifyPhoneOTPProcedure = publicProcedure
   .input(
@@ -28,7 +26,7 @@ export const verifyPhoneOTPProcedure = publicProcedure
       }
       
       // Check OTP
-      const storedOTP = otpStore.get(phone);
+      const storedOTP = phoneOtpStore.get(phone);
       
       if (!storedOTP) {
         throw new Error('OTP tapılmadı. Zəhmət olmasa yenidən göndərin');
@@ -39,7 +37,7 @@ export const verifyPhoneOTPProcedure = publicProcedure
       }
       
       if (Date.now() > storedOTP.expiresAt) {
-        otpStore.delete(phone);
+        phoneOtpStore.delete(phone);
         throw new Error('OTP müddəti bitib. Zəhmət olmasa yenidən göndərin');
       }
       
@@ -59,7 +57,7 @@ export const verifyPhoneOTPProcedure = publicProcedure
       }
       
       // Clean up OTP
-      otpStore.delete(phone);
+      phoneOtpStore.delete(phone);
       
       // Generate tokens
       const tokens = await generateTokenPair({

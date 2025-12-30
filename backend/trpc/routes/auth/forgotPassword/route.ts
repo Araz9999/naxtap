@@ -5,6 +5,11 @@ import { emailService } from '../../../../services/email';
 import { smsService } from '../../../../services/sms';
 import { logger } from '../../../../utils/logger';
 import { otpStore, generateOTP } from '../verifyPasswordOTP/route';
+import { checkThrottle } from '../../../../utils/throttle';
+
+const OTP_COOLDOWN_MS = 60 * 1000; // 60s between sends
+const OTP_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+const OTP_MAX_IN_WINDOW = 5; // max 5 sends/hour per contact
 
 export const forgotPasswordProcedure = publicProcedure
   .input(
@@ -41,7 +46,26 @@ export const forgotPasswordProcedure = publicProcedure
         return {
           success: true,
           message: 'Əgər bu email qeydiyyatdan keçibsə, OTP kodu göndəriləcək',
+          retryAfterSeconds: Math.ceil(OTP_COOLDOWN_MS / 1000),
         };
+      }
+
+      const throttleKey =
+        contactType === 'email'
+          ? `otp:password_reset:email:${contactInfo}`
+          : `otp:password_reset:phone:${contactInfo}`;
+      const throttle = checkThrottle(throttleKey, {
+        cooldownMs: OTP_COOLDOWN_MS,
+        windowMs: OTP_WINDOW_MS,
+        maxInWindow: OTP_MAX_IN_WINDOW,
+      });
+      if (throttle.allowed === false) {
+        const seconds = throttle.retryAfterSeconds;
+        throw new Error(
+          throttle.reason === 'cooldown'
+            ? `Zəhmət olmasa yenidən göndərmək üçün ${seconds} saniyə gözləyin.`
+            : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`
+        );
       }
 
       // Generate OTP
@@ -83,6 +107,7 @@ export const forgotPasswordProcedure = publicProcedure
         message: contactType === 'email'
           ? 'OTP kodu e-poçt ünvanınıza göndərildi'
           : 'OTP kodu telefon nömrənizə göndərildi',
+        retryAfterSeconds: throttle.retryAfterSeconds,
       };
     } catch (error) {
       logger.error('[Auth] Forgot password error:', error);

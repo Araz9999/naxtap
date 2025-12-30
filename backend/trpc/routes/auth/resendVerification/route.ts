@@ -3,6 +3,11 @@ import { findUserById, setVerificationToken } from '../../../../db/userPrisma';
 import { emailService } from '../../../../services/email';
 
 import { logger } from '../../../../utils/logger';
+import { checkThrottle } from '../../../../utils/throttle';
+
+const VERIFICATION_COOLDOWN_MS = 60 * 1000; // 60s between sends
+const VERIFICATION_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+const VERIFICATION_MAX_IN_WINDOW = 5; // max 5 sends/hour per user
 export const resendVerificationProcedure = protectedProcedure
   .mutation(async ({ ctx }) => {
     logger.debug('[Auth] Resend verification attempt:', ctx.user.userId);
@@ -17,6 +22,20 @@ export const resendVerificationProcedure = protectedProcedure
         success: false,
         message: 'Email artıq təsdiqlənib',
       };
+    }
+
+    const throttle = checkThrottle(`email_verification:${user.id}`, {
+      cooldownMs: VERIFICATION_COOLDOWN_MS,
+      windowMs: VERIFICATION_WINDOW_MS,
+      maxInWindow: VERIFICATION_MAX_IN_WINDOW,
+    });
+    if (throttle.allowed === false) {
+      const seconds = throttle.retryAfterSeconds;
+      throw new Error(
+        throttle.reason === 'cooldown'
+          ? `Zəhmət olmasa yenidən göndərmək üçün ${seconds} saniyə gözləyin.`
+          : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`
+      );
     }
 
     const verificationToken = generateRandomToken();
@@ -39,6 +58,7 @@ export const resendVerificationProcedure = protectedProcedure
     return {
       success: true,
       message: 'Təsdiq emaili yenidən göndərildi',
+      retryAfterSeconds: throttle.retryAfterSeconds,
     };
   });
 
