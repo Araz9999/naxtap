@@ -10,6 +10,11 @@ export interface SupportTicket {
   createdAt: Date;
   updatedAt: Date;
   responses: SupportResponse[];
+
+  // Admin/moderator workflow metadata (optional)
+  assignedModeratorId?: string;
+  moderatorNotes?: string;
+  resolution?: string;
 }
 
 export interface SupportResponse {

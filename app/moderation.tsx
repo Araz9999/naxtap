@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { logger } from '@/utils/logger';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
@@ -6,8 +6,11 @@ import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
 import { useModerationStore } from '@/store/moderationStore';
+import { useModerationSettingsStore } from '@/store/moderationSettingsStore';
 import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
+import { useNotificationStore } from '@/store/notificationStore';
+import { notificationService } from '@/services/notificationService';
 import { 
   Shield, 
   Users, 
@@ -32,31 +35,34 @@ export default function ModerationScreen() {
     moderators, 
     stats,
     getReportsByStatus,
-    getTicketsByStatus
   } = useModerationStore();
+  const { settings } = useModerationSettingsStore();
+  const { addNotification } = useNotificationStore();
 
   const colors = getColors(themeMode, colorTheme);
 
   // Check if user has moderation permissions (must be defined before useQuery hooks)
   const canAccessModeration = currentUser?.role === 'admin' || currentUser?.role === 'moderator';
 
+  const refetchMs = settings.autoRefresh ? settings.autoRefreshIntervalSec * 1000 : false;
+
   // ✅ Fetch data from backend using tRPC
   const { data: backendStats, isLoading: statsLoading, error: statsError } = trpc.moderation.getStats.useQuery(undefined, {
     enabled: canAccessModeration,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: refetchMs,
     retry: false, // Don't retry on auth errors
   });
 
   const { data: allReports, isLoading: reportsLoading, error: reportsError } = trpc.moderation.getReports.useQuery(undefined, {
     enabled: canAccessModeration,
-    refetchInterval: 30000,
+    refetchInterval: refetchMs,
     retry: false, // Don't retry on auth errors
   });
 
   // ✅ Fetch moderators from backend (admin only)
   const { data: backendModerators, isLoading: moderatorsLoading } = trpc.admin.getModerators.useQuery(undefined, {
     enabled: canAccessModeration && currentUser?.role === 'admin',
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: settings.autoRefresh ? 60000 : false, // Keep 1min when enabled
     retry: false,
   });
 
@@ -118,8 +124,61 @@ export default function ModerationScreen() {
   // ✅ Get reports by status from backend data
   const pendingReports = actualReports?.filter((r: any) => r.status === 'pending') || [];
   const resolvedReports = actualReports?.filter((r: any) => r.status === 'resolved') || [];
-  const openTickets = getTicketsByStatus('open'); // Still using local store for tickets
-  const inProgressTickets = getTicketsByStatus('in_progress');
+  // ✅ Support tickets counts come from backend stats (multi-device)
+  const openTicketsCount = actualStats?.openTickets || 0;
+  const inProgressTicketsCount = actualStats?.inProgressTickets || 0;
+  const pendingReportsCount = actualStats?.pendingReports ?? pendingReports.length ?? 0;
+  const resolvedReportsCount = actualStats?.resolvedReports ?? resolvedReports.length ?? 0;
+
+  // Notify when new pending reports appear (avoid spamming on first load)
+  const prevPendingRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!settings.notifyOnNewReport) return;
+    if (!canAccessModeration) return;
+    if (statsLoading || reportsLoading) return;
+
+    const current = pendingReportsCount;
+    const prev = prevPendingRef.current;
+    prevPendingRef.current = current;
+
+    if (prev === null) return; // first load
+    if (current <= prev) return;
+
+    const diff = current - prev;
+    const title = language === 'az' ? 'Yeni şikayət' : 'Новая жалоба';
+    const message =
+      language === 'az'
+        ? `${diff} yeni şikayət gözləyir`
+        : `Ожидает новых жалоб: ${diff}`;
+
+    try {
+      addNotification({
+        type: 'general',
+        title,
+        message,
+        data: { type: 'moderation_report' },
+        actionUrl: '/admin-reports',
+      });
+    } catch (e) {
+      // ignore
+    }
+
+    // Best-effort local notification
+    notificationService.sendLocalNotification({
+      title,
+      body: message,
+      data: { actionUrl: '/admin-reports' },
+      sound: true,
+    });
+  }, [
+    settings.notifyOnNewReport,
+    canAccessModeration,
+    pendingReportsCount,
+    statsLoading,
+    reportsLoading,
+    language,
+    addNotification,
+  ]);
 
   const StatCard = ({ 
     title, 
@@ -248,14 +307,14 @@ export default function ModerationScreen() {
           <View style={styles.statsGrid}>
             <StatCard
               title={language === 'az' ? 'Gözləyən şikayətlər' : 'Ожидающие жалобы'}
-              value={pendingReports?.length || 0}
+              value={pendingReportsCount}
               icon={Clock}
               color="#F59E0B"
               onPress={() => go('/admin-reports')}
             />
             <StatCard
               title={language === 'az' ? 'Açıq biletlər' : 'Открытые тикеты'}
-              value={(openTickets?.length || 0) + (inProgressTickets?.length || 0)}
+              value={openTicketsCount + inProgressTicketsCount}
               icon={HelpCircle}
               color="#3B82F6"
               onPress={() => go('/admin-tickets')}
@@ -280,7 +339,7 @@ export default function ModerationScreen() {
             />
             <StatCard
               title={language === 'az' ? 'Həll edilmiş' : 'Решенные'}
-              value={resolvedReports?.length || actualStats?.resolvedReports || 0}
+              value={resolvedReportsCount}
               icon={CheckCircle}
               color="#059669"
             />
@@ -299,12 +358,12 @@ export default function ModerationScreen() {
             <MenuCard
               title={language === 'az' ? 'Şikayətləri idarə et' : 'Управление жалобами'}
               subtitle={language === 'az' 
-                ? `${pendingReports?.length || 0} gözləyən şikayət` 
-                : `${pendingReports?.length || 0} ожидающих жалоб`
+                ? `${pendingReportsCount} gözləyən şikayət` 
+                : `${pendingReportsCount} ожидающих жалоб`
               }
               icon={Flag}
               onPress={() => go('/admin-reports')}
-              badge={pendingReports?.length || 0}
+              badge={pendingReportsCount}
               color="#EF4444"
             />
           )}
@@ -314,12 +373,12 @@ export default function ModerationScreen() {
             <MenuCard
               title={language === 'az' ? 'Dəstək biletləri' : 'Тикеты поддержки'}
               subtitle={language === 'az' 
-                ? `${(openTickets?.length || 0) + (inProgressTickets?.length || 0)} aktiv bilet` 
-                : `${(openTickets?.length || 0) + (inProgressTickets?.length || 0)} активных тикетов`
+                ? `${openTicketsCount + inProgressTicketsCount} aktiv bilet` 
+                : `${openTicketsCount + inProgressTicketsCount} активных тикетов`
               }
               icon={HelpCircle}
               onPress={() => go('/admin-tickets')}
-              badge={(openTickets?.length || 0) + (inProgressTickets?.length || 0)}
+              badge={openTicketsCount + inProgressTicketsCount}
               color="#3B82F6"
             />
           )}

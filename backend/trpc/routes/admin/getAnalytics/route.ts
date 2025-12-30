@@ -45,7 +45,7 @@ export const getAnalyticsProcedure = adminProcedure.query(async () => {
       }),
       prisma.user.groupBy({
         by: ['role'],
-        _count: true,
+        _count: { _all: true },
       }),
     ]);
     
@@ -74,7 +74,7 @@ export const getAnalyticsProcedure = adminProcedure.query(async () => {
         regular: totalUsers - totalModerators - totalAdmins,
         byRole: usersByRole.map((r) => ({
           role: r.role,
-          count: r._count,
+          count: r._count._all,
         })),
       },
       balance: {

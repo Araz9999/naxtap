@@ -22,12 +22,45 @@ model User {
   passwordHash        String?
   balance             Int                 @default(0)
   role                Role                @default(USER)
+  moderatorPermissions String[]           @default([])
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
   socialAccounts      SocialAccount[]
   verificationTokens  VerificationToken[]
   passwordResetTokens PasswordResetToken[]
+  supportTickets      SupportTicket[]
+  supportResponses    SupportResponse[]
+}
+
+model SupportTicket {
+  id                 String           @id @default(cuid())
+  user               User             @relation(fields: [userId], references: [id])
+  userId             String
+  subject            String
+  message            String
+  category           String
+  priority           String           @default("medium")
+  status             String           @default("open")
+  attachments        String[]         @default([])
+  assignedModeratorId String?
+  moderatorNotes     String?
+  resolution         String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  responses          SupportResponse[]
+}
+
+model SupportResponse {
+  id        String       @id @default(cuid())
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId  String
+  user      User         @relation(fields: [userId], references: [id])
+  userId    String
+  message   String
+  isAdmin   Boolean      @default(false)
+  attachments String[]   @default([])
+  createdAt DateTime     @default(now())
 }
 
 model SocialAccount {

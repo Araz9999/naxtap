@@ -17,6 +17,7 @@ import { useUserStore } from '@/store/userStore';
 import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
 import { prompt } from '@/utils/confirm';
+import { trpc } from '@/lib/trpc';
 import { 
   MessageSquare, 
   Send, 
@@ -47,8 +48,24 @@ export default function SupportScreen() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
   const { currentUser } = useUserStore();
-  const { categories, createTicket, getTicketsByUser, liveChats, operators, getAvailableOperators, startLiveChat } = useSupportStore();
+  const { categories, liveChats, operators, getAvailableOperators } = useSupportStore();
   const colors = getColors(themeMode, colorTheme);
+
+  const utils = trpc.useUtils();
+  const myTicketsQuery = trpc.support.getMyTickets.useQuery(undefined, {
+    enabled: !!currentUser,
+    refetchInterval: 30000,
+  });
+  const createTicketMutation = trpc.support.createTicket.useMutation({
+    onSuccess: async () => {
+      await myTicketsQuery.refetch();
+    },
+  });
+  const addTicketResponseMutation = trpc.support.addTicketResponse.useMutation({
+    onSuccess: async () => {
+      await myTicketsQuery.refetch();
+    },
+  });
 
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [subject, setSubject] = useState<string>('');
@@ -62,10 +79,9 @@ export default function SupportScreen() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   React.useEffect(() => {
-    logger.info('[Support] Support screen opened', { 
+    logger.info('[Support] Support screen opened', {
       userId: currentUser?.id,
-      userTicketsCount: userTickets.length,
-      userChatsCount: userChats.length 
+      userChatsCount: userChats.length,
     });
     
     Animated.timing(fadeAnim, {
@@ -75,7 +91,7 @@ export default function SupportScreen() {
     }).start();
   }, [fadeAnim]);
 
-  const userTickets = currentUser ? getTicketsByUser(currentUser.id) : [];
+  const userTickets = (myTicketsQuery.data as any[]) || [];
   const userChats = currentUser ? liveChats.filter(chat => chat.userId === currentUser.id) : [];
   const availableOperators = getAvailableOperators();
 
@@ -175,15 +191,13 @@ export default function SupportScreen() {
       // Convert FileAttachment to string array for storage
       const attachmentUris = attachments.map(att => att.uri);
 
-      createTicket({
-        userId: currentUser.id,
+      await createTicketMutation.mutateAsync({
         subject: subject.trim(),
         message: message.trim(),
         category: selectedCategory,
         priority,
-        status: 'open',
-        attachments: attachmentUris
-      });
+        attachments: attachmentUris,
+      } as any);
 
       logger.info('[Support] Ticket created successfully', {
         userId: currentUser.id,
@@ -289,13 +303,10 @@ export default function SupportScreen() {
                         userId: currentUser.id,
                         responseLength: text.trim().length
                       });
-                      const { addResponse } = useSupportStore.getState();
-                      addResponse(ticket.id, {
+                      await addTicketResponseMutation.mutateAsync({
                         ticketId: ticket.id,
-                        userId: currentUser.id,
                         message: text.trim(),
-                        isAdmin: false
-                      });
+                      } as any);
                       logger.info('[Support] Response added successfully:', { ticketId: ticket.id });
                       Alert.alert(
                         language === 'az' ? 'Uğurlu' : 'Успешно',

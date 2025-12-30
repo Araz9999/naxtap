@@ -125,6 +125,18 @@ export default function LoginScreen() {
             isOnline: true,
           },
         };
+
+        // ✅ Attach moderator permissions from DB (if any)
+        if (user.role === 'moderator') {
+          const perms = (result.user as any).moderatorPermissions || [];
+          user.moderatorInfo = {
+            assignedDate: new Date().toISOString(),
+            permissions: perms,
+            handledReports: 0,
+            averageResponseTime: 0,
+            isActive: true,
+          };
+        }
         
         // ✅ Save tokens
         await AsyncStorage.setItem('auth_tokens', JSON.stringify(result.tokens));

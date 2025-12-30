@@ -1,28 +1,54 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { Stack } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  RefreshControl,
+  Platform,
+} from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
 import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
-import { RefreshCw, UserCog, Shield, BadgeCheck, BadgeX, Trash2 } from 'lucide-react-native';
+import { RefreshCw, UserCog, Shield, BadgeCheck, BadgeX, Trash2, ExternalLink, Edit3 } from 'lucide-react-native';
 
 type RoleFilter = 'all' | 'USER' | 'MODERATOR' | 'ADMIN';
+type VerifiedFilter = 'all' | 'verified' | 'unverified';
 
 export default function AdminUsersScreen() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
   const { currentUser } = useUserStore();
   const colors = getColors(themeMode, colorTheme);
+  const router = useRouter();
 
   const canAccess = currentUser?.role === 'admin';
 
   const [search, setSearch] = useState('');
   const [role, setRole] = useState<RoleFilter>('all');
-  const [page] = useState(1);
+  const [verified, setVerified] = useState<VerifiedFilter>('all');
+  const [page, setPage] = useState(1);
   const limit = 20;
+  const [items, setItems] = useState<any[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editBalance, setEditBalance] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const input = useMemo(() => {
     return {
@@ -30,8 +56,9 @@ export default function AdminUsersScreen() {
       limit,
       role: role === 'all' ? undefined : role,
       search: search.trim() ? search.trim() : undefined,
+      verified: verified === 'all' ? undefined : verified === 'verified',
     };
-  }, [page, limit, role, search]);
+  }, [page, limit, role, search, verified]);
 
   const utils = trpc.useUtils();
   const usersQuery = trpc.admin.getUsers.useQuery(input as any, {
@@ -47,7 +74,11 @@ export default function AdminUsersScreen() {
     },
     onError: (e: any) => {
       logger.error('[AdminUsers] update user failed:', e);
-      Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', language === 'az' ? 'Yenilənmə alınmadı.' : 'Не удалось обновить.');
+      const msg =
+        typeof e?.message === 'string' && e.message.trim()
+          ? e.message
+          : (language === 'az' ? 'Yenilənmə alınmadı.' : 'Не удалось обновить.');
+      Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
     },
   });
 
@@ -58,13 +89,49 @@ export default function AdminUsersScreen() {
     },
     onError: (e: any) => {
       logger.error('[AdminUsers] delete user failed:', e);
-      Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', language === 'az' ? 'Silinmə alınmadı.' : 'Не удалось удалить.');
+      const msg =
+        typeof e?.message === 'string' && e.message.trim()
+          ? e.message
+          : (language === 'az' ? 'Silinmə alınmadı.' : 'Не удалось удалить.');
+      Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
     },
   });
 
   if (!canAccess) return null;
 
-  const users = usersQuery.data?.users || [];
+  const pageData = usersQuery.data?.users || [];
+  const pagination = usersQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+  const canLoadMore = page < totalPages;
+
+  useEffect(() => {
+    // Reset list when filters change
+    setPage(1);
+    setItems([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, verified, search]);
+
+  useEffect(() => {
+    if (!usersQuery.data) return;
+    setItems((prev) => {
+      const base = page === 1 ? [] : prev;
+      const merged = [...base, ...pageData];
+      const seen = new Set<string>();
+      return merged.filter((u: any) => {
+        if (!u?.id) return false;
+        if (seen.has(u.id)) return false;
+        seen.add(u.id);
+        return true;
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usersQuery.data]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    };
+  }, []);
 
   const roleTitle = (r: string) => {
     if (language === 'az') {
@@ -75,6 +142,13 @@ export default function AdminUsersScreen() {
     if (r === 'ADMIN') return 'Админ';
     if (r === 'MODERATOR') return 'Модератор';
     return 'Пользователь';
+  };
+
+  const formatDateTime = (iso?: string) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '-';
+    return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   const RoleChip = ({ value, title }: { value: RoleFilter; title: string }) => {
@@ -90,6 +164,83 @@ export default function AdminUsersScreen() {
         <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '700', fontSize: 12 }}>{title}</Text>
       </TouchableOpacity>
     );
+  };
+
+  const VerifiedChip = ({ value, title }: { value: VerifiedFilter; title: string }) => {
+    const active = verified === value;
+    return (
+      <TouchableOpacity
+        onPress={() => setVerified(value)}
+        style={[
+          styles.chip,
+          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+        ]}
+      >
+        <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '700', fontSize: 12 }}>{title}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const openDetails = (u: any) => {
+    setSelected(u);
+    setEditName((u?.name || '').toString());
+    setEditEmail((u?.email || '').toString());
+    setEditPhone((u?.phone || '').toString());
+    setEditBalance(typeof u?.balance === 'number' ? String(u.balance) : '0');
+    setSaving(false);
+    setDetailsOpen(true);
+  };
+
+  const closeDetails = () => {
+    setDetailsOpen(false);
+    setSelected(null);
+    setEditName('');
+    setEditEmail('');
+    setEditPhone('');
+    setEditBalance('');
+    setSaving(false);
+  };
+
+  const onRefresh = () => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    setIsRefreshing(true);
+    setPage(1);
+    setItems([]);
+    usersQuery.refetch();
+    refreshTimer.current = setTimeout(() => setIsRefreshing(false), 450);
+  };
+
+  const goToProfile = (userId?: string) => {
+    if (!userId) return;
+    try {
+      router.push(`/profile/${userId}` as any);
+    } catch (e) {
+      logger.error('[AdminUsers] profile navigation failed:', e);
+    }
+  };
+
+  const saveEdits = async () => {
+    if (!selected?.id) return;
+    if (saving) return;
+    setSaving(true);
+    try {
+      const balanceNum = Number(editBalance);
+      if (!Number.isFinite(balanceNum)) {
+        Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', language === 'az' ? 'Balans düzgün deyil.' : 'Неверный баланс.');
+        setSaving(false);
+        return;
+      }
+      await updateUser.mutateAsync({
+        userId: selected.id,
+        name: editName.trim() || undefined,
+        email: editEmail.trim() || undefined,
+        phone: editPhone.trim() ? editPhone.trim() : null,
+        balance: balanceNum,
+      } as any);
+      closeDetails();
+    } catch {
+      setSaving(false);
+    }
   };
 
   return (
@@ -112,11 +263,13 @@ export default function AdminUsersScreen() {
             placeholderTextColor={colors.textSecondary}
             style={[styles.search, { color: colors.text }]}
             autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
           />
         </View>
         <TouchableOpacity
           style={[styles.refreshBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => usersQuery.refetch()}
+          onPress={onRefresh}
         >
           <RefreshCw size={18} color={colors.text} />
         </TouchableOpacity>
@@ -127,6 +280,10 @@ export default function AdminUsersScreen() {
         <RoleChip value="USER" title={language === 'az' ? 'İstifadəçi' : 'Пользователь'} />
         <RoleChip value="MODERATOR" title={language === 'az' ? 'Moderator' : 'Модератор'} />
         <RoleChip value="ADMIN" title={language === 'az' ? 'Admin' : 'Админ'} />
+        <View style={{ width: 8 }} />
+        <VerifiedChip value="all" title={language === 'az' ? 'Təsdiq: hamısı' : 'Вериф: все'} />
+        <VerifiedChip value="verified" title={language === 'az' ? 'Təsdiqli' : 'Вериф.'} />
+        <VerifiedChip value="unverified" title={language === 'az' ? 'Təsdiqsiz' : 'Без вериф.'} />
       </ScrollView>
 
       {usersQuery.isLoading ? (
@@ -143,15 +300,19 @@ export default function AdminUsersScreen() {
           </Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-          {users.length === 0 ? (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        >
+          {items.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
               <Text style={{ color: colors.textSecondary }}>
                 {language === 'az' ? 'İstifadəçi tapılmadı.' : 'Пользователи не найдены.'}
               </Text>
             </View>
           ) : (
-            users.map((u: any) => {
+            items.map((u: any) => {
               const roleColor = u.role === 'ADMIN' ? '#F59E0B' : u.role === 'MODERATOR' ? '#10B981' : colors.textSecondary;
               return (
                 <TouchableOpacity
@@ -159,52 +320,7 @@ export default function AdminUsersScreen() {
                   style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
                   activeOpacity={0.85}
                   onPress={() => {
-                    const title = u.name || u.email || (language === 'az' ? 'İstifadəçi' : 'Пользователь');
-                    Alert.alert(
-                      title,
-                      `${language === 'az' ? 'Email' : 'Email'}: ${u.email || '-'}\n` +
-                        `${language === 'az' ? 'Telefon' : 'Тел'}: ${u.phone || '-'}\n` +
-                        `${language === 'az' ? 'Rol' : 'Роль'}: ${roleTitle(u.role)}\n` +
-                        `${language === 'az' ? 'Təsdiq' : 'Вериф.'}: ${u.verified ? '✓' : '✗'}`,
-                      [
-                        {
-                          text: u.verified ? (language === 'az' ? 'Təsdiqi ləğv et' : 'Снять вериф.') : (language === 'az' ? 'Təsdiqlə' : 'Вериф.'),
-                          onPress: () => updateUser.mutate({ userId: u.id, verified: !u.verified } as any),
-                        },
-                        {
-                          text: language === 'az' ? 'Rolu dəyiş' : 'Сменить роль',
-                          onPress: () => {
-                            Alert.alert(
-                              language === 'az' ? 'Rol seçin' : 'Выберите роль',
-                              title,
-                              [
-                                { text: language === 'az' ? 'İstifadəçi' : 'Пользователь', onPress: () => updateUser.mutate({ userId: u.id, role: 'USER' } as any) },
-                                { text: language === 'az' ? 'Moderator' : 'Модератор', onPress: () => updateUser.mutate({ userId: u.id, role: 'MODERATOR' } as any) },
-                                { text: language === 'az' ? 'Admin' : 'Админ', onPress: () => updateUser.mutate({ userId: u.id, role: 'ADMIN' } as any) },
-                                { text: language === 'az' ? 'Ləğv et' : 'Отмена', style: 'cancel' },
-                              ]
-                            );
-                          },
-                        },
-                        {
-                          text: language === 'az' ? 'Sil' : 'Удалить',
-                          style: 'destructive',
-                          onPress: () => {
-                            Alert.alert(
-                              language === 'az' ? 'Silmək?' : 'Удалить?',
-                              language === 'az'
-                                ? 'Bu istifadəçini silmək istədiyinizə əminsiniz?'
-                                : 'Вы уверены, что хотите удалить этого пользователя?',
-                              [
-                                { text: language === 'az' ? 'Ləğv' : 'Отмена', style: 'cancel' },
-                                { text: language === 'az' ? 'Sil' : 'Удалить', style: 'destructive', onPress: () => deleteUser.mutate({ userId: u.id } as any) },
-                              ]
-                            );
-                          },
-                        },
-                        { text: language === 'az' ? 'Bağla' : 'Закрыть', style: 'cancel' },
-                      ]
-                    );
+                    openDetails(u);
                   }}
                 >
                   <View style={styles.cardTop}>
@@ -214,6 +330,9 @@ export default function AdminUsersScreen() {
                       </Text>
                       <Text style={[styles.meta, { color: colors.textSecondary }]} numberOfLines={1}>
                         {u.email || u.phone || '-'}
+                      </Text>
+                      <Text style={[styles.meta2, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {(language === 'az' ? 'Yaradılıb: ' : 'Создан: ') + formatDateTime(u.createdAt)}
                       </Text>
                     </View>
                     <View style={styles.right}>
@@ -233,9 +352,9 @@ export default function AdminUsersScreen() {
                       </Text>
                     </View>
                     <View style={styles.smallRow}>
-                      <Trash2 size={14} color={colors.textSecondary} />
+                      <Edit3 size={14} color={colors.textSecondary} />
                       <Text style={[styles.small, { color: colors.textSecondary, marginLeft: 6 }]}>
-                        {language === 'az' ? 'Sil / Rol / Təsdiq' : 'Удалить / Роль / Вериф.'}
+                        {language === 'az' ? 'Düzəliş / Rol / Təsdiq / Sil' : 'Правка / Роль / Вериф. / Удалить'}
                       </Text>
                     </View>
                   </View>
@@ -243,9 +362,194 @@ export default function AdminUsersScreen() {
               );
             })
           )}
+
+          {items.length > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.loadMoreBtn,
+                { backgroundColor: colors.card, borderColor: colors.border, opacity: canLoadMore ? 1 : 0.5 },
+              ]}
+              disabled={!canLoadMore || usersQuery.isFetching}
+              onPress={() => setPage((p) => p + 1)}
+            >
+              <Text style={{ color: colors.text, fontWeight: '800' }}>
+                {canLoadMore
+                  ? (language === 'az' ? 'Daha çox yüklə' : 'Загрузить еще')
+                  : (language === 'az' ? 'Hamısı yükləndi' : 'Все загружено')}
+              </Text>
+            </TouchableOpacity>
+          )}
           <View style={{ height: 24 }} />
         </ScrollView>
       )}
+
+      <Modal visible={detailsOpen} transparent animationType="fade" onRequestClose={closeDetails}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]} numberOfLines={1}>
+                {language === 'az' ? 'İstifadəçi detalları' : 'Детали пользователя'}
+              </Text>
+              <TouchableOpacity onPress={closeDetails} style={styles.modalCloseBtn}>
+                <Text style={{ color: colors.textSecondary, fontWeight: '800' }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>ID</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]} numberOfLines={1}>
+                  {selected?.id || '-'}
+                </Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Rol' : 'Роль'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>{selected?.role ? roleTitle(selected.role) : '-'}</Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Təsdiq' : 'Вериф.'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>{selected?.verified ? '✓' : '✗'}</Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Yaradılıb' : 'Создан'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>{formatDateTime(selected?.createdAt)}</Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={[styles.kvKey, { color: colors.textSecondary }]}>{language === 'az' ? 'Yenilənib' : 'Обновлен'}</Text>
+                <Text style={[styles.kvVal, { color: colors.text }]}>{formatDateTime(selected?.updatedAt)}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.targetBtn, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+                onPress={() => goToProfile(selected?.id)}
+              >
+                <ExternalLink size={16} color={colors.primary} />
+                <Text style={[styles.targetBtnText, { color: colors.primary }]}>
+                  {language === 'az' ? 'Profilə keç' : 'Открыть профиль'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.sectionBlock}>
+                <Text style={[styles.blockTitle, { color: colors.text }]}>{language === 'az' ? 'Redaktə' : 'Редактирование'}</Text>
+
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{language === 'az' ? 'Ad' : 'Имя'}</Text>
+                <TextInput
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder={language === 'az' ? 'Ad' : 'Имя'}
+                  placeholderTextColor={colors.textSecondary}
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                />
+
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Email</Text>
+                <TextInput
+                  value={editEmail}
+                  onChangeText={setEditEmail}
+                  placeholder="email@example.com"
+                  placeholderTextColor={colors.textSecondary}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                />
+
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{language === 'az' ? 'Telefon' : 'Телефон'}</Text>
+                <TextInput
+                  value={editPhone}
+                  onChangeText={setEditPhone}
+                  placeholder="+994…"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="phone-pad"
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                />
+
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{language === 'az' ? 'Balans' : 'Баланс'}</Text>
+                <TextInput
+                  value={editBalance}
+                  onChangeText={setEditBalance}
+                  placeholder="0"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                />
+
+                <TouchableOpacity
+                  style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}
+                  disabled={saving}
+                  onPress={saveEdits}
+                >
+                  <Text style={styles.primaryBtnText}>
+                    {saving ? (language === 'az' ? 'Yadda saxlanır…' : 'Сохранение…') : (language === 'az' ? 'Yadda saxla' : 'Сохранить')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.actionPill, { backgroundColor: '#10B98115' }]}
+                  onPress={() => updateUser.mutate({ userId: selected?.id, verified: !selected?.verified } as any)}
+                >
+                  <BadgeCheck size={16} color="#10B981" />
+                  <Text style={[styles.actionPillText, { color: '#10B981' }]}>
+                    {selected?.verified
+                      ? (language === 'az' ? 'Təsdiqi ləğv et' : 'Снять вериф.')
+                      : (language === 'az' ? 'Təsdiqlə' : 'Вериф.')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionPill, { backgroundColor: '#3B82F615' }]}
+                  onPress={() => {
+                    const title = selected?.name || selected?.email || 'User';
+                    Alert.alert(
+                      language === 'az' ? 'Rol seçin' : 'Выберите роль',
+                      title,
+                      [
+                        { text: language === 'az' ? 'İstifadəçi' : 'Пользователь', onPress: () => updateUser.mutate({ userId: selected?.id, role: 'USER' } as any) },
+                        { text: language === 'az' ? 'Moderator' : 'Модератор', onPress: () => updateUser.mutate({ userId: selected?.id, role: 'MODERATOR' } as any) },
+                        { text: language === 'az' ? 'Admin' : 'Админ', onPress: () => updateUser.mutate({ userId: selected?.id, role: 'ADMIN' } as any) },
+                        { text: language === 'az' ? 'Ləğv et' : 'Отмена', style: 'cancel' },
+                      ]
+                    );
+                  }}
+                >
+                  <Shield size={16} color="#3B82F6" />
+                  <Text style={[styles.actionPillText, { color: '#3B82F6' }]}>
+                    {language === 'az' ? 'Rolu dəyiş' : 'Сменить роль'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionPill, { backgroundColor: '#EF444415' }]}
+                  onPress={() => {
+                    Alert.alert(
+                      language === 'az' ? 'Silmək?' : 'Удалить?',
+                      language === 'az'
+                        ? 'Bu istifadəçini silmək istədiyinizə əminsiniz?'
+                        : 'Вы уверены, что хотите удалить этого пользователя?',
+                      [
+                        { text: language === 'az' ? 'Ləğv' : 'Отмена', style: 'cancel' },
+                        {
+                          text: language === 'az' ? 'Sil' : 'Удалить',
+                          style: 'destructive',
+                          onPress: () => {
+                            deleteUser.mutate({ userId: selected?.id } as any);
+                            closeDetails();
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Trash2 size={16} color="#EF4444" />
+                  <Text style={[styles.actionPillText, { color: '#EF4444' }]}>
+                    {language === 'az' ? 'Sil' : 'Удалить'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -283,6 +587,7 @@ const styles = StyleSheet.create({
   right: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   name: { fontSize: 16, fontWeight: '800' },
   meta: { marginTop: 4, fontSize: 13 },
+  meta2: { marginTop: 4, fontSize: 12 },
   rolePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -293,5 +598,104 @@ const styles = StyleSheet.create({
   cardBottom: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' },
   smallRow: { flexDirection: 'row', alignItems: 'center' },
   small: { fontSize: 12, fontWeight: '600' },
+
+  loadMoreBtn: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 520,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '800', flex: 1 },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBody: { paddingHorizontal: 14, paddingBottom: 14 },
+  kvRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 6,
+  },
+  kvKey: { fontSize: 12, fontWeight: '700' },
+  kvVal: { fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right' },
+  targetBtn: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  targetBtnText: { fontSize: 12, fontWeight: '900', flex: 1 },
+  sectionBlock: { marginTop: 12 },
+  blockTitle: { fontSize: 13, fontWeight: '900', marginBottom: 10 },
+  inputLabel: { fontSize: 12, fontWeight: '800', marginBottom: 6 },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  primaryBtn: {
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  primaryBtnText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  modalActions: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  actionPillText: { fontSize: 12, fontWeight: '900' },
 });
 
