@@ -48,7 +48,6 @@ import { Audio } from 'expo-av';
 import UserActionModal from '@/components/UserActionModal';
 
 import { logger } from '@/utils/logger';
-import { size } from 'zod';
 const { width: screenWidth } = Dimensions.get('window');
 
 const ChatInput = memo(({ 
@@ -185,6 +184,7 @@ export default function ConversationScreen() {
   const [recordingTimer, setRecordingTimer] = useState<ReturnType<typeof setTimeout> | null>(null); // ✅ Max duration timer
   const [recordingDuration, setRecordingDuration] = useState<number>(0); // ✅ Track current recording duration in seconds
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null); // ✅ Interval ref used to update recordingDuration
+  const recordingStartedAtRef = useRef<number | null>(null); // ✅ Timestamp used to update recordingDuration
   const [showAttachmentModal, setShowAttachmentModal] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -238,7 +238,10 @@ export default function ConversationScreen() {
     } else {
       setConversation(null);
     }
-    logger.debug('ConversationScreen - Updated conversation:', !!foundConversation, 'Messages:', foundConversation?.messages?.length || 0);
+    logger.debug('ConversationScreen - Updated conversation', {
+      found: !!foundConversation,
+      messages: foundConversation?.messages?.length || 0,
+    });
   }, [conversationId, conversations, currentUser, getConversation]);
   
   const messages = conversation?.messages ? [...conversation.messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) : [];
@@ -284,6 +287,13 @@ export default function ConversationScreen() {
         recording.stopAndUnloadAsync()
           .catch(err => logger.warn('Error cleaning up recording:', err));
       }
+      
+      // ✅ Clear recording duration interval
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      recordingStartedAtRef.current = null;
       
       // ✅ Clear recording timer
       if (recordingTimer) {
@@ -554,7 +564,7 @@ export default function ConversationScreen() {
         }
       }
 
-      logger.info('[pickImage] Successfully sent', result.assets.length, 'images');
+      logger.info('[pickImage] Successfully sent images', { count: result.assets.length });
     } catch (error) {
       logger.error('[pickImage] Error picking/sending images:', error);
       
@@ -794,6 +804,20 @@ export default function ConversationScreen() {
       
       setRecording(newRecording);
       setIsRecording(true);
+      setRecordingDuration(0);
+      
+      // ✅ 5b. Start elapsed-time ticker for UI
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      recordingStartedAtRef.current = Date.now();
+      recordingTimerRef.current = setInterval(() => {
+        const startedAt = recordingStartedAtRef.current;
+        if (!startedAt) return;
+        const seconds = Math.floor((Date.now() - startedAt) / 1000);
+        setRecordingDuration(prev => (prev === seconds ? prev : seconds));
+      }, 250);
       
       // ✅ 6. Set max duration timer (5 minutes)
       const MAX_DURATION_MS = 5 * 60 * 1000;
@@ -847,6 +871,11 @@ export default function ConversationScreen() {
         clearTimeout(recordingTimer);
         setRecordingTimer(null);
       }
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      recordingStartedAtRef.current = null;
       return;
     }
 
@@ -856,6 +885,7 @@ export default function ConversationScreen() {
         clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = null;
       }
+      recordingStartedAtRef.current = null;
       
       setIsRecording(false);
       
@@ -924,7 +954,7 @@ export default function ConversationScreen() {
           duration: durationSeconds, // ✅ Store duration
         };
         
-        logger.info(`Sending voice message: ${recordingDuration}s, ${size} bytes`);
+        logger.info(`Sending voice message: ${durationSeconds}s`);
         await sendMessage('', 'audio', [attachment]);
       }
       
@@ -944,6 +974,11 @@ export default function ConversationScreen() {
         clearTimeout(recordingTimer);
         setRecordingTimer(null);
       }
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      recordingStartedAtRef.current = null;
       
       // ✅ Try to reset audio mode even if recording failed
       try {
@@ -972,6 +1007,7 @@ export default function ConversationScreen() {
         clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = null;
       }
+      recordingStartedAtRef.current = null;
       
       setIsRecording(false);
       
@@ -1219,6 +1255,8 @@ export default function ConversationScreen() {
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwnMessage = item.senderId === currentUser?.id;
     const sender = users.find(user => user.id === item.senderId);
+    const audioIconColor = isOwnMessage ? '#fff' : Colors.primary;
+    const audioTextColor = isOwnMessage ? '#fff' : Colors.primary;
 
     return (
       <TouchableOpacity
@@ -1247,20 +1285,23 @@ export default function ConversationScreen() {
               
               {attachment.type === 'audio' && (
                 <TouchableOpacity 
-                  style={styles.audioAttachment}
+                  style={[
+                    styles.audioAttachment,
+                    isOwnMessage ? styles.audioAttachmentOwn : styles.audioAttachmentOther
+                  ]}
                   onPress={() => playAudio(attachment.uri, item.id)}
                 >
                   {playingAudio === item.id ? (
-                    <Pause size={20} color={Colors.primary} />
+                    <Pause size={20} color={audioIconColor} />
                   ) : (
-                    <Play size={20} color={Colors.primary} />
+                    <Play size={20} color={audioIconColor} />
                   )}
                   <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={styles.audioText}>
+                    <Text style={[styles.audioText, { color: audioTextColor }]}>
                       {language === 'az' ? 'Səs mesajı' : 'Голосовое сообщение'}
                     </Text>
                     {attachment.duration && (
-                      <Text style={[styles.audioText, { fontSize: 12, opacity: 0.7 }]}>
+                      <Text style={[styles.audioText, { color: audioTextColor, fontSize: 12, opacity: 0.8 }]}>
                         {Math.floor(attachment.duration / 60)}:{String(attachment.duration % 60).padStart(2, '0')}
                       </Text>
                     )}
@@ -1985,13 +2026,21 @@ const styles = StyleSheet.create({
   audioAttachment: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 8,
+    minHeight: 44,
+    maxWidth: screenWidth * 0.6,
+    alignSelf: 'flex-start',
+    flexGrow: 0,
+  },
+  audioAttachmentOwn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  audioAttachmentOther: {
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   audioText: {
-    marginLeft: 8,
-    color: Colors.primary,
     fontWeight: '500',
   },
   fileAttachment: {
