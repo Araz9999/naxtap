@@ -377,6 +377,48 @@ function RootLayoutNav() {
           }} 
         />
         <Stack.Screen 
+          name="admin-reports" 
+          options={{ 
+            title: "",
+            presentation: 'card',
+          }} 
+        />
+        <Stack.Screen 
+          name="admin-tickets" 
+          options={{ 
+            title: "",
+            presentation: 'card',
+          }} 
+        />
+        <Stack.Screen 
+          name="admin-users" 
+          options={{ 
+            title: "",
+            presentation: 'card',
+          }} 
+        />
+        <Stack.Screen 
+          name="admin-moderators" 
+          options={{ 
+            title: "",
+            presentation: 'card',
+          }} 
+        />
+        <Stack.Screen 
+          name="admin-analytics" 
+          options={{ 
+            title: "",
+            presentation: 'card',
+          }} 
+        />
+        <Stack.Screen 
+          name="admin-moderation-settings" 
+          options={{ 
+            title: "",
+            presentation: 'card',
+          }} 
+        />
+        <Stack.Screen 
           name="operator-dashboard" 
           options={{ 
             title: "",
