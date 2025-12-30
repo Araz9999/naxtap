@@ -12,6 +12,20 @@ enum Role {
   ADMIN
 }
 
+enum StoreStatus {
+  ACTIVE
+  GRACE_PERIOD
+  DEACTIVATED
+  ARCHIVED
+}
+
+enum AdType {
+  FREE
+  STANDARD
+  PREMIUM
+  VIP
+}
+
 model User {
   id                  String              @id @default(cuid())
   email               String              @unique
@@ -31,6 +45,88 @@ model User {
   passwordResetTokens PasswordResetToken[]
   supportTickets      SupportTicket[]
   supportResponses    SupportResponse[]
+  listings            Listing[]
+  stores              Store[]
+}
+
+model Listing {
+  id                String    @id @default(cuid())
+  title             Json      // { az: string, ru: string }
+  description       Json      // { az: string, ru: string }
+  price             Float
+  currency          String    @default("AZN")
+  location          Json      // { az: string, ru: string }
+  categoryId        Int
+  subcategoryId     Int
+  images            String[]
+  userId            String
+  storeId           String?
+  views             Int       @default(0)
+  isFeatured        Boolean   @default(false)
+  isPremium         Boolean   @default(false)
+  adType            AdType    @default(FREE)
+  contactPreference String    @default("both")
+  favorites         Int       @default(0)
+  isArchived        Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  expiresAt         DateTime
+  archivedAt        DateTime?
+  
+  // Discount fields
+  originalPrice     Float?
+  discountPercentage Float?
+  hasDiscount       Boolean   @default(false)
+  discountEndDate   DateTime?
+  
+  // Creative effects (stored as JSON)
+  creativeEffects   Json?
+  
+  // Promotion fields
+  promotionEndDate  DateTime?
+  purchasedViews    Int?
+  
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store  Store?  @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([storeId])
+  @@index([categoryId])
+  @@index([isArchived])
+  @@index([expiresAt])
+}
+
+model Store {
+  id                  String       @id @default(cuid())
+  userId              String
+  name                String
+  categoryName        String
+  address             String
+  contactInfo         Json         // { phone?, email?, website?, whatsapp? }
+  description         String
+  logo                String?
+  coverImage          String?
+  planId              String
+  adsUsed             Int          @default(0)
+  maxAds              Int
+  deletedListings     String[]     @default([])
+  isActive            Boolean      @default(true)
+  status              StoreStatus  @default(ACTIVE)
+  followers           String[]     @default([])
+  rating              Int          @default(0)
+  totalRatings        Int          @default(0)
+  createdAt           DateTime     @default(now())
+  expiresAt           DateTime
+  gracePeriodEndsAt   DateTime?
+  deactivatedAt       DateTime?
+  archivedAt          DateTime?
+  lastPaymentReminder DateTime?
+  
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings Listing[]
+  
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
 }
 
 model SupportTicket {
@@ -94,5 +190,4 @@ model PasswordResetToken {
   user      User     @relation(fields: [userId], references: [id])
   userId    String
 }
-
 

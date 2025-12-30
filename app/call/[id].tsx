@@ -14,10 +14,9 @@ import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useCallStore } from '@/store/callStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
-import { users } from '@/mocks/users';
-import { listings } from '@/mocks/listings';
+import { useListingStore } from '@/store/listingStore';
 import Colors from '@/constants/colors';
-import { logger } from '@/utils/logger'; // ✅ Import logger
+import { logger } from '@/utils/logger';
 import {
   PhoneOff,
   Mic,
@@ -42,7 +41,10 @@ import {
   type TrackReferenceOrPlaceholder,
 } from '@livekit/react-native';
 import { ConnectionState, Track } from 'livekit-client';
-import { trpc } from '@/lib/trpc';
+import { trpc, trpcClient } from '@/lib/trpc';
+
+// User cache for performance
+const userCache = new Map<string, any>();
 
 if (Platform.OS !== 'web') {
   // Must be called before using LiveKit (safe to call multiple times).
@@ -299,16 +301,13 @@ export default function CallScreen() {
     }
   }, [activeCall, callId]);
 
-  // ✅ Navigate back if other user can't be resolved (avoid conditional hooks)
+  // Navigate back if other user can't be resolved (avoid conditional hooks)
   useEffect(() => {
-    if (!activeCall || !callId) return;
-    const otherUserId =
-      activeCall.callerId === currentUser?.id ? activeCall.receiverId : activeCall.callerId;
-    const otherUser = users.find((u) => u.id === otherUserId);
+    if (!activeCall || !callId || !otherUser) return;
     if (!otherUser) {
       router.back();
     }
-  }, [activeCall, callId, currentUser?.id]);
+  }, [activeCall, callId, otherUser]);
 
   // Fetch LiveKit token once per call (requires backend env LIVEKIT_*)
   useEffect(() => {
@@ -345,14 +344,11 @@ export default function CallScreen() {
     return null;
   }
 
-  // ✅ Use actual current user ID, not hardcoded
-  const otherUserId = activeCall.callerId === currentUser?.id ? activeCall.receiverId : activeCall.callerId;
-  const otherUser = users.find(user => user.id === otherUserId);
   const listing = listings.find(l => l.id === activeCall.listingId);
 
-  // ✅ Validate other user exists
+  // Validate other user exists
   if (!otherUser) {
-    logger.error('Other user not found:', otherUserId);
+    logger.error('Other user not found');
     return (
       <View style={styles.container}>
         <View style={styles.content}>
