@@ -13,9 +13,13 @@ interface LoggerConfig {
 }
 
 // Determine dev mode in both React Native / web (__DEV__) and Node.js
+const IS_TEST: boolean = process.env.NODE_ENV === 'test';
 const IS_DEV: boolean =
   // @ts-ignore - __DEV__ is provided by React Native / Expo on the client
-  typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
+  !IS_TEST &&
+  (typeof __DEV__ !== 'undefined'
+    ? __DEV__
+    : process.env.NODE_ENV !== 'production');
 
 const LOG_LEVELS: Record<LogLevel, number> = {
   debug: 0,
@@ -29,7 +33,8 @@ class Logger {
 
   constructor(config?: Partial<LoggerConfig>) {
     this.config = {
-      enabled: IS_DEV,
+      // Keep logs minimal in tests (prevents noisy Jest output)
+      enabled: IS_DEV || IS_TEST,
       minLevel: IS_DEV ? 'debug' : 'error',
       prefix: '',
       ...config,

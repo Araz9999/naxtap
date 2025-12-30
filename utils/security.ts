@@ -160,20 +160,29 @@ export const emailRateLimiter = new RateLimiter(3, 60 * 60 * 1000); // 3 emails 
 /**
  * Input Sanitizer Middleware
  */
-export function sanitizeInputs<T extends Record<string, unknown>>(inputs: T): T {
-  const sanitized = {} as T;
-
-  for (const [key, value] of Object.entries(inputs)) {
-    if (typeof value === 'string') {
-      sanitized[key as keyof T] = sanitizeString(value) as T[keyof T];
-    } else if (typeof value === 'object' && value !== null) {
-      sanitized[key as keyof T] = sanitizeInputs(value as Record<string, unknown>) as T[keyof T];
-    } else {
-      sanitized[key as keyof T] = value as T[keyof T];
-    }
+export function sanitizeInputs<T>(inputs: T): T {
+  // Preserve arrays (previous implementation converted arrays into plain objects)
+  if (Array.isArray(inputs)) {
+    return inputs.map((v) => sanitizeInputs(v)) as unknown as T;
   }
 
-  return sanitized;
+  // Sanitize strings directly
+  if (typeof inputs === 'string') {
+    return sanitizeString(inputs) as unknown as T;
+  }
+
+  // Recurse objects (and drop prototype-pollution keys)
+  if (inputs && typeof inputs === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [rawKey, value] of Object.entries(inputs as Record<string, unknown>)) {
+      if (rawKey === '__proto__' || rawKey === 'constructor' || rawKey === 'prototype') continue;
+      out[rawKey] = sanitizeInputs(value);
+    }
+    return out as unknown as T;
+  }
+
+  // numbers/booleans/null/undefined/etc.
+  return inputs;
 }
 
 /**

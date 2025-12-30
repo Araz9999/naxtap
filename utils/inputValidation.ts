@@ -147,7 +147,7 @@ export function validatePrice(value: string): {
     return {
       isValid: false,
       sanitized: '',
-      error: 'Price must be greater than 0'
+      error: 'Price must be greater than 0',
     };
   }
   const sanitized = sanitizeNumericInput(value);

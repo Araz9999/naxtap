@@ -14,6 +14,7 @@
     "build:ios": "eas build --platform ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "test": "jest",
     "preview": "expo export --platform web && node scripts/fix-web-index-module.js && npx serve dist",
     "dev": "npm run start",
     "prod": "npm run build:web",
