@@ -10,6 +10,7 @@ import { trpc } from '@/lib/trpc';
 import { initiateSocialLogin, showSocialLoginError } from '@/utils/socialAuth';
 import { logger } from '@/utils/logger';
 import { validateEmail, validateAzerbaijanPhone, sanitizeTextInput } from '@/utils/inputValidation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -196,6 +197,11 @@ export default function RegisterScreen() {
           name: sanitizeTextInput(name.trim(), 100),
           phone: phone.trim(),
         });
+
+      // ✅ Save tokens so user can access protected routes (edit profile, etc.)
+      if (result?.tokens) {
+        await AsyncStorage.setItem('auth_tokens', JSON.stringify(result.tokens));
+      }
       
       // ✅ Create complete user object
       const mockUser = {
