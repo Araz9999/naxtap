@@ -20,6 +20,7 @@ import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
 import { Flag, RefreshCw, CheckCircle2, XCircle, Eye, ExternalLink, StickyNote } from 'lucide-react-native';
+import { useModerationSettingsStore } from '@/store/moderationSettingsStore';
 
 type ReportStatus = 'all' | 'pending' | 'in_review' | 'resolved' | 'dismissed';
 
@@ -63,6 +64,7 @@ export default function AdminReportsScreen() {
   const { currentUser } = useUserStore();
   const colors = getColors(themeMode, colorTheme);
   const router = useRouter();
+  const { settings } = useModerationSettingsStore();
 
   const [status, setStatus] = useState<ReportStatus>('pending');
   const [search, setSearch] = useState('');
@@ -82,6 +84,17 @@ export default function AdminReportsScreen() {
     if (status === 'all') return undefined;
     return { status };
   }, [status]);
+
+  // Enforce moderation settings for visibility
+  useMemo(() => {
+    if (!settings.showResolvedReports && status === 'resolved') {
+      setStatus('pending');
+    }
+    if (!settings.showDismissedReports && status === 'dismissed') {
+      setStatus('pending');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.showResolvedReports, settings.showDismissedReports]);
 
   const utils = trpc.useUtils();
   const reportsQuery = trpc.moderation.getReports.useQuery(queryInput, {
@@ -267,8 +280,8 @@ export default function AdminReportsScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
               {renderStatusChip('pending', language === 'az' ? 'Gözləyən' : 'Ожидает')}
               {renderStatusChip('in_review', language === 'az' ? 'Baxışda' : 'На проверке')}
-              {renderStatusChip('resolved', language === 'az' ? 'Həll' : 'Решено')}
-              {renderStatusChip('dismissed', language === 'az' ? 'Rədd' : 'Отклонено')}
+              {settings.showResolvedReports && renderStatusChip('resolved', language === 'az' ? 'Həll' : 'Решено')}
+              {settings.showDismissedReports && renderStatusChip('dismissed', language === 'az' ? 'Rədd' : 'Отклонено')}
               {renderStatusChip('all', language === 'az' ? 'Hamısı' : 'Все')}
             </ScrollView>
 
