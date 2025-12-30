@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -19,9 +19,18 @@ export default function ForgotPasswordScreen() {
   const [isOTPVerified, setIsOTPVerified] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [contactType, setContactType] = useState<'email' | 'phone'>('email');
+  const [resendSecondsLeft, setResendSecondsLeft] = useState(0);
   
   const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation();
   const verifyOTPMutation = trpc.auth.verifyPasswordOTP.useMutation();
+
+  useEffect(() => {
+    if (resendSecondsLeft <= 0) return;
+    const id = setInterval(() => {
+      setResendSecondsLeft((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [resendSecondsLeft]);
   
   const detectContactType = (input: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -117,10 +126,16 @@ export default function ForgotPasswordScreen() {
         ? { email: contactInfo.trim() }
         : { phone: contactInfo.replace(/[\s\-\(\)]/g, '') };
       
-      await forgotPasswordMutation.mutateAsync(input as any);
+      const result = await forgotPasswordMutation.mutateAsync(input as any);
       
       setIsLoading(false);
       setIsCodeSent(true);
+      const retryAfterSeconds = (result as any)?.retryAfterSeconds;
+      if (typeof retryAfterSeconds === 'number' && Number.isFinite(retryAfterSeconds)) {
+        setResendSecondsLeft(Math.max(0, Math.floor(retryAfterSeconds)));
+      } else {
+        setResendSecondsLeft(60);
+      }
     } catch (error: any) {
       logger.error('Password reset error:', error);
       setIsLoading(false);
@@ -197,6 +212,9 @@ export default function ForgotPasswordScreen() {
   };
   
   const handleResendCode = async () => {
+    if (resendSecondsLeft > 0) {
+      return;
+    }
     setIsCodeSent(false);
     setIsOTPVerified(false);
     setOtpCode('');
@@ -272,9 +290,17 @@ export default function ForgotPasswordScreen() {
                 )}
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.secondaryButton} onPress={handleResendCode}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={handleResendCode}
+                disabled={isLoading || resendSecondsLeft > 0}
+              >
                 <Text style={styles.secondaryButtonText}>
-                  {language === 'az' ? 'Kodu Yenidən Göndər' : 'Отправить код снова'}
+                  {resendSecondsLeft > 0
+                    ? (language === 'az'
+                        ? `Kodu Yenidən Göndər (${resendSecondsLeft})`
+                        : `Отправить код снова (${resendSecondsLeft})`)
+                    : (language === 'az' ? 'Kodu Yenidən Göndər' : 'Отправить код снова')}
                 </Text>
               </TouchableOpacity>
               
