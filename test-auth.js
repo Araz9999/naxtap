@@ -3,6 +3,8 @@
  * Run with: node test-auth.js
  */
 
+/* eslint-disable no-console */
+
 const BASE_URL = 'http://localhost:3000';
 
 // Import superjson to serialize inputs (tRPC uses superjson transformer)

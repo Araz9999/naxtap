@@ -1,5 +1,3 @@
-import { LocalizedText } from './category';
-
 export type ReportType =
   | 'spam'
   | 'inappropriate_content'

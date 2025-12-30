@@ -118,13 +118,7 @@ export async function clearImageCache(): Promise<void> {
  * Get cache size for monitoring
  */
 export async function getCacheSize(): Promise<{ memory: number; disk: number }> {
-  try {
-    // expo-image doesn't provide this directly, but you can implement custom tracking
-    return { memory: 0, disk: 0 };
-  } catch (error) {
-    if (__DEV__) {
-      logger.error('Failed to get cache size:', error);
-    }
-    return { memory: 0, disk: 0 };
-  }
+  // expo-image doesn't provide this directly; return placeholders.
+  // (Old try/catch was flagged as unreachable because the try block can't throw.)
+  return { memory: 0, disk: 0 };
 }

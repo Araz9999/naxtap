@@ -33,7 +33,7 @@ export interface Transaction {
   description: string;
   createdAt: string;
   updatedAt: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaymentResponse {
@@ -43,7 +43,7 @@ export interface PaymentResponse {
   orderStatus?: string;
   responseCode?: string;
   responseDescription?: string;
-  payload?: any;
+  payload?: unknown;
 }
 
 export interface AutoPayRequest {

@@ -4,7 +4,8 @@
  */
 
 import { Platform } from 'react-native';
-import { sanitizeString, sanitizeHTML, safeJSONParse, RateLimiter } from './validation';
+import { sanitizeString, RateLimiter } from './validation';
+import { logger } from './logger';
 
 /**
  * CSRF Token Manager
@@ -251,7 +252,7 @@ class SecurityAuditLogger {
 
     // In production, send to logging service
     if (__DEV__) {
-      console.log('[Security Audit]', fullEvent);
+      logger.debug('[Security Audit]', fullEvent);
     }
   }
 
@@ -287,7 +288,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
  * SQL Injection Prevention Helper
  */
 export function escapeSQLString(str: string): string {
-  return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, (char) => {
+  return str.replace(/[\0\x08\x09\x1a\n\r"'\\%]/g, (char) => {
     switch (char) {
       case '\0':
         return '\\0';

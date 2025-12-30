@@ -11,7 +11,7 @@ export class AppError extends Error {
     message: string,
     public code?: string,
     public statusCode?: number,
-    public details?: Record<string, any>,
+    public details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'AppError';
@@ -34,14 +34,14 @@ export class AppError extends Error {
 }
 
 export class NetworkError extends AppError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 'NETWORK_ERROR', 0, details);
     this.name = 'NetworkError';
   }
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 'VALIDATION_ERROR', 400, details);
     this.name = 'ValidationError';
   }
@@ -90,7 +90,7 @@ export async function handleAsync<T>(
 /**
  * Wraps a function to catch and handle errors
  */
-export function withErrorHandler<T extends (...args: any[]) => any>(
+export function withErrorHandler<T extends (...args: unknown[]) => unknown>(
   fn: T,
   errorHandler?: (error: Error) => void,
 ): T {
@@ -168,7 +168,7 @@ export async function retryWithBackoff<T>(
 /**
  * Safe JSON parse with error handling
  */
-export function safeJSONParse<T = any>(
+export function safeJSONParse<T = unknown>(
   json: string,
   fallback?: T,
 ): T | null {
@@ -273,14 +273,14 @@ export function getUserFriendlyTRPCError(
       if (seen.has(val as object)) return [];
       seen.add(val as object);
 
-      const obj: any = val;
+      const obj = val as Record<string, unknown>;
 
       // Zod issue: { message, path, ... }
-      const directMsg = typeof obj?.message === 'string' ? obj.message.trim() : '';
-      const pathArr = Array.isArray(obj?.path) ? obj.path : null;
+      const directMsg = typeof obj?.message === 'string' ? (obj.message as string).trim() : '';
+      const pathArr = Array.isArray(obj?.path) ? (obj.path as unknown[]) : null;
       const pathStr =
         pathArr && pathArr.length
-          ? pathArr.map((p: any) => String(p)).filter(Boolean).join('.')
+          ? pathArr.map((p: unknown) => String(p)).filter(Boolean).join('.')
           : '';
 
       // Prefer explicit message fields
@@ -295,21 +295,27 @@ export function getUserFriendlyTRPCError(
       if (Array.isArray(obj?.errors)) messages.push(...collectFromUnknown(obj.errors));
 
       // tRPC v11 zodError shape
-      const zodError = obj?.zodError ?? obj?.data?.zodError ?? obj?.shape?.data?.zodError;
+      const data = obj?.data && typeof obj.data === 'object' ? (obj.data as Record<string, unknown>) : null;
+      const shape = obj?.shape && typeof obj.shape === 'object' ? (obj.shape as Record<string, unknown>) : null;
+      const shapeData =
+        shape?.data && typeof shape.data === 'object' ? (shape.data as Record<string, unknown>) : null;
+
+      const zodError = obj?.zodError ?? data?.zodError ?? shapeData?.zodError;
       if (zodError) {
         if (Array.isArray(zodError)) {
           messages.push(...collectFromUnknown(zodError));
         } else if (typeof zodError === 'object') {
-          const fe = (zodError as any)?.fieldErrors;
-          const fo = (zodError as any)?.formErrors;
+          const ze = zodError as Record<string, unknown>;
+          const fe = ze?.fieldErrors;
+          const fo = ze?.formErrors;
           if (fe && typeof fe === 'object') {
             for (const v of Object.values(fe)) {
               messages.push(...collectFromUnknown(v));
             }
           }
           if (Array.isArray(fo)) messages.push(...collectFromUnknown(fo));
-          if (Array.isArray((zodError as any)?.issues)) {
-            messages.push(...collectFromUnknown((zodError as any).issues));
+          if (Array.isArray(ze?.issues)) {
+            messages.push(...collectFromUnknown(ze.issues));
           }
         }
       }
@@ -327,14 +333,18 @@ export function getUserFriendlyTRPCError(
     return [];
   };
 
-  const err: any = error as any;
+  const err = (error && typeof error === 'object' ? (error as Record<string, unknown>) : {}) as Record<string, unknown>;
 
   // Prefer explicit tRPC zodError containers first, then fall back to message parsing.
   const candidates: unknown[] = [
-    err?.data?.zodError,
-    err?.shape?.data?.zodError,
-    err?.zodError,
-    err?.message,
+    (err.data && typeof err.data === 'object' ? (err.data as Record<string, unknown>).zodError : undefined),
+    (() => {
+      const s = err.shape && typeof err.shape === 'object' ? (err.shape as Record<string, unknown>) : null;
+      const sd = s?.data && typeof s.data === 'object' ? (s.data as Record<string, unknown>) : null;
+      return sd?.zodError;
+    })(),
+    err.zodError,
+    err.message,
     err,
   ];
 
