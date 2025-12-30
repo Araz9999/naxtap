@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '@/constants/translations';
 import { useUserStore } from '@/store/userStore';
@@ -7,22 +7,28 @@ import { useListingStore } from '@/store/listingStore';
 import { useStoreStore } from '@/store/storeStore';
 import Colors from '@/constants/colors';
 import { users } from '@/mocks/users';
-import { Star, LogOut, Heart, Settings, Bell, HelpCircle, Shield, Package, MessageCircle, ChevronRight, Wallet, Store, Trash2, Headphones } from 'lucide-react-native';
+import { Star, LogOut, Heart, Settings, Bell, HelpCircle, Shield, Package, MessageCircle, ChevronRight, Wallet, Store, Trash2, Headphones, User as UserIcon } from 'lucide-react-native';
 import LiveChatWidget from '@/components/LiveChatWidget';
 import { authService } from '@/services/authService';
 import { useSupportStore } from '@/store/supportStore';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { trpc } from '@/lib/trpc';
 
 import { logger } from '@/utils/logger';
 export default function ProfileScreen() {
   const router = useRouter();
   const { t, language } = useTranslation();
-  const { isAuthenticated, logout, favorites, freeAdsThisMonth, walletBalance, bonusBalance, currentUser } = useUserStore(); // ✅ Get real currentUser
+  const { isAuthenticated, logout, favorites, freeAdsThisMonth, walletBalance, bonusBalance, currentUser, updateUserProfile } = useUserStore(); // ✅ Get real currentUser
   const { listings } = useListingStore();
   const { getUserStore } = useStoreStore();
   const { liveChats, getAvailableOperators } = useSupportStore();
 
   const [showLiveChat, setShowLiveChat] = React.useState<boolean>(false);
   const [isDeletingAccount, setIsDeletingAccount] = React.useState<boolean>(false); // ✅ Loading state
+  const [isUpdatingAvatar, setIsUpdatingAvatar] = React.useState<boolean>(false);
+
+  const updateMeMutation = trpc.user.updateMe.useMutation();
 
   // ✅ Use real currentUser from useUserStore (not mock data)
   const userStore = currentUser ? getUserStore(currentUser.id) : null;
@@ -43,6 +49,8 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
+    // Best-effort cleanup so protected requests don't use stale tokens
+    AsyncStorage.removeItem('auth_tokens').catch(() => {});
     logout();
     router.push('/auth/login');
   };
@@ -236,36 +244,107 @@ export default function ProfileScreen() {
     );
   }
 
+  const applyAvatar = async (uri: string) => {
+    try {
+      setIsUpdatingAvatar(true);
+      updateUserProfile({ avatar: uri });
+
+      // Try to persist on backend if we have auth tokens (login flow sets them)
+      await updateMeMutation.mutateAsync({ avatar: uri });
+    } catch (error) {
+      logger.error('[applyAvatar] Failed to update avatar:', error);
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        language === 'az' ? 'Profil şəkli yenilənmədi' : 'Не удалось обновить фото профиля'
+      );
+    } finally {
+      setIsUpdatingAvatar(false);
+    }
+  };
+
+  const pickAvatarFromGallery = async () => {
+    try {
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            t('permissionRequired'),
+            t('galleryPermissionRequired')
+          );
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        await applyAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      logger.error('[pickAvatarFromGallery] Error:', error);
+      Alert.alert(
+        t('error'),
+        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение'
+      );
+    }
+  };
+
+  const pickAvatarFromCamera = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        Alert.alert(
+          t('error'),
+          language === 'az' ? 'Kamera veb versiyada dəstəklənmir' : 'Камера не поддерживается в веб-версии'
+        );
+        return;
+      }
+
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          t('permissionRequired'),
+          t('cameraPermissionRequired')
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        await applyAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      logger.error('[pickAvatarFromCamera] Error:', error);
+      Alert.alert(
+        t('error'),
+        language === 'az' ? 'Kamera açıla bilmədi' : 'Не удалось открыть камеру'
+      );
+    }
+  };
+
   const handleAvatarPress = async () => {
     try {
       Alert.alert(
-        language === 'az' ? 'Profil şəkli' : 'Фото профиля',
-        language === 'az' ? 'Profil şəklini dəyişdirmək istəyirsiniz?' : 'Хотите изменить фото профиля?',
+        t('profilePhoto'),
+        t('howToAddPhoto'),
         [
-          { text: language === 'az' ? 'Ləğv et' : 'Отмена', style: 'cancel' },
+          { text: t('cancel'), style: 'cancel' },
           {
-            text: language === 'az' ? 'Kameradan çək' : 'Сделать фото',
-            onPress: () => {
-              logger.info('[handleAvatarPress] Camera photo option selected');
-              Alert.alert(
-                language === 'az' ? 'Kamera' : 'Камера',
-                language === 'az'
-                  ? 'Kamera funksiyası hazırlanır. Tezliklə əlavə olunacaq.'
-                  : 'Функция камеры в разработке. Скоро будет добавлена.'
-              );
-            }
+            text: t('camera'),
+            onPress: () => pickAvatarFromCamera(),
           },
           {
-            text: language === 'az' ? 'Qalereyadan seç' : 'Выбрать из галереи',
-            onPress: () => {
-              logger.info('[handleAvatarPress] Gallery photo option selected');
-              Alert.alert(
-                language === 'az' ? 'Qalereya' : 'Галерея',
-                language === 'az'
-                  ? 'Qalereya funksiyası hazırlanır. Tezliklə əlavə olunacaq.'
-                  : 'Функция галереи в разработке. Скоро будет добавлена.'
-              );
-            }
+            text: t('gallery'),
+            onPress: () => pickAvatarFromGallery(),
           }
         ]
       );
@@ -283,7 +362,17 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         {currentUser && (
           <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.7}>
-            <Image source={{ uri: currentUser.avatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+            <View>
+              <Image
+                source={{ uri: currentUser.avatar || 'https://placehold.co/100x100?text=Avatar' }}
+                style={{ width: 50, height: 50, borderRadius: 25, opacity: isUpdatingAvatar ? 0.6 : 1 }}
+              />
+              {isUpdatingAvatar && (
+                <View style={{ position: 'absolute', left: 0, top: 0, width: 50, height: 50, alignItems: 'center', justifyContent: 'center' }}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         )}
         {currentUser && (
@@ -324,6 +413,19 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/profile/edit')}
+        >
+          <View style={styles.menuIconContainer}>
+            <UserIcon size={20} color={Colors.primary} />
+          </View>
+          <Text style={styles.menuItemText}>
+            {language === 'az' ? 'Profili redaktə et' : 'Редактировать профиль'}
+          </Text>
+          <ChevronRight size={20} color={Colors.textSecondary} />
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => router.push('/wallet')}

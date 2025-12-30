@@ -141,6 +141,13 @@ function RootLayoutNav() {
             presentation: 'card',
           }} 
         />
+        <Stack.Screen
+          name="profile/edit"
+          options={{
+            title: "",
+            presentation: 'card',
+          }}
+        />
         <Stack.Screen 
           name="auth/login" 
           options={{ 
