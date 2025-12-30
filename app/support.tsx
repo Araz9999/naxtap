@@ -52,6 +52,9 @@ export default function SupportScreen() {
   const colors = getColors(themeMode, colorTheme);
 
   const utils = trpc.useUtils();
+  const presenceQuery = trpc.liveChat.getPresence.useQuery(undefined, {
+    refetchInterval: 10000,
+  });
   const myTicketsQuery = trpc.support.getMyTickets.useQuery(undefined, {
     enabled: !!currentUser,
     refetchInterval: 30000,
@@ -94,10 +97,14 @@ export default function SupportScreen() {
   const userTickets = (myTicketsQuery.data as any[]) || [];
   const userChats = currentUser ? liveChats.filter(chat => chat.userId === currentUser.id) : [];
   const availableOperators = getAvailableOperators();
+< cursor/live-chat-section-improvements-1e02
   const { data: agentStats } = trpc.liveChat.getAgentStats.useQuery(undefined, {
     refetchInterval: 10000,
   });
   const onlineOperatorsCount = agentStats?.availableCount ?? availableOperators.length;
+=======
+  const availableOperatorsCount = presenceQuery.data?.availableCount ?? availableOperators.length;
+> main
 
   const getCategoryIcon = (iconName: string) => {
     switch (iconName) {
@@ -471,11 +478,19 @@ export default function SupportScreen() {
                   <Text style={[styles.quickActionSubtitle, { color: colors.textSecondary }]}>
                     {language === 'az' ? 'Operatorla birbaşa söhbət' : 'Прямой чат с оператором'}
                   </Text>
+< cursor/live-chat-section-improvements-1e02
                   {onlineOperatorsCount > 0 ? (
                     <View style={styles.operatorStatus}>
                       <View style={styles.onlineDot} />
                       <Text style={[styles.operatorStatusText, { color: colors.primary }]}>
                         {onlineOperatorsCount} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+=======
+                  {availableOperatorsCount > 0 ? (
+                    <View style={styles.operatorStatus}>
+                      <View style={styles.onlineDot} />
+                      <Text style={[styles.operatorStatusText, { color: colors.primary }]}>
+                        {availableOperatorsCount} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+> main
                       </Text>
                     </View>
                   ) : (
