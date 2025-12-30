@@ -11,7 +11,7 @@ import {
   Animated,
   Dimensions,
   Platform,
-  Keyboard
+  Keyboard,
 } from 'react-native';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -27,7 +27,7 @@ import {
   Clock,
   CheckCircle2,
   Headphones,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react-native';
 import { LiveChatMessage } from '@/types/support';
 import FileAttachmentPicker, { FileAttachment } from '@/components/FileAttachmentPicker';
@@ -45,15 +45,15 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
   const { currentUser } = useUserStore();
-  const { 
-    liveChats, 
-    operators, 
-    sendMessage, 
-    closeLiveChat, 
-    setTyping, 
+  const {
+    liveChats,
+    operators,
+    sendMessage,
+    closeLiveChat,
+    setTyping,
     markMessagesAsRead,
     startLiveChat,
-    categories
+    categories,
   } = useSupportStore();
   const colors = getColors(themeMode, colorTheme);
 
@@ -69,7 +69,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
   const [isScrolling, setIsScrolling] = useState<boolean>(false);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showAttachments, setShowAttachments] = useState<boolean>(false);
-  
+
   const scrollViewRef = useRef<ScrollView>(null);
   const slideAnim = useRef(new Animated.Value(height)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -83,13 +83,13 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
         toValue: 0,
         useNativeDriver: true,
         tension: 100,
-        friction: 8
+        friction: 8,
       }).start();
     } else {
       Animated.timing(slideAnim, {
         toValue: height,
         duration: 300,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start();
     }
   }, [visible, slideAnim]);
@@ -113,14 +113,14 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       'keyboardDidShow',
       () => {
         setShouldScrollToEnd(false);
-      }
+      },
     );
 
     const keyboardDidHideListener = Keyboard.addListener(
       'keyboardDidHide',
       () => {
         setShouldScrollToEnd(true);
-      }
+      },
     );
 
     return () => {
@@ -140,9 +140,9 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       currentUser.id,
       subject.trim(),
       selectedCategory,
-      priority
+      priority,
     );
-    
+
     setCurrentChatId(newChatId);
     setShowStartForm(false);
     setSelectedCategory('');
@@ -155,27 +155,27 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
 
     const attachmentUrls = attachments.map(att => att.uri);
     const messageText = message.trim() || (attachments.length > 0 ? `📎 ${attachments.length} fayl göndərildi` : '');
-    
+
     logger.debug('Sending message with attachments:', { messageText, attachmentUrls });
-    
+
     sendMessage(
-      currentChatId, 
-      currentUser.id, 
-      'user', 
-      messageText, 
-      attachmentUrls.length > 0 ? attachmentUrls : undefined
+      currentChatId,
+      currentUser.id,
+      'user',
+      messageText,
+      attachmentUrls.length > 0 ? attachmentUrls : undefined,
     );
-    
+
     setMessage('');
     setAttachments([]);
     setShowAttachments(false);
     setShouldScrollToEnd(true);
-    
+
     // Scroll to end after message is sent
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
-    
+
     // Clear typing indicator
     if (typingTimeout) {
       clearTimeout(typingTimeout);
@@ -185,22 +185,22 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
 
   const handleTyping = (text: string) => {
     setMessage(text);
-    
+
     if (!currentChatId) return;
-    
+
     // Set typing indicator
     setTyping(currentChatId, 'user', true);
-    
+
     // Clear previous timeout
     if (typingTimeout) {
       clearTimeout(typingTimeout);
     }
-    
+
     // Set new timeout to clear typing indicator
     const timeout: ReturnType<typeof setTimeout> = setTimeout(() => {
       setTyping(currentChatId, 'user', false);
     }, 2000);
-    
+
     setTypingTimeout(timeout);
   };
 
@@ -213,22 +213,22 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
 
   const handleReopenChat = () => {
     if (!currentUser) return;
-    
+
     const newChatId = startLiveChat(
       currentUser.id,
       'Yenidən əlaqə',
       '5', // Other category
-      'medium'
+      'medium',
     );
-    
+
     setCurrentChatId(newChatId);
     setShowStartForm(false);
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('az-AZ', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('az-AZ', {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -262,11 +262,11 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
     return (
       <View style={[
         styles.messageBubble,
-        isUser ? styles.userMessage : styles.operatorMessage
+        isUser ? styles.userMessage : styles.operatorMessage,
       ]}>
         {isOperator && operator && (
           <View style={styles.operatorInfo}>
-            <Image 
+            <Image
               source={{ uri: operator.avatar || 'https://via.placeholder.com/30' }}
               style={styles.operatorAvatar}
             />
@@ -275,45 +275,45 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
             </Text>
           </View>
         )}
-        
+
         <View style={[
           styles.messageContent,
           {
             backgroundColor: isUser ? colors.primary : colors.card,
-            alignSelf: isUser ? 'flex-end' : 'flex-start'
-          }
+            alignSelf: isUser ? 'flex-end' : 'flex-start',
+          },
         ]}>
           <Text style={[
             styles.messageText,
-            { color: isUser ? '#fff' : colors.text }
+            { color: isUser ? '#fff' : colors.text },
           ]}>
             {msg.message}
           </Text>
-          
+
           {/* Attachments */}
           {msg.attachments && msg.attachments.length > 0 && (
             <View style={styles.attachmentsContainer}>
               {msg.attachments.map((attachment, index) => {
                 // Check if it's an image or document
-                const isImage = attachment.toLowerCase().includes('.jpg') || 
-                               attachment.toLowerCase().includes('.jpeg') || 
-                               attachment.toLowerCase().includes('.png') || 
+                const isImage = attachment.toLowerCase().includes('.jpg') ||
+                               attachment.toLowerCase().includes('.jpeg') ||
+                               attachment.toLowerCase().includes('.png') ||
                                attachment.toLowerCase().includes('.gif') ||
                                attachment.startsWith('file://') ||
                                attachment.startsWith('content://') ||
                                attachment.startsWith('ph://');
-                
+
                 return (
                   <TouchableOpacity
                     key={index}
                     style={[
                       styles.attachmentPreview,
-                      { backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : colors.border }
+                      { backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : colors.border },
                     ]}
                   >
                     {isImage ? (
-                      <Image 
-                        source={{ uri: attachment }} 
+                      <Image
+                        source={{ uri: attachment }}
                         style={styles.attachmentImage}
                         resizeMode="cover"
                       />
@@ -330,11 +330,11 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
               })}
             </View>
           )}
-          
+
           <View style={styles.messageFooter}>
             <Text style={[
               styles.messageTime,
-              { color: isUser ? 'rgba(255,255,255,0.7)' : colors.textSecondary }
+              { color: isUser ? 'rgba(255,255,255,0.7)' : colors.textSecondary },
             ]}>
               {formatTime(msg.timestamp)}
             </Text>
@@ -359,7 +359,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
         {language === 'az' ? 'Canlı Dəstək' : 'Живая поддержка'}
       </Text>
       <Text style={[styles.startSubtitle, { color: colors.textSecondary }]}>
-        {language === 'az' 
+        {language === 'az'
           ? 'Operatorumuzla birbaşa əlaqə saxlayın'
           : 'Свяжитесь напрямую с нашим оператором'
         }
@@ -378,16 +378,16 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                   styles.categoryChip,
                   {
                     backgroundColor: selectedCategory === category.id ? colors.primary : colors.card,
-                    borderColor: colors.border
-                  }
+                    borderColor: colors.border,
+                  },
                 ]}
                 onPress={() => setSelectedCategory(category.id)}
               >
                 <Text style={[
                   styles.categoryChipText,
-                  { 
-                    color: selectedCategory === category.id ? '#fff' : colors.text 
-                  }
+                  {
+                    color: selectedCategory === category.id ? '#fff' : colors.text,
+                  },
                 ]}>
                   {language === 'az' ? category.name : category.nameRu}
                 </Text>
@@ -407,8 +407,8 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
             {
               backgroundColor: colors.card,
               color: colors.text,
-              borderColor: colors.border
-            }
+              borderColor: colors.border,
+            },
           ]}
           placeholder={language === 'az' ? 'Probleminizi qısaca yazın' : 'Кратко опишите проблему'}
           placeholderTextColor={colors.textSecondary}
@@ -424,8 +424,8 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
           styles.startButton,
           {
             backgroundColor: colors.primary,
-            opacity: (!selectedCategory || !subject.trim()) ? 0.5 : 1
-          }
+            opacity: (!selectedCategory || !subject.trim()) ? 0.5 : 1,
+          },
         ]}
         onPress={handleStartChat}
         disabled={!selectedCategory || !subject.trim()}
@@ -448,14 +448,14 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.chatContainer,
             {
               backgroundColor: colors.background,
-              transform: [{ translateY: slideAnim }, { scale: scaleAnim }]
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
             },
-            isMinimized && styles.minimizedContainer
+            isMinimized && styles.minimizedContainer,
           ]}
         >
           {/* Header */}
@@ -472,16 +472,16 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                   <View style={styles.statusContainer}>
                     <View style={[
                       styles.statusDot,
-                      { backgroundColor: getStatusColor(currentChat.status) }
+                      { backgroundColor: getStatusColor(currentChat.status) },
                     ]} />
                     <Text style={styles.statusText}>
                       {language === 'az'
                         ? currentChat.status === 'waiting' ? 'Gözləyir'
                           : currentChat.status === 'active' ? 'Aktiv'
-                          : 'Bağlı'
+                            : 'Bağlı'
                         : currentChat.status === 'waiting' ? 'Ожидание'
                           : currentChat.status === 'active' ? 'Активен'
-                          : 'Закрыт'
+                            : 'Закрыт'
                       }
                     </Text>
                     {operator && (
@@ -493,7 +493,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                 )}
               </View>
             </View>
-            
+
             <View style={styles.headerActions}>
               <TouchableOpacity
                 style={styles.headerButton}
@@ -525,7 +525,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                     contentContainerStyle={{ paddingBottom: 10 }}
                     maintainVisibleContentPosition={{
                       minIndexForVisible: 0,
-                      autoscrollToTopThreshold: 10
+                      autoscrollToTopThreshold: 10,
                     }}
                     onContentSizeChange={() => {
                       if (!isScrolling && shouldScrollToEnd) {
@@ -549,7 +549,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                     {currentChat.messages.map((msg) => (
                       <MessageBubble key={msg.id} msg={msg} />
                     ))}
-                    
+
                     {currentChat.operatorTyping && (
                       <View style={styles.typingIndicator}>
                         <View style={[styles.typingBubble, { backgroundColor: colors.card }]}>
@@ -577,24 +577,24 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                           />
                         </View>
                       )}
-                      
+
                       <View style={[
-                        styles.inputContainer, 
-                        { backgroundColor: colors.background }
+                        styles.inputContainer,
+                        { backgroundColor: colors.background },
                       ]}>
                         <TouchableOpacity
                           style={[
                             styles.attachButton,
                             {
                               backgroundColor: showAttachments ? colors.primary : colors.card,
-                              borderColor: colors.border
-                            }
+                              borderColor: colors.border,
+                            },
                           ]}
                           onPress={() => setShowAttachments(!showAttachments)}
                         >
                           <Paperclip size={18} color={showAttachments ? '#fff' : colors.textSecondary} />
                         </TouchableOpacity>
-                        
+
                         <TextInput
                           testID="livechat-widget-input"
                           style={[
@@ -602,8 +602,8 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                             {
                               backgroundColor: colors.background,
                               color: colors.text,
-                              borderColor: colors.border
-                            }
+                              borderColor: colors.border,
+                            },
                           ]}
                           placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите сообщение...'}
                           placeholderTextColor={colors.textSecondary}
@@ -623,13 +623,13 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                           keyboardAppearance={Platform.OS === 'ios' ? (themeMode === 'dark' ? 'dark' : 'light') : 'default'}
                           maxLength={1000}
                         />
-                        
+
                         <TouchableOpacity
                           style={[
                             styles.sendButton,
                             {
-                              backgroundColor: (message.trim() || attachments.length > 0) ? colors.primary : colors.border
-                            }
+                              backgroundColor: (message.trim() || attachments.length > 0) ? colors.primary : colors.border,
+                            },
                           ]}
                           onPress={() => {
                             logger.debug('Send button pressed. Message:', message, 'Attachments:', attachments.length);
@@ -644,7 +644,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                   ) : (
                     <View style={[styles.closedChatContainer, { backgroundColor: colors.card }]}>
                       <Text style={[styles.closedChatText, { color: colors.textSecondary }]}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? 'Bu söhbət bağlanıb. Yenidən yazmaq üçün yeni söhbət başladın.'
                           : 'Этот чат закрыт. Начните новый чат, чтобы написать снова.'
                         }

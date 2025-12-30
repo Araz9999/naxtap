@@ -16,7 +16,7 @@ export const saveCardProcedure = protectedProcedure
       }),
       brand: z.string(),
       cardHolderName: z.string().optional(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const userId = ctx.user.userId;

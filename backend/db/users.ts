@@ -93,7 +93,7 @@ class UserDatabase {
   private async initializeDefaultUsers() {
     // Import password hashing
     const { hashPassword } = await import('../utils/password');
-    
+
     // Default regular user
     const defaultUser: DBUser = {
       id: '1',
@@ -144,10 +144,10 @@ class UserDatabase {
 
     this.users.set(defaultUser.id, defaultUser);
     this.emailIndex.set(defaultUser.email.toLowerCase(), defaultUser.id);
-    
+
     this.users.set(adminUser.id, adminUser);
     this.emailIndex.set(adminUser.email.toLowerCase(), adminUser.id);
-    
+
     this.users.set(moderatorUser.id, moderatorUser);
     this.emailIndex.set(moderatorUser.email.toLowerCase(), moderatorUser.id);
   }
@@ -203,7 +203,7 @@ class UserDatabase {
     // Atomic-like operation
     try {
       this.users.set(id, user);
-      
+
       if (user.email) {
         this.emailIndex.set(user.email.toLowerCase(), id);
       }
@@ -263,7 +263,7 @@ class UserDatabase {
     if (!user) return null;
 
     const existingProviderIndex = user.socialProviders.findIndex(
-      p => p.provider === provider.provider
+      p => p.provider === provider.provider,
     );
 
     if (existingProviderIndex >= 0) {
@@ -288,7 +288,7 @@ class UserDatabase {
 
     // BUG FIX: Remove from all indexes to prevent stale references
     this.emailIndex.delete(user.email.toLowerCase());
-    
+
     user.socialProviders.forEach(provider => {
       const key = `${provider.provider}:${provider.socialId}`;
       this.socialIndex.delete(key);

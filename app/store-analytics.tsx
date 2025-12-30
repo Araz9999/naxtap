@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  Platform
+  Platform,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -26,7 +26,7 @@ import {
   Clock,
   Star,
   MapPin,
-  Phone
+  Phone,
 } from 'lucide-react-native';
 import { useStoreStore } from '@/store/storeStore';
 import { useUserStore } from '@/store/userStore';
@@ -79,7 +79,7 @@ const timeRanges = [
   { id: '7d', label: '7 gün' },
   { id: '30d', label: '30 gün' },
   { id: '90d', label: '3 ay' },
-  { id: '1y', label: '1 il' }
+  { id: '1y', label: '1 il' },
 ];
 
 export default function StoreAnalyticsScreen() {
@@ -188,9 +188,9 @@ export default function StoreAnalyticsScreen() {
       logger.error('[StoreAnalytics] No store for sharing');
       return;
     }
-    
+
     logger.info('[StoreAnalytics] Sharing analytics:', { storeId: store.id, storeName: store.name });
-    
+
     try {
       // ✅ Create anonymous analytics summary
       const summary = `📊 Mağaza Analitikası (Anonim)
@@ -204,19 +204,19 @@ export default function StoreAnalyticsScreen() {
 ⭐ Orta Reytinq: ${analyticsData.avgRating}
 
 Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTimeRange}`;
-      
+
       const isAvailable = await Sharing.isAvailableAsync();
       if (isAvailable) {
         // Save to temp file
         const fileName = `analytics_${Date.now()}.txt`;
         const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
         await FileSystem.writeAsStringAsync(fileUri, summary);
-        
+
         await Sharing.shareAsync(fileUri, {
           mimeType: 'text/plain',
-          dialogTitle: 'Analitika Paylaş'
+          dialogTitle: 'Analitika Paylaş',
         });
-        
+
         logger.info('[StoreAnalytics] Analytics shared successfully');
       } else {
         logger.warn('[StoreAnalytics] Sharing not available on this platform');
@@ -227,15 +227,15 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
       Alert.alert('Xəta', 'Analitika paylaşıla bilmədi');
     }
   };
-  
+
   const handleExportReport = async () => {
     if (!store) {
       logger.error('[StoreAnalytics] No store for export');
       return;
     }
-    
+
     logger.info('[StoreAnalytics] Exporting weekly report:', { storeId: store.id, storeName: store.name });
-    
+
     setIsExporting(true);
     try {
       // ✅ Check email availability
@@ -246,14 +246,14 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
         setIsExporting(false);
         return;
       }
-      
+
       if (!currentUser?.email) {
         logger.error('[StoreAnalytics] No user email for report');
         Alert.alert('Xəta', 'İstifadəçi e-mail ünvanı tapılmadı');
         setIsExporting(false);
         return;
       }
-      
+
       // ✅ Create detailed weekly report
       const reportContent = `
 <!DOCTYPE html>
@@ -324,14 +324,14 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
 </body>
 </html>
 `;
-      
+
       const result = await MailComposer.composeAsync({
         recipients: [currentUser.email],
         subject: `📊 Həftəlik Mağaza Hesabatı - ${store.name}`,
         body: reportContent,
-        isHtml: true
+        isHtml: true,
       });
-      
+
       if (result.status === 'sent') {
         logger.info('[StoreAnalytics] Report email sent successfully');
         Alert.alert('Uğurlu', 'Hesabat e-mail ünvanınıza göndərildi');
@@ -365,7 +365,7 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
     { label: 'C.A.', value: Math.floor(analyticsData.views * 0.18), color: colors.primary },
     { label: 'C.', value: Math.floor(analyticsData.views * 0.16), color: colors.primary },
     { label: 'Ş.', value: Math.floor(analyticsData.views * 0.20), color: colors.primary },
-    { label: 'B.', value: Math.floor(analyticsData.views * 0.16), color: colors.primary }
+    { label: 'B.', value: Math.floor(analyticsData.views * 0.16), color: colors.primary },
   ];
 
   const topPerformingListings = storeListings
@@ -377,19 +377,19 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
     value: string | number,
     change: number,
     icon: React.ComponentType<{size: number; color: string}>,
-    color: string = colors.primary
+    color: string = colors.primary,
   ) => {
     // ✅ Validate inputs
     if (!title || typeof change !== 'number' || isNaN(change) || !isFinite(change)) {
       return null;
     }
-    
+
     const isPositive = change >= 0;
     const IconComponent = icon;
-    
+
     // ✅ Format change value
     const formattedChange = Math.abs(change).toFixed(1);
-    
+
     return (
       <View style={styles.statCard}>
         <View style={styles.statHeader}>
@@ -404,7 +404,7 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
             )}
             <Text style={[
               styles.changeText,
-              { color: isPositive ? colors.success : colors.error }
+              { color: isPositive ? colors.success : colors.error },
             ]}>
               {formattedChange}%
             </Text>
@@ -428,10 +428,10 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
         </View>
       );
     }
-    
+
     // ✅ Prevent division by zero
     const maxValue = Math.max(...viewsChartData.map(d => d.value), 1);
-    
+
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Həftəlik Baxışlar</Text>
@@ -439,7 +439,7 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
           {viewsChartData.map((data, index) => {
             // ✅ Safe height calculation
             const height = maxValue > 0 ? (data.value / maxValue) * 120 : 0;
-            
+
             return (
               <View key={index} style={styles.chartBar}>
                 <View
@@ -447,8 +447,8 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
                     styles.bar,
                     {
                       height: Math.max(height, 2), // ✅ Min height 2px
-                      backgroundColor: data.color
-                    }
+                      backgroundColor: data.color,
+                    },
                   ]}
                 />
                 <Text style={styles.barLabel}>{data.label}</Text>
@@ -473,7 +473,7 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
         </View>
       );
     }
-    
+
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Ən Çox Baxılan Elanlar</Text>
@@ -483,7 +483,7 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
           const price = listing?.price || 0;
           const views = listing?.views || 0;
           const favorites = (listing as {favorites?: number}).favorites || 0;
-          
+
           return (
             <TouchableOpacity
               key={listing.id}
@@ -524,14 +524,14 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Təhlil və Tövsiyələr</Text>
-        
+
         <View style={styles.insightCard}>
           <View style={styles.insightHeader}>
             <Target size={20} color={colors.primary} />
             <Text style={styles.insightTitle}>Performans Təhlili</Text>
           </View>
           <Text style={styles.insightText}>
-            Mağazanızın performansı son 30 gündə 18.9% artıb. Ən çox baxılan elanlarınız 
+            Mağazanızın performansı son 30 gündə 18.9% artıb. Ən çox baxılan elanlarınız
             şənbə günləri daha aktiv olur.
           </Text>
         </View>
@@ -552,7 +552,7 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
             <Text style={styles.insightTitle}>Reytinq Təkmilləşdirmə</Text>
           </View>
           <Text style={styles.insightText}>
-            Müştəri rəylərini tez cavabladığınız üçün reytinqiniz yüksəkdir. 
+            Müştəri rəylərini tez cavabladığınız üçün reytinqiniz yüksəkdir.
             Bu tempi saxlayın!
           </Text>
         </View>
@@ -562,19 +562,19 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
 
   return (
     <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Mağaza Analitikası',
           headerRight: () => (
             <View style={styles.headerActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.headerButton}
                 onPress={handleShareAnalytics}
                 disabled={isExporting}
               >
                 <Share2 size={20} color={colors.primary} />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.headerButton}
                 onPress={handleExportReport}
                 disabled={isExporting}
@@ -582,10 +582,10 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
                 <Download size={20} color={colors.primary} />
               </TouchableOpacity>
             </View>
-          )
-        }} 
+          ),
+        }}
       />
-      
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Time Range Selector */}
         <View style={styles.timeRangeContainer}>
@@ -594,13 +594,13 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
               key={range.id}
               style={[
                 styles.timeRangeButton,
-                selectedTimeRange === range.id && styles.activeTimeRange
+                selectedTimeRange === range.id && styles.activeTimeRange,
               ]}
               onPress={() => setSelectedTimeRange(range.id)}
             >
               <Text style={[
                 styles.timeRangeText,
-                selectedTimeRange === range.id && styles.activeTimeRangeText
+                selectedTimeRange === range.id && styles.activeTimeRangeText,
               ]}>
                 {range.label}
               </Text>

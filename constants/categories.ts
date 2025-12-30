@@ -42,7 +42,7 @@ export const categories: Category[] = [
           { id: 10124, name: { az: 'Selfi çubuqları', ru: 'Селфи-палки' } },
           { id: 10125, name: { az: 'Smart saatlar', ru: 'Умные часы' } },
           { id: 10126, name: { az: 'Fitness qolbaqları', ru: 'Фитнес-браслеты' } },
-        ]
+        ],
       },
       {
         id: 102,
@@ -71,7 +71,7 @@ export const categories: Category[] = [
           { id: 10218, name: { az: 'Anakartlar', ru: 'Материнские платы' } },
           { id: 10219, name: { az: 'Güc blokları', ru: 'Блоки питания' } },
           { id: 10220, name: { az: 'Korpuslar', ru: 'Корпуса' } },
-        ]
+        ],
       },
       {
         id: 103,
@@ -86,7 +86,7 @@ export const categories: Category[] = [
           { id: 10304, name: { az: 'Lenovo planşetləri', ru: 'Планшеты Lenovo' } },
           { id: 10305, name: { az: 'Xiaomi planşetləri', ru: 'Планшеты Xiaomi' } },
           { id: 10306, name: { az: 'Planşet aksesuarları', ru: 'Аксессуары для планшетов' } },
-        ]
+        ],
       },
       {
         id: 104,
@@ -105,7 +105,7 @@ export const categories: Category[] = [
           { id: 10408, name: { az: 'DVD/Blu-ray pleyelər', ru: 'DVD/Blu-ray плееры' } },
           { id: 10409, name: { az: 'Antenalar', ru: 'Антенны' } },
           { id: 10410, name: { az: 'TV aksesuarları', ru: 'Аксессуары для ТВ' } },
-        ]
+        ],
       },
       {
         id: 105,
@@ -124,7 +124,7 @@ export const categories: Category[] = [
           { id: 10508, name: { az: 'Musiqi mərkəzləri', ru: 'Музыкальные центры' } },
           { id: 10509, name: { az: 'Radiolər', ru: 'Радиоприемники' } },
           { id: 10510, name: { az: 'Turntable', ru: 'Проигрыватели' } },
-        ]
+        ],
       },
       {
         id: 106,
@@ -143,7 +143,7 @@ export const categories: Category[] = [
           { id: 10608, name: { az: 'Foto aksesuarları', ru: 'Фотоаксессуары' } },
           { id: 10609, name: { az: 'Yaddaş kartları', ru: 'Карты памяти' } },
           { id: 10610, name: { az: 'Foto çantaları', ru: 'Фотосумки' } },
-        ]
+        ],
       },
       {
         id: 107,
@@ -162,7 +162,7 @@ export const categories: Category[] = [
           { id: 10708, name: { az: 'Oyun klaviaturaları', ru: 'Игровые клавиатуры' } },
           { id: 10709, name: { az: 'Oyun siçanları', ru: 'Игровые мыши' } },
           { id: 10710, name: { az: 'Gamepadlar', ru: 'Геймпады' } },
-        ]
+        ],
       },
       {
         id: 108,
@@ -181,7 +181,7 @@ export const categories: Category[] = [
           { id: 10808, name: { az: 'İstilik radiatoru', ru: 'Радиаторы отопления' } },
           { id: 10809, name: { az: 'Su qızdırıcıları', ru: 'Водонагреватели' } },
           { id: 10810, name: { az: 'Hava təmizləyiciləri', ru: 'Очистители воздуха' } },
-        ]
+        ],
       },
       {
         id: 109,
@@ -200,7 +200,7 @@ export const categories: Category[] = [
           { id: 10908, name: { az: 'Xırdalan edici', ru: 'Измельчители' } },
           { id: 10909, name: { az: 'Meyve sıxanlar', ru: 'Соковыжималки' } },
           { id: 10910, name: { az: 'Mikserlər', ru: 'Миксеры' } },
-        ]
+        ],
       },
       {
         id: 110,
@@ -217,7 +217,7 @@ export const categories: Category[] = [
           { id: 11006, name: { az: 'Radar detektorları', ru: 'Радар-детекторы' } },
           { id: 11007, name: { az: 'Avtomobil dinamikləri', ru: 'Автомобильные колонки' } },
           { id: 11008, name: { az: 'Avtomobil amplifikatoru', ru: 'Автомобильные усилители' } },
-        ]
+        ],
       },
     ],
   },
@@ -246,7 +246,7 @@ export const categories: Category[] = [
           { id: 20108, name: { az: 'Köhnə tikili', ru: 'Вторичное жилье' } },
           { id: 20109, name: { az: 'Penthouse', ru: 'Пентхаус' } },
           { id: 20110, name: { az: 'Duplex', ru: 'Дуплекс' } },
-        ]
+        ],
       },
       {
         id: 202,
@@ -262,7 +262,7 @@ export const categories: Category[] = [
           { id: 20205, name: { az: 'Kotteçlər', ru: 'Коттеджи' } },
           { id: 20206, name: { az: 'Townhouse', ru: 'Таунхаус' } },
           { id: 20207, name: { az: 'Fərdi evlər', ru: 'Частные дома' } },
-        ]
+        ],
       },
       {
         id: 203,
@@ -276,7 +276,7 @@ export const categories: Category[] = [
           { id: 20303, name: { az: 'Bağ torpağı', ru: 'Садовые участки' } },
           { id: 20304, name: { az: 'Sənaye torpağı', ru: 'Промышленная земля' } },
           { id: 20305, name: { az: 'Kommersiya torpağı', ru: 'Коммерческая земля' } },
-        ]
+        ],
       },
       {
         id: 204,
@@ -295,7 +295,7 @@ export const categories: Category[] = [
           { id: 20408, name: { az: 'Biznes mərkəzləri', ru: 'Бизнес-центры' } },
           { id: 20409, name: { az: 'Kafe və barlar', ru: 'Кафе и бары' } },
           { id: 20410, name: { az: 'Avtoyuma stansiyaları', ru: 'Автомойки' } },
-        ]
+        ],
       },
       {
         id: 205,
@@ -307,7 +307,7 @@ export const categories: Category[] = [
           { id: 20501, name: { az: 'Qarajlar', ru: 'Гаражи' } },
           { id: 20502, name: { az: 'Parkinq yerləri', ru: 'Парковочные места' } },
           { id: 20503, name: { az: 'Avtomobil anbarları', ru: 'Автомобильные склады' } },
-        ]
+        ],
       },
       {
         id: 206,
@@ -324,7 +324,7 @@ export const categories: Category[] = [
           { id: 20606, name: { az: 'Anbar kirayəsi', ru: 'Аренда складов' } },
           { id: 20607, name: { az: 'Otaq kirayəsi', ru: 'Аренда комнат' } },
           { id: 20608, name: { az: 'Günlük kirayə', ru: 'Посуточная аренда' } },
-        ]
+        ],
       },
       {
         id: 207,
@@ -340,7 +340,7 @@ export const categories: Category[] = [
           { id: 20705, name: { az: 'Kənd təsərrüfatı layihələri', ru: 'Сельскохозяйственные проекты' } },
           { id: 20706, name: { az: 'Sənaye layihələri', ru: 'Промышленные проекты' } },
           { id: 20707, name: { az: 'Yaşayış kompleksləri', ru: 'Жилые комплексы' } },
-        ]
+        ],
       },
       {
         id: 208,
@@ -356,7 +356,7 @@ export const categories: Category[] = [
           { id: 20805, name: { az: 'Rusiya əmlakı', ru: 'Недвижимость в России' } },
           { id: 20806, name: { az: 'Gürcüstan əmlakı', ru: 'Недвижимость в Грузии' } },
           { id: 20807, name: { az: 'Digər ölkələr', ru: 'Другие страны' } },
-        ]
+        ],
       },
       {
         id: 209,
@@ -372,7 +372,7 @@ export const categories: Category[] = [
           { id: 20905, name: { az: 'Xizək mərkəzləri', ru: 'Лыжные центры' } },
           { id: 20906, name: { az: 'Termal kurortlar', ru: 'Термальные курорты' } },
           { id: 20907, name: { az: 'Ekoloji turizm mərkəzləri', ru: 'Экотуристические центры' } },
-        ]
+        ],
       },
       {
         id: 210,
@@ -391,7 +391,7 @@ export const categories: Category[] = [
           { id: 21008, name: { az: 'Muzeylar', ru: 'Музеи' } },
           { id: 21009, name: { az: 'Dini binalar', ru: 'Религиозные здания' } },
           { id: 21010, name: { az: 'Hökumət binaları', ru: 'Правительственные здания' } },
-        ]
+        ],
       },
       {
         id: 211,
@@ -408,7 +408,7 @@ export const categories: Category[] = [
           { id: 21106, name: { az: 'Əmlak dizaynı', ru: 'Дизайн недвижимости' } },
           { id: 21107, name: { az: 'Əmlak fotoçəkilişi', ru: 'Фотосъемка недвижимости' } },
           { id: 21108, name: { az: 'Əmlak marketinqi', ru: 'Маркетинг недвижимости' } },
-        ]
+        ],
       },
       {
         id: 212,
@@ -423,7 +423,7 @@ export const categories: Category[] = [
           { id: 21204, name: { az: 'Əmlak sənədləşdirilməsi', ru: 'Оформление документов на недвижимость' } },
           { id: 21205, name: { az: 'Əmlak vergi məsləhətləri', ru: 'Налоговые консультации по недвижимости' } },
           { id: 21206, name: { az: 'Əmlak lizinqi', ru: 'Лизинг недвижимости' } },
-        ]
+        ],
       },
       {
         id: 213,
@@ -439,7 +439,7 @@ export const categories: Category[] = [
           { id: 21305, name: { az: 'Avtomatik qapılar', ru: 'Автоматические ворота' } },
           { id: 21306, name: { az: 'Video nəzarət sistemləri', ru: 'Системы видеонаблюдения' } },
           { id: 21307, name: { az: 'Ağıllı məişət texnikası', ru: 'Умная бытовая техника' } },
-        ]
+        ],
       },
     ],
   },
@@ -470,7 +470,7 @@ export const categories: Category[] = [
           { id: 30110, name: { az: 'Pikap', ru: 'Пикап' } },
           { id: 30111, name: { az: 'Liftbek', ru: 'Лифтбек' } },
           { id: 30112, name: { az: 'Universal', ru: 'Универсал' } },
-        ]
+        ],
       },
       {
         id: 302,
@@ -487,7 +487,7 @@ export const categories: Category[] = [
           { id: 30206, name: { az: 'Turist motosikletləri', ru: 'Туристические мотоциклы' } },
           { id: 30207, name: { az: 'Chopper', ru: 'Чопперы' } },
           { id: 30208, name: { az: 'Elektrik motosikletləri', ru: 'Электромотоциклы' } },
-        ]
+        ],
       },
       {
         id: 303,
@@ -506,7 +506,7 @@ export const categories: Category[] = [
           { id: 30308, name: { az: 'Akkumulyatorlar', ru: 'Аккумуляторы' } },
           { id: 30309, name: { az: 'Işıqlandırma', ru: 'Освещение' } },
           { id: 30310, name: { az: 'Salon aksesuarları', ru: 'Салонные аксессуары' } },
-        ]
+        ],
       },
       {
         id: 304,
@@ -520,7 +520,7 @@ export const categories: Category[] = [
           { id: 30403, name: { az: 'Ağır yük maşınları', ru: 'Тяжелые грузовики' } },
           { id: 30404, name: { az: 'Qoşqular', ru: 'Прицепы' } },
           { id: 30405, name: { az: 'Yarımqoşqular', ru: 'Полуприцепы' } },
-        ]
+        ],
       },
       {
         id: 305,
@@ -533,7 +533,7 @@ export const categories: Category[] = [
           { id: 30502, name: { az: 'Turist avtobusları', ru: 'Туристические автобусы' } },
           { id: 30503, name: { az: 'Mikroavtobuslar', ru: 'Микроавтобусы' } },
           { id: 30504, name: { az: 'Məktəb avtobusları', ru: 'Школьные автобусы' } },
-        ]
+        ],
       },
       {
         id: 306,
@@ -547,7 +547,7 @@ export const categories: Category[] = [
           { id: 30603, name: { az: 'Katamaranlar', ru: 'Катамараны' } },
           { id: 30604, name: { az: 'Su skuterləri', ru: 'Гидроциклы' } },
           { id: 30605, name: { az: 'Su nəqliyyatı aksesuarları', ru: 'Аксессуары для водного транспорта' } },
-        ]
+        ],
       },
       {
         id: 307,
@@ -562,7 +562,7 @@ export const categories: Category[] = [
           { id: 30704, name: { az: 'Traktorlar', ru: 'Тракторы' } },
           { id: 30705, name: { az: 'Kombaynlar', ru: 'Комбайны' } },
           { id: 30706, name: { az: 'Yol texnikası', ru: 'Дорожная техника' } },
-        ]
+        ],
       },
       {
         id: 308,
@@ -578,7 +578,7 @@ export const categories: Category[] = [
           { id: 30805, name: { az: 'Uşaq velosipedləri', ru: 'Детские велосипеды' } },
           { id: 30806, name: { az: 'BMX', ru: 'BMX' } },
           { id: 30807, name: { az: 'Velosiped aksesuarları', ru: 'Велосипедные аксессуары' } },
-        ]
+        ],
       },
       {
         id: 309,
@@ -592,7 +592,7 @@ export const categories: Category[] = [
           { id: 30903, name: { az: 'Yük maşını kirayəsi', ru: 'Аренда грузовиков' } },
           { id: 30904, name: { az: 'Avtobus kirayəsi', ru: 'Аренда автобусов' } },
           { id: 30905, name: { az: 'Xüsusi texnika kirayəsi', ru: 'Аренда спецтехники' } },
-        ]
+        ],
       },
     ],
   },
@@ -626,7 +626,7 @@ export const categories: Category[] = [
           { id: 40113, name: { az: 'Sənaye', ru: 'Промышленность' } },
           { id: 40114, name: { az: 'Kənd təsərrüfatı', ru: 'Сельское хозяйство' } },
           { id: 40115, name: { az: 'Gözəllik və sağlamlıq', ru: 'Красота и здоровье' } },
-        ]
+        ],
       },
       {
         id: 402,
@@ -645,7 +645,7 @@ export const categories: Category[] = [
           { id: 40208, name: { az: 'Təmizlik işçisi', ru: 'Уборщик' } },
           { id: 40209, name: { az: 'Mühəndis', ru: 'Инженер' } },
           { id: 40210, name: { az: 'Dizayner', ru: 'Дизайнер' } },
-        ]
+        ],
       },
       {
         id: 403,
@@ -664,7 +664,7 @@ export const categories: Category[] = [
           { id: 40308, name: { az: 'Təmizlik işçisi axtarıram', ru: 'Ищу уборщика' } },
           { id: 40309, name: { az: 'Mühəndis axtarıram', ru: 'Ищу инженера' } },
           { id: 40310, name: { az: 'Dizayner axtarıram', ru: 'Ищу дизайнера' } },
-        ]
+        ],
       },
       {
         id: 404,
@@ -683,7 +683,7 @@ export const categories: Category[] = [
           { id: 40408, name: { az: 'Mühasibatlıq xidmətləri', ru: 'Бухгалтерские услуги' } },
           { id: 40409, name: { az: 'Konsaltinq', ru: 'Консалтинг' } },
           { id: 40410, name: { az: 'Reklam xidmətləri', ru: 'Рекламные услуги' } },
-        ]
+        ],
       },
       {
         id: 405,
@@ -700,7 +700,7 @@ export const categories: Category[] = [
           { id: 40506, name: { az: 'Boyaq işləri', ru: 'Малярные работы' } },
           { id: 40507, name: { az: 'Döşəmə işləri', ru: 'Напольные покрытия' } },
           { id: 40508, name: { az: 'Dam işləri', ru: 'Кровельные работы' } },
-        ]
+        ],
       },
       {
         id: 406,
@@ -717,7 +717,7 @@ export const categories: Category[] = [
           { id: 40606, name: { az: 'Repetitorluq', ru: 'Репетиторство' } },
           { id: 40607, name: { az: 'Biznes kursları', ru: 'Бизнес-курсы' } },
           { id: 40608, name: { az: 'Sənətkarlıq kursları', ru: 'Курсы рукоделия' } },
-        ]
+        ],
       },
       {
         id: 407,
@@ -733,7 +733,7 @@ export const categories: Category[] = [
           { id: 40705, name: { az: 'Fitness məşqçisi', ru: 'Фитнес-тренер' } },
           { id: 40706, name: { az: 'Dietetik', ru: 'Диетология' } },
           { id: 40707, name: { az: 'Psixoloji xidmətlər', ru: 'Психологические услуги' } },
-        ]
+        ],
       },
       {
         id: 408,
@@ -748,7 +748,7 @@ export const categories: Category[] = [
           { id: 40804, name: { az: 'Xalça təmizliği', ru: 'Чистка ковров' } },
           { id: 40805, name: { az: 'Mebel təmizliği', ru: 'Чистка мебели' } },
           { id: 40806, name: { az: 'Tikinti sonrası təmizlik', ru: 'Уборка после ремонта' } },
-        ]
+        ],
       },
     ],
   },
@@ -777,7 +777,7 @@ export const categories: Category[] = [
           { id: 50108, name: { az: 'Ev geyimi', ru: 'Домашняя одежда' } },
           { id: 50109, name: { az: 'Qış geyimi', ru: 'Зимняя одежда' } },
           { id: 50110, name: { az: 'Yay geyimi', ru: 'Летняя одежда' } },
-        ]
+        ],
       },
       {
         id: 502,
@@ -794,7 +794,7 @@ export const categories: Category[] = [
           { id: 50206, name: { az: 'Yay ayaqqabıları', ru: 'Летняя обувь' } },
           { id: 50207, name: { az: 'Ev ayaqqabıları', ru: 'Домашняя обувь' } },
           { id: 50208, name: { az: 'İş ayaqqabıları', ru: 'Рабочая обувь' } },
-        ]
+        ],
       },
       {
         id: 503,
@@ -813,7 +813,7 @@ export const categories: Category[] = [
           { id: 50308, name: { az: 'Saç aksesuarları', ru: 'Аксессуары для волос' } },
           { id: 50309, name: { az: 'Portfellər', ru: 'Портфели' } },
           { id: 50310, name: { az: 'Çəmədanlar', ru: 'Чемоданы' } },
-        ]
+        ],
       },
       {
         id: 504,
@@ -832,7 +832,7 @@ export const categories: Category[] = [
           { id: 50408, name: { az: 'Boyunbağılar', ru: 'Ожерелья' } },
           { id: 50409, name: { az: 'Üzüklər', ru: 'Кольца' } },
           { id: 50410, name: { az: 'Bilərziklər', ru: 'Браслеты' } },
-        ]
+        ],
       },
       {
         id: 505,
@@ -849,7 +849,7 @@ export const categories: Category[] = [
           { id: 50506, name: { az: 'Bədən baxımı', ru: 'Уход за телом' } },
           { id: 50507, name: { az: 'Dırnaq baxımı', ru: 'Уход за ногтями' } },
           { id: 50508, name: { az: 'Kişi baxım məhsulları', ru: 'Мужская косметика' } },
-        ]
+        ],
       },
       {
         id: 506,
@@ -865,7 +865,7 @@ export const categories: Category[] = [
           { id: 50605, name: { az: 'Məktəb çantaları', ru: 'Школьные рюкзаки' } },
           { id: 50606, name: { az: 'Laptop çantaları', ru: 'Сумки для ноутбуков' } },
           { id: 50607, name: { az: 'Çəmədanlar', ru: 'Чемоданы' } },
-        ]
+        ],
       },
       {
         id: 507,
@@ -882,7 +882,7 @@ export const categories: Category[] = [
           { id: 50706, name: { az: 'Dəri çantalar', ru: 'Кожаные сумки' } },
           { id: 50707, name: { az: 'Dəri portfellər', ru: 'Кожаные портфели' } },
           { id: 50708, name: { az: 'Dəri telefon qabları', ru: 'Кожаные чехлы для телефонов' } },
-        ]
+        ],
       },
       {
         id: 508,
@@ -898,7 +898,7 @@ export const categories: Category[] = [
           { id: 50805, name: { az: 'Vintage çantalar', ru: 'Винтажные сумки' } },
           { id: 50806, name: { az: 'Retro eynəklər', ru: 'Ретро очки' } },
           { id: 50807, name: { az: 'Vintage parfümlər', ru: 'Винтажные духи' } },
-        ]
+        ],
       },
       {
         id: 509,
@@ -915,7 +915,7 @@ export const categories: Category[] = [
           { id: 50906, name: { az: 'Designer ayaqqabılar', ru: 'Дизайнерская обувь' } },
           { id: 50907, name: { az: 'Ekskluziv aksesuarlar', ru: 'Эксклюзивные аксессуары' } },
           { id: 50908, name: { az: 'Lüks kosmetika', ru: 'Люксовая косметика' } },
-        ]
+        ],
       },
       {
         id: 510,
@@ -931,7 +931,7 @@ export const categories: Category[] = [
           { id: 51005, name: { az: 'Bambuk aksesuarlar', ru: 'Бамбуковые аксессуары' } },
           { id: 51006, name: { az: 'Təbii daş zinət əşyaları', ru: 'Украшения из натуральных камней' } },
           { id: 51007, name: { az: 'Ekoloji çantalar', ru: 'Экологичные сумки' } },
-        ]
+        ],
       },
       {
         id: 511,
@@ -948,7 +948,7 @@ export const categories: Category[] = [
           { id: 51106, name: { az: 'Handmade ayaqqabılar', ru: 'Обувь ручной работы' } },
           { id: 51107, name: { az: 'Əl işi kosmetika', ru: 'Косметика ручной работы' } },
           { id: 51108, name: { az: 'Fərdi sifarişlər', ru: 'Индивидуальные заказы' } },
-        ]
+        ],
       },
       {
         id: 512,
@@ -964,7 +964,7 @@ export const categories: Category[] = [
           { id: 51205, name: { az: 'Smart çantalar', ru: 'Умные сумки' } },
           { id: 51206, name: { az: 'Texnoloji eynəklər', ru: 'Технологичные очки' } },
           { id: 51207, name: { az: 'İnnovasiya məhsulları', ru: 'Инновационные продукты' } },
-        ]
+        ],
       },
       {
         id: 513,
@@ -980,7 +980,7 @@ export const categories: Category[] = [
           { id: 51305, name: { az: 'Teatr kostyumları', ru: 'Театральные костюмы' } },
           { id: 51306, name: { az: 'Milli geyim', ru: 'Национальная одежда' } },
           { id: 51307, name: { az: 'Karnaval kostyumları', ru: 'Карнавальные костюмы' } },
-        ]
+        ],
       },
     ],
   },
@@ -1009,7 +1009,7 @@ export const categories: Category[] = [
           { id: 60108, name: { az: 'Uşaq mebeli', ru: 'Детская мебель' } },
           { id: 60109, name: { az: 'Bağ mebeli', ru: 'Садовая мебель' } },
           { id: 60110, name: { az: 'Antik mebel', ru: 'Антикварная мебель' } },
-        ]
+        ],
       },
       {
         id: 602,
@@ -1023,7 +1023,7 @@ export const categories: Category[] = [
           { id: 60203, name: { az: 'Mətbəx texnikası', ru: 'Кухонная техника' } },
           { id: 60204, name: { az: 'İqlim texnikası', ru: 'Климатическая техника' } },
           { id: 60205, name: { az: 'Təmizlik texnikası', ru: 'Техника для уборки' } },
-        ]
+        ],
       },
       {
         id: 603,
@@ -1040,7 +1040,7 @@ export const categories: Category[] = [
           { id: 60306, name: { az: 'Gübrələr', ru: 'Удобрения' } },
           { id: 60307, name: { az: 'Bitki qoruyucu vasitələr', ru: 'Средства защиты растений' } },
           { id: 60308, name: { az: 'Bağ dekorasiyası', ru: 'Садовый декор' } },
-        ]
+        ],
       },
       {
         id: 604,
@@ -1057,7 +1057,7 @@ export const categories: Category[] = [
           { id: 60406, name: { az: 'Dam materialları', ru: 'Кровельные материалы' } },
           { id: 60407, name: { az: 'İnşaat alətləri', ru: 'Строительные инструменты' } },
           { id: 60408, name: { az: 'Bağlayıcı materiallar', ru: 'Крепежные материалы' } },
-        ]
+        ],
       },
       {
         id: 605,
@@ -1072,7 +1072,7 @@ export const categories: Category[] = [
           { id: 60504, name: { az: 'Şüşə qablar', ru: 'Стеклянная посуда' } },
           { id: 60505, name: { az: 'Plastik qablar', ru: 'Пластиковая посуда' } },
           { id: 60506, name: { az: 'Mətbəx aksesuarları', ru: 'Кухонные аксессуары' } },
-        ]
+        ],
       },
       {
         id: 606,
@@ -1089,7 +1089,7 @@ export const categories: Category[] = [
           { id: 60606, name: { az: 'Yastıqlar', ru: 'Подушки' } },
           { id: 60607, name: { az: 'Pərdələr', ru: 'Шторы' } },
           { id: 60608, name: { az: 'Xalçalar', ru: 'Ковры' } },
-        ]
+        ],
       },
       {
         id: 607,
@@ -1104,7 +1104,7 @@ export const categories: Category[] = [
           { id: 60704, name: { az: 'Ağaclar', ru: 'Деревья' } },
           { id: 60705, name: { az: 'Kollar', ru: 'Кустарники' } },
           { id: 60706, name: { az: 'Bitki qabları', ru: 'Горшки для растений' } },
-        ]
+        ],
       },
       {
         id: 608,
@@ -1119,7 +1119,7 @@ export const categories: Category[] = [
           { id: 60804, name: { az: 'Divar lampaları', ru: 'Настенные светильники' } },
           { id: 60805, name: { az: 'LED işıqlar', ru: 'LED освещение' } },
           { id: 60806, name: { az: 'Bağ işıqlandırması', ru: 'Садовое освещение' } },
-        ]
+        ],
       },
       {
         id: 609,
@@ -1138,7 +1138,7 @@ export const categories: Category[] = [
           { id: 60908, name: { az: 'Ağıllı kilidlər', ru: 'Умные замки' } },
           { id: 60909, name: { az: 'Təhlükəsizlik kameraları', ru: 'Камеры безопасности' } },
           { id: 60910, name: { az: 'Ev seyfi', ru: 'Домашние сейфы' } },
-        ]
+        ],
       },
       {
         id: 610,
@@ -1155,7 +1155,7 @@ export const categories: Category[] = [
           { id: 61006, name: { az: 'Wi-Fi genişləndiricilər', ru: 'Wi-Fi усилители' } },
           { id: 61007, name: { az: 'Ağıllı pərdələr', ru: 'Умные шторы' } },
           { id: 61008, name: { az: 'Ağıllı su sistemi', ru: 'Умные системы полива' } },
-        ]
+        ],
       },
       {
         id: 611,
@@ -1172,7 +1172,7 @@ export const categories: Category[] = [
           { id: 61106, name: { az: 'Dezinfeksiya vasitələri', ru: 'Дезинфицирующие средства' } },
           { id: 61107, name: { az: 'Hava təravətləndiriciləri', ru: 'Освежители воздуха' } },
           { id: 61108, name: { az: 'Kanalizasiya təmizləyiciləri', ru: 'Средства для труб' } },
-        ]
+        ],
       },
       {
         id: 612,
@@ -1191,7 +1191,7 @@ export const categories: Category[] = [
           { id: 61208, name: { az: 'Mətbəx dəsmalları', ru: 'Кухонные полотенца' } },
           { id: 61209, name: { az: 'Hamam örtükləri', ru: 'Банные халаты' } },
           { id: 61210, name: { az: 'Dekorativ yastıqlar', ru: 'Декоративные подушки' } },
-        ]
+        ],
       },
       {
         id: 613,
@@ -1208,7 +1208,7 @@ export const categories: Category[] = [
           { id: 61306, name: { az: 'Nərdivan və pilləkənlər', ru: 'Лестницы и стремянки' } },
           { id: 61307, name: { az: 'İş əlcəkləri', ru: 'Рабочие перчатки' } },
           { id: 61308, name: { az: 'Təhlükəsizlik vasitələri', ru: 'Средства защиты' } },
-        ]
+        ],
       },
       {
         id: 614,
@@ -1225,7 +1225,7 @@ export const categories: Category[] = [
           { id: 61406, name: { az: 'Vakuum torbalar', ru: 'Вакуумные пакеты' } },
           { id: 61407, name: { az: 'Çanta və portfellər', ru: 'Сумки и чемоданы' } },
           { id: 61408, name: { az: 'Etiketlər və işarələr', ru: 'Этикетки и маркеры' } },
-        ]
+        ],
       },
       {
         id: 615,
@@ -1242,7 +1242,7 @@ export const categories: Category[] = [
           { id: 61506, name: { az: 'Jakuzi və spa', ru: 'Джакузи и спа' } },
           { id: 61507, name: { az: 'Sauna avadanlığı', ru: 'Оборудование для сауны' } },
           { id: 61508, name: { az: 'Su oyunları', ru: 'Водные игры' } },
-        ]
+        ],
       },
       {
         id: 616,
@@ -1259,7 +1259,7 @@ export const categories: Category[] = [
           { id: 61606, name: { az: 'Kompost qutuları', ru: 'Компостные ящики' } },
           { id: 61607, name: { az: 'Yağış suyu toplama', ru: 'Сбор дождевой воды' } },
           { id: 61608, name: { az: 'Ekoloji təmizlik vasitələri', ru: 'Экологичные моющие средства' } },
-        ]
+        ],
       },
       {
         id: 617,
@@ -1276,7 +1276,7 @@ export const categories: Category[] = [
           { id: 61706, name: { az: 'Lövhələr', ru: 'Доски' } },
           { id: 61707, name: { az: 'Ofis aksesuarları', ru: 'Офисные аксессуары' } },
           { id: 61708, name: { az: 'Kabel idarəetməsi', ru: 'Управление кабелями' } },
-        ]
+        ],
       },
       {
         id: 618,
@@ -1293,7 +1293,7 @@ export const categories: Category[] = [
           { id: 61806, name: { az: 'Təcili durum dəstləri', ru: 'Наборы экстренной помощи' } },
           { id: 61807, name: { az: 'Radioaktiv detektorlar', ru: 'Детекторы радиации' } },
           { id: 61808, name: { az: 'Karbon monoksid detektorları', ru: 'Детекторы угарного газа' } },
-        ]
+        ],
       },
     ],
   },
@@ -1318,7 +1318,7 @@ export const categories: Category[] = [
           { id: 70104, name: { az: '13+ yaş geyimi', ru: 'Одежда 13+ лет' } },
           { id: 70105, name: { az: 'Körpə geyimi', ru: 'Одежда для новорожденных' } },
           { id: 70106, name: { az: 'Uşaq idman geyimi', ru: 'Детская спортивная одежда' } },
-        ]
+        ],
       },
       {
         id: 702,
@@ -1332,7 +1332,7 @@ export const categories: Category[] = [
           { id: 70203, name: { az: 'Uşaq çəkmələri', ru: 'Детские сапоги' } },
           { id: 70204, name: { az: 'Uşaq sandalları', ru: 'Детские сандалии' } },
           { id: 70205, name: { az: 'Məktəb ayaqqabıları', ru: 'Школьная обувь' } },
-        ]
+        ],
       },
       {
         id: 703,
@@ -1346,7 +1346,7 @@ export const categories: Category[] = [
           { id: 70303, name: { az: 'Transformer arabalar', ru: 'Коляски-трансформеры' } },
           { id: 70304, name: { az: 'İkiz arabaları', ru: 'Коляски для двойни' } },
           { id: 70305, name: { az: 'Araba aksesuarları', ru: 'Аксессуары для колясок' } },
-        ]
+        ],
       },
       {
         id: 704,
@@ -1365,7 +1365,7 @@ export const categories: Category[] = [
           { id: 70408, name: { az: 'Puzzle', ru: 'Пазлы' } },
           { id: 70409, name: { az: 'Kreativ oyuncaqlar', ru: 'Творческие игрушки' } },
           { id: 70410, name: { az: 'Açıq hava oyuncaqları', ru: 'Игрушки для улицы' } },
-        ]
+        ],
       },
       {
         id: 705,
@@ -1380,7 +1380,7 @@ export const categories: Category[] = [
           { id: 70504, name: { az: 'Uşaq şkafları', ru: 'Детские шкафы' } },
           { id: 70505, name: { az: 'Oyun mebeli', ru: 'Игровая мебель' } },
           { id: 70506, name: { az: 'Körpə mebeli', ru: 'Мебель для новорожденных' } },
-        ]
+        ],
       },
       {
         id: 706,
@@ -1394,7 +1394,7 @@ export const categories: Category[] = [
           { id: 70603, name: { az: 'Uşaq içkiləri', ru: 'Детские напитки' } },
           { id: 70604, name: { az: 'Uşaq peçenyesi', ru: 'Детское печенье' } },
           { id: 70605, name: { az: 'Vitamin əlavələri', ru: 'Витаминные добавки' } },
-        ]
+        ],
       },
       {
         id: 707,
@@ -1407,7 +1407,7 @@ export const categories: Category[] = [
           { id: 70702, name: { az: '9-18 kq avtokreslo', ru: 'Автокресла 9-18 кг' } },
           { id: 70703, name: { az: '15-36 kq avtokreslo', ru: 'Автокресла 15-36 кг' } },
           { id: 70704, name: { az: 'Buster oturacaqları', ru: 'Бустеры' } },
-        ]
+        ],
       },
       {
         id: 708,
@@ -1422,7 +1422,7 @@ export const categories: Category[] = [
           { id: 70804, name: { az: '16" velosipedlər', ru: 'Велосипеды 16"' } },
           { id: 70805, name: { az: '18" velosipedlər', ru: 'Велосипеды 18"' } },
           { id: 70806, name: { az: '20" velosipedlər', ru: 'Велосипеды 20"' } },
-        ]
+        ],
       },
       {
         id: 709,
@@ -1436,7 +1436,7 @@ export const categories: Category[] = [
           { id: 70903, name: { az: 'Uşaq sabunları', ru: 'Детское мыло' } },
           { id: 70904, name: { az: 'Uşaq kremlər', ru: 'Детские кремы' } },
           { id: 70905, name: { az: 'Uşaq dişləri üçün', ru: 'Для детских зубов' } },
-        ]
+        ],
       },
     ],
   },
@@ -1460,7 +1460,7 @@ export const categories: Category[] = [
           { id: 80103, name: { az: 'Kiçik cinslər', ru: 'Мелкие породы' } },
           { id: 80104, name: { az: 'Qarışıq cinslər', ru: 'Смешанные породы' } },
           { id: 80105, name: { az: 'İt balası', ru: 'Щенки' } },
-        ]
+        ],
       },
       {
         id: 802,
@@ -1474,7 +1474,7 @@ export const categories: Category[] = [
           { id: 80203, name: { az: 'Tüksüz cinslər', ru: 'Бесшерстные породы' } },
           { id: 80204, name: { az: 'Qarışıq cinslər', ru: 'Смешанные породы' } },
           { id: 80205, name: { az: 'Pişik balası', ru: 'Котята' } },
-        ]
+        ],
       },
       {
         id: 803,
@@ -1488,7 +1488,7 @@ export const categories: Category[] = [
           { id: 80303, name: { az: 'Finçlər', ru: 'Амадины' } },
           { id: 80304, name: { az: 'Göyərçinlər', ru: 'Голуби' } },
           { id: 80305, name: { az: 'Digər quşlar', ru: 'Другие птицы' } },
-        ]
+        ],
       },
       {
         id: 804,
@@ -1502,7 +1502,7 @@ export const categories: Category[] = [
           { id: 80403, name: { az: 'Dəniz balıqları', ru: 'Морские рыбки' } },
           { id: 80404, name: { az: 'Akvarium bitkiləri', ru: 'Аквариумные растения' } },
           { id: 80405, name: { az: 'Akvarium avadanlığı', ru: 'Аквариумное оборудование' } },
-        ]
+        ],
       },
       {
         id: 805,
@@ -1519,7 +1519,7 @@ export const categories: Category[] = [
           { id: 80506, name: { az: 'Toyuqlar', ru: 'Куры' } },
           { id: 80507, name: { az: 'Ördəklər', ru: 'Утки' } },
           { id: 80508, name: { az: 'Qazlar', ru: 'Гуси' } },
-        ]
+        ],
       },
       {
         id: 806,
@@ -1535,7 +1535,7 @@ export const categories: Category[] = [
           { id: 80605, name: { az: 'Heyvan yataqları', ru: 'Лежанки для животных' } },
           { id: 80606, name: { az: 'Heyvan daşıyıcıları', ru: 'Переноски для животных' } },
           { id: 80607, name: { az: 'Heyvan baxım məhsulları', ru: 'Средства ухода за животными' } },
-        ]
+        ],
       },
       {
         id: 807,
@@ -1550,7 +1550,7 @@ export const categories: Category[] = [
           { id: 80704, name: { az: 'Kirpilər', ru: 'Ежи' } },
           { id: 80705, name: { az: 'Sürünənlər', ru: 'Рептилии' } },
           { id: 80706, name: { az: 'Həşəratlar', ru: 'Насекомые' } },
-        ]
+        ],
       },
       {
         id: 808,
@@ -1564,7 +1564,7 @@ export const categories: Category[] = [
           { id: 80803, name: { az: 'Heyvan məşqi', ru: 'Дрессировка' } },
           { id: 80804, name: { az: 'Heyvan otelləri', ru: 'Гостиницы для животных' } },
           { id: 80805, name: { az: 'Heyvan gəzdirilməsi', ru: 'Выгул животных' } },
-        ]
+        ],
       },
     ],
   },
@@ -1590,7 +1590,7 @@ export const categories: Category[] = [
           { id: 90105, name: { az: 'Elektron alətlər', ru: 'Электронные инструменты' } },
           { id: 90106, name: { az: 'Simli alətlər', ru: 'Струнные инструменты' } },
           { id: 90107, name: { az: 'Musiqi aksesuarları', ru: 'Музыкальные аксессуары' } },
-        ]
+        ],
       },
       {
         id: 902,
@@ -1605,7 +1605,7 @@ export const categories: Category[] = [
           { id: 90204, name: { az: 'Antik əşyalar', ru: 'Антиквариат' } },
           { id: 90205, name: { az: 'Modelləşdirmə', ru: 'Моделизм' } },
           { id: 90206, name: { az: 'Militaria', ru: 'Милитария' } },
-        ]
+        ],
       },
       {
         id: 903,
@@ -1624,7 +1624,7 @@ export const categories: Category[] = [
           { id: 90308, name: { az: 'Döyüş sənətləri', ru: 'Боевые искусства' } },
           { id: 90309, name: { az: 'Yoga və pilates', ru: 'Йога и пилатес' } },
           { id: 90310, name: { az: 'Turizm avadanlığı', ru: 'Туристическое снаряжение' } },
-        ]
+        ],
       },
       {
         id: 904,
@@ -1640,7 +1640,7 @@ export const categories: Category[] = [
           { id: 90405, name: { az: 'Ensiklopediyalar', ru: 'Энциклопедии' } },
           { id: 90406, name: { az: 'Dini kitablar', ru: 'Религиозные книги' } },
           { id: 90407, name: { az: 'Biznes kitabları', ru: 'Бизнес-литература' } },
-        ]
+        ],
       },
       {
         id: 905,
@@ -1655,7 +1655,7 @@ export const categories: Category[] = [
           { id: 90504, name: { az: 'Balıqçılıq geyimi', ru: 'Рыболовная одежда' } },
           { id: 90505, name: { az: 'Çadırlar', ru: 'Палатки' } },
           { id: 90506, name: { az: 'Yem və qarmaqlar', ru: 'Приманки и крючки' } },
-        ]
+        ],
       },
       {
         id: 906,
@@ -1670,7 +1670,7 @@ export const categories: Category[] = [
           { id: 90604, name: { az: 'Səyahət turları', ru: 'Туристические туры' } },
           { id: 90605, name: { az: 'Aviabiletlər', ru: 'Авиабилеты' } },
           { id: 90606, name: { az: 'Mehmanxana rezervasiyaları', ru: 'Бронирование отелей' } },
-        ]
+        ],
       },
       {
         id: 907,
@@ -1684,7 +1684,7 @@ export const categories: Category[] = [
           { id: 90703, name: { az: 'Kart oyunları', ru: 'Карточные игры' } },
           { id: 90704, name: { az: 'Puzzle oyunları', ru: 'Головоломки' } },
           { id: 90705, name: { az: 'Uşaq bord oyunları', ru: 'Детские настольные игры' } },
-        ]
+        ],
       },
     ],
   },
@@ -1709,7 +1709,7 @@ export const categories: Category[] = [
           { id: 100104, name: { az: 'Mağaza mebeli', ru: 'Торговая мебель' } },
           { id: 100105, name: { az: 'Təhlükəsizlik sistemləri', ru: 'Системы безопасности' } },
           { id: 100106, name: { az: 'Barkod skanerlər', ru: 'Сканеры штрих-кодов' } },
-        ]
+        ],
       },
       {
         id: 1002,
@@ -1724,7 +1724,7 @@ export const categories: Category[] = [
           { id: 100204, name: { az: 'Nasoslar', ru: 'Насосы' } },
           { id: 100205, name: { az: 'Elektrik avadanlığı', ru: 'Электрооборудование' } },
           { id: 100206, name: { az: 'Ölçü cihazları', ru: 'Измерительные приборы' } },
-        ]
+        ],
       },
       {
         id: 1003,
@@ -1739,7 +1739,7 @@ export const categories: Category[] = [
           { id: 100304, name: { az: 'Proyektorlar', ru: 'Проекторы' } },
           { id: 100305, name: { az: 'Lövhələr', ru: 'Доски' } },
           { id: 100306, name: { az: 'Ofis aksesuarları', ru: 'Офисные аксессуары' } },
-        ]
+        ],
       },
       {
         id: 1004,
@@ -1753,7 +1753,7 @@ export const categories: Category[] = [
           { id: 100403, name: { az: 'İstehsalat biznes', ru: 'Производственный бизнес' } },
           { id: 100404, name: { az: 'Xidmət biznes', ru: 'Сервисный бизнес' } },
           { id: 100405, name: { az: 'İnternet biznes', ru: 'Интернет-бизнес' } },
-        ]
+        ],
       },
       {
         id: 1005,
@@ -1768,7 +1768,7 @@ export const categories: Category[] = [
           { id: 100504, name: { az: 'Suvarma sistemləri', ru: 'Системы орошения' } },
           { id: 100505, name: { az: 'Kənd təsərrüfatı alətləri', ru: 'Сельхозинструменты' } },
           { id: 100506, name: { az: 'Toxumlar', ru: 'Семена' } },
-        ]
+        ],
       },
       {
         id: 1006,
@@ -1783,7 +1783,7 @@ export const categories: Category[] = [
           { id: 100604, name: { az: 'Restoran mebeli', ru: 'Ресторанная мебель' } },
           { id: 100605, name: { az: 'Qab-qacaq', ru: 'Посуда' } },
           { id: 100606, name: { az: 'Xidmət avadanlığı', ru: 'Сервировочное оборудование' } },
-        ]
+        ],
       },
     ],
   },
@@ -1807,7 +1807,7 @@ export const categories: Category[] = [
           { id: 110103, name: { az: 'Çörəklər', ru: 'Хлебобулочные изделия' } },
           { id: 110104, name: { az: 'Konservlər', ru: 'Консервы' } },
           { id: 110105, name: { az: 'Dondurulmuş yeməklər', ru: 'Замороженные блюда' } },
-        ]
+        ],
       },
       {
         id: 1102,
@@ -1822,7 +1822,7 @@ export const categories: Category[] = [
           { id: 110204, name: { az: 'Şokoladlar', ru: 'Шоколад' } },
           { id: 110205, name: { az: 'Konfetlər', ru: 'Конфеты' } },
           { id: 110206, name: { az: 'Bal məhsulları', ru: 'Медовые изделия' } },
-        ]
+        ],
       },
       {
         id: 1103,
@@ -1837,7 +1837,7 @@ export const categories: Category[] = [
           { id: 110304, name: { az: 'Qəhvə', ru: 'Кофе' } },
           { id: 110305, name: { az: 'Su', ru: 'Вода' } },
           { id: 110306, name: { az: 'Enerji içkiləri', ru: 'Энергетические напитки' } },
-        ]
+        ],
       },
       {
         id: 1104,
@@ -1851,7 +1851,7 @@ export const categories: Category[] = [
           { id: 110403, name: { az: 'Omega-3', ru: 'Омега-3' } },
           { id: 110404, name: { az: 'Probiotiklər', ru: 'Пробиотики' } },
           { id: 110405, name: { az: 'Mineral əlavələr', ru: 'Минеральные добавки' } },
-        ]
+        ],
       },
       {
         id: 1105,
@@ -1866,7 +1866,7 @@ export const categories: Category[] = [
           { id: 110504, name: { az: 'Süd məhsulları', ru: 'Молочные продукты' } },
           { id: 110505, name: { az: 'Ət məhsulları', ru: 'Мясные продукты' } },
           { id: 110506, name: { az: 'Balıq məhsulları', ru: 'Рыбные продукты' } },
-        ]
+        ],
       },
     ],
   },
@@ -1890,7 +1890,7 @@ export const categories: Category[] = [
           { id: 120103, name: { az: 'Xarici dil dərslikləri', ru: 'Учебники иностранных языков' } },
           { id: 120104, name: { az: 'Texniki dərsliklər', ru: 'Технические учебники' } },
           { id: 120105, name: { az: 'Tibb dərslikləri', ru: 'Медицинские учебники' } },
-        ]
+        ],
       },
       {
         id: 1202,
@@ -1905,7 +1905,7 @@ export const categories: Category[] = [
           { id: 120204, name: { az: 'Sənətkarlıq kursları', ru: 'Курсы рукоделия' } },
           { id: 120205, name: { az: 'Musiqi kursları', ru: 'Музыкальные курсы' } },
           { id: 120206, name: { az: 'İdman kursları', ru: 'Спортивные курсы' } },
-        ]
+        ],
       },
       {
         id: 1203,
@@ -1920,7 +1920,7 @@ export const categories: Category[] = [
           { id: 120304, name: { az: 'Dil repetitoru', ru: 'Репетитор по языкам' } },
           { id: 120305, name: { az: 'Tarix repetitoru', ru: 'Репетитор по истории' } },
           { id: 120306, name: { az: 'Ədəbiyyat repetitoru', ru: 'Репетитор по литературе' } },
-        ]
+        ],
       },
       {
         id: 1204,
@@ -1934,7 +1934,7 @@ export const categories: Category[] = [
           { id: 120403, name: { az: 'İnteraktiv lövhələr', ru: 'Интерактивные доски' } },
           { id: 120404, name: { az: 'Təhsil oyunları', ru: 'Образовательные игры' } },
           { id: 120405, name: { az: 'Məktəb ləvazimatları', ru: 'Школьные принадлежности' } },
-        ]
+        ],
       },
       {
         id: 1205,
@@ -1948,7 +1948,7 @@ export const categories: Category[] = [
           { id: 120503, name: { az: 'Onlayn repetitorluq', ru: 'Онлайн репетиторство' } },
           { id: 120504, name: { az: 'Elektron kitablar', ru: 'Электронные книги' } },
           { id: 120505, name: { az: 'Təhsil platformaları', ru: 'Образовательные платформы' } },
-        ]
+        ],
       },
     ],
   },
@@ -1973,7 +1973,7 @@ export const categories: Category[] = [
           { id: 130104, name: { az: 'Düymələr', ru: 'Пуговицы' } },
           { id: 130105, name: { az: 'İplər', ru: 'Нитки' } },
           { id: 130106, name: { az: 'Kalıplar', ru: 'Выкройки' } },
-        ]
+        ],
       },
       {
         id: 1302,
@@ -1988,7 +1988,7 @@ export const categories: Category[] = [
           { id: 130204, name: { az: 'Toxucu dəmirləri', ru: 'Спицы для вязания' } },
           { id: 130205, name: { az: 'Makrame ipləri', ru: 'Нити для макраме' } },
           { id: 130206, name: { az: 'Hörmə materialları', ru: 'Материалы для плетения' } },
-        ]
+        ],
       },
       {
         id: 1303,
@@ -2002,7 +2002,7 @@ export const categories: Category[] = [
           { id: 130303, name: { az: 'Zərgərlik alətləri', ru: 'Ювелирные инструменты' } },
           { id: 130304, name: { az: 'Kristallar', ru: 'Кристаллы' } },
           { id: 130305, name: { az: 'Zərgərlik aksesuarları', ru: 'Ювелирная фурнитура' } },
-        ]
+        ],
       },
       {
         id: 1304,
@@ -2016,7 +2016,7 @@ export const categories: Category[] = [
           { id: 130403, name: { az: 'Ağac boyaları', ru: 'Краски для дерева' } },
           { id: 130404, name: { az: 'Ağac lakları', ru: 'Лаки для дерева' } },
           { id: 130405, name: { az: 'Dekorativ ağac məmulatları', ru: 'Декоративные изделия из дерева' } },
-        ]
+        ],
       },
       {
         id: 1305,
@@ -2030,7 +2030,7 @@ export const categories: Category[] = [
           { id: 130503, name: { az: 'Keramika boyaları', ru: 'Краски для керамики' } },
           { id: 130504, name: { az: 'Gil heykəlciklər', ru: 'Глиняные фигурки' } },
           { id: 130505, name: { az: 'Keramika qabları', ru: 'Керамическая посуда' } },
-        ]
+        ],
       },
       {
         id: 1306,
@@ -2044,7 +2044,7 @@ export const categories: Category[] = [
           { id: 130603, name: { az: 'Rəsm kağızları', ru: 'Бумага для рисования' } },
           { id: 130604, name: { az: 'Kaligrafiya qələmləri', ru: 'Каллиграфические перья' } },
           { id: 130605, name: { az: 'Kaligrafiya mürəkkəbi', ru: 'Каллиграфические чернила' } },
-        ]
+        ],
       },
       {
         id: 1307,
@@ -2058,7 +2058,7 @@ export const categories: Category[] = [
           { id: 130703, name: { az: 'Yapışqan lentlər', ru: 'Клейкие ленты' } },
           { id: 130704, name: { az: 'Kart şablonları', ru: 'Шаблоны для открыток' } },
           { id: 130705, name: { az: 'Əl ilə düzəldilmiş kartlar', ru: 'Открытки ручной работы' } },
-        ]
+        ],
       },
       {
         id: 1308,
@@ -2073,7 +2073,7 @@ export const categories: Category[] = [
           { id: 130804, name: { az: 'Şam mumu', ru: 'Воск для свечей' } },
           { id: 130805, name: { az: 'Şam fitilləri', ru: 'Фитили для свечей' } },
           { id: 130806, name: { az: 'Şam qəlibləri', ru: 'Формы для свечей' } },
-        ]
+        ],
       },
       {
         id: 1309,
@@ -2087,7 +2087,7 @@ export const categories: Category[] = [
           { id: 130903, name: { az: 'Tikmə iynələri', ru: 'Иглы для вышивки' } },
           { id: 130904, name: { az: 'Tikmə çərçivələri', ru: 'Пяльцы для вышивки' } },
           { id: 130905, name: { az: 'Tikmə naxışları', ru: 'Схемы для вышивки' } },
-        ]
+        ],
       },
       {
         id: 1310,
@@ -2106,7 +2106,7 @@ export const categories: Category[] = [
           { id: 131008, name: { az: 'Səbət toxuma', ru: 'Плетение корзин' } },
           { id: 131009, name: { az: 'Daş boyama', ru: 'Роспись по камню' } },
           { id: 131010, name: { az: 'Əl ilə düzəldilmiş oyuncaqlar', ru: 'Игрушки ручной работы' } },
-        ]
+        ],
       },
     ],
   },
@@ -2133,7 +2133,7 @@ export const categories: Category[] = [
           { id: 140106, name: { az: 'EKQ aparatları', ru: 'ЭКГ аппараты' } },
           { id: 140107, name: { az: 'Ultrasəs aparatları', ru: 'УЗИ аппараты' } },
           { id: 140108, name: { az: 'Rentgen aparatları', ru: 'Рентген аппараты' } },
-        ]
+        ],
       },
       {
         id: 1402,
@@ -2149,7 +2149,7 @@ export const categories: Category[] = [
           { id: 140205, name: { az: 'Qoltuqaltı dəyənəkləri', ru: 'Костыли' } },
           { id: 140206, name: { az: 'Rollatorlar', ru: 'Роллаторы' } },
           { id: 140207, name: { az: 'Skuter kreyserlər', ru: 'Скутеры для инвалидов' } },
-        ]
+        ],
       },
       {
         id: 1403,
@@ -2166,7 +2166,7 @@ export const categories: Category[] = [
           { id: 140306, name: { az: 'Bilərzik dəstəkləri', ru: 'Бандажи для запястья' } },
           { id: 140307, name: { az: 'Ayaq dəstəkləri', ru: 'Ортопедические стельки' } },
           { id: 140308, name: { az: 'Postural dəstəklər', ru: 'Корректоры осанки' } },
-        ]
+        ],
       },
       {
         id: 1404,
@@ -2182,7 +2182,7 @@ export const categories: Category[] = [
           { id: 140405, name: { az: 'Elektrostimulatorlar', ru: 'Электростимуляторы' } },
           { id: 140406, name: { az: 'Maqnit terapiya aparatları', ru: 'Аппараты магнитотерапии' } },
           { id: 140407, name: { az: 'Lazer terapiya aparatları', ru: 'Лазерные терапевтические аппараты' } },
-        ]
+        ],
       },
       {
         id: 1405,
@@ -2199,7 +2199,7 @@ export const categories: Category[] = [
           { id: 140506, name: { az: 'Tibbi maskalar', ru: 'Медицинские маски' } },
           { id: 140507, name: { az: 'Gigiyena məhsulları', ru: 'Гигиенические изделия' } },
           { id: 140508, name: { az: 'Yara örtükləri', ru: 'Раневые покрытия' } },
-        ]
+        ],
       },
       {
         id: 1406,
@@ -2214,7 +2214,7 @@ export const categories: Category[] = [
           { id: 140604, name: { az: 'Tibbi kabinetlər', ru: 'Медицинские шкафы' } },
           { id: 140605, name: { az: 'Tibbi stullar', ru: 'Медицинские стулья' } },
           { id: 140606, name: { az: 'Xəstə lifti', ru: 'Подъемники для пациентов' } },
-        ]
+        ],
       },
       {
         id: 1407,
@@ -2229,7 +2229,7 @@ export const categories: Category[] = [
           { id: 140704, name: { az: 'Göz damcıları', ru: 'Глазные капли' } },
           { id: 140705, name: { az: 'Göz baxım məhsulları', ru: 'Средства ухода за глазами' } },
           { id: 140706, name: { az: 'Günəş eynəkləri', ru: 'Солнцезащитные очки' } },
-        ]
+        ],
       },
       {
         id: 1408,
@@ -2243,7 +2243,7 @@ export const categories: Category[] = [
           { id: 140803, name: { az: 'Səyahət üçün ilk yardım dəsti', ru: 'Дорожная аптечка' } },
           { id: 140804, name: { az: 'İdman üçün ilk yardım dəsti', ru: 'Спортивная аптечка' } },
           { id: 140805, name: { az: 'İş yeri üçün ilk yardım dəsti', ru: 'Аптечка для рабочего места' } },
-        ]
+        ],
       },
       {
         id: 1409,
@@ -2259,7 +2259,7 @@ export const categories: Category[] = [
           { id: 140905, name: { az: 'Analitik tərəzilər', ru: 'Аналитические весы' } },
           { id: 140906, name: { az: 'İnkubatorlar', ru: 'Инкубаторы' } },
           { id: 140907, name: { az: 'Avtoklavlar', ru: 'Автоклавы' } },
-        ]
+        ],
       },
       {
         id: 1410,
@@ -2275,7 +2275,7 @@ export const categories: Category[] = [
           { id: 141005, name: { az: 'Körpə inhaleatori', ru: 'Детские ингаляторы' } },
           { id: 141006, name: { az: 'Hamiləlik dəstək kəmərləri', ru: 'Бандажи для беременных' } },
           { id: 141007, name: { az: 'Körpə monitoru', ru: 'Мониторы для младенцев' } },
-        ]
+        ],
       },
       {
         id: 1411,
@@ -2304,7 +2304,7 @@ export const categories: Category[] = [
           { id: 141118, name: { az: 'Diş təmizləmə avadanlığı', ru: 'Оборудование для чистки зубов' } },
           { id: 141119, name: { az: 'Diş klinikası mebeli', ru: 'Мебель для стоматологических кабинетов' } },
           { id: 141120, name: { az: 'Diş texnikası aksesuarları', ru: 'Аксессуары для стоматологического оборудования' } },
-        ]
+        ],
       },
       {
         id: 1412,
@@ -2321,7 +2321,7 @@ export const categories: Category[] = [
           { id: 141206, name: { az: 'Ürək dərmanları', ru: 'Кардиологические препараты' } },
           { id: 141207, name: { az: 'Ürək cərrahiyyə alətləri', ru: 'Кардиохирургические инструменты' } },
           { id: 141208, name: { az: 'Ürək protezləri', ru: 'Сердечные протезы' } },
-        ]
+        ],
       },
       {
         id: 1413,
@@ -2337,7 +2337,7 @@ export const categories: Category[] = [
           { id: 141305, name: { az: 'Beyin cərrahiyyə alətləri', ru: 'Нейрохирургические инструменты' } },
           { id: 141306, name: { az: 'Spinal implantlar', ru: 'Спинальные имплантаты' } },
           { id: 141307, name: { az: 'Nevroloji testlər', ru: 'Неврологические тесты' } },
-        ]
+        ],
       },
       {
         id: 1414,
@@ -2354,7 +2354,7 @@ export const categories: Category[] = [
           { id: 141406, name: { az: 'Göz dərmanları', ru: 'Офтальмологические препараты' } },
           { id: 141407, name: { az: 'Göz protezləri', ru: 'Глазные протезы' } },
           { id: 141408, name: { az: 'Göz bandajları', ru: 'Глазные повязки' } },
-        ]
+        ],
       },
       {
         id: 1415,
@@ -2370,7 +2370,7 @@ export const categories: Category[] = [
           { id: 141505, name: { az: 'Ginekologi dərmanlar', ru: 'Гинекологические препараты' } },
           { id: 141506, name: { az: 'Doğum alətləri', ru: 'Акушерские инструменты' } },
           { id: 141507, name: { az: 'Kontraceptiv vasitələr', ru: 'Контрацептивы' } },
-        ]
+        ],
       },
       {
         id: 1416,
@@ -2386,7 +2386,7 @@ export const categories: Category[] = [
           { id: 141605, name: { az: 'Uroloji dərmanlar', ru: 'Урологические препараты' } },
           { id: 141606, name: { az: 'Prostat müayinə alətləri', ru: 'Инструменты для обследования простаты' } },
           { id: 141607, name: { az: 'Böyrək daşı müalicə alətləri', ru: 'Оборудование для лечения камней в почках' } },
-        ]
+        ],
       },
       {
         id: 1417,
@@ -2402,7 +2402,7 @@ export const categories: Category[] = [
           { id: 141705, name: { az: 'Kosmetoloji aparatlar', ru: 'Косметологическое оборудование' } },
           { id: 141706, name: { az: 'Dəri baxım məhsulları', ru: 'Средства ухода за кожей' } },
           { id: 141707, name: { az: 'Fototerapiya aparatları', ru: 'Аппараты фототерапии' } },
-        ]
+        ],
       },
       {
         id: 1418,
@@ -2417,7 +2417,7 @@ export const categories: Category[] = [
           { id: 141804, name: { az: 'Anesteziya monitorları', ru: 'Мониторы анестезии' } },
           { id: 141805, name: { az: 'Ağrı kəsici pompalar', ru: 'Обезболивающие помпы' } },
           { id: 141806, name: { az: 'Spinal anesteziya alətləri', ru: 'Инструменты спинальной анестезии' } },
-        ]
+        ],
       },
       {
         id: 1419,
@@ -2433,7 +2433,7 @@ export const categories: Category[] = [
           { id: 141905, name: { az: 'Uşaq cərrahiyyə alətləri', ru: 'Детские хирургические инструменты' } },
           { id: 141906, name: { az: 'Uşaq reanimasiya avadanlığı', ru: 'Детское реанимационное оборудование' } },
           { id: 141907, name: { az: 'Uşaq inkubatorları', ru: 'Детские инкубаторы' } },
-        ]
+        ],
       },
       {
         id: 1420,
@@ -2448,7 +2448,7 @@ export const categories: Category[] = [
           { id: 142004, name: { az: 'Psixiatrik müayinə alətləri', ru: 'Психиатрические инструменты' } },
           { id: 142005, name: { az: 'Beyin stimulyasiya aparatları', ru: 'Аппараты стимуляции мозга' } },
           { id: 142006, name: { az: 'Psixoterapiya avadanlığı', ru: 'Оборудование для психотерапии' } },
-        ]
+        ],
       },
       {
         id: 1421,
@@ -2464,7 +2464,7 @@ export const categories: Category[] = [
           { id: 142105, name: { az: 'Biopsi alətləri', ru: 'Инструменты для биопсии' } },
           { id: 142106, name: { az: 'Onkoloji implantlar', ru: 'Онкологические имплантаты' } },
           { id: 142107, name: { az: 'Şişə müalicə lazerləri', ru: 'Лазеры для лечения опухолей' } },
-        ]
+        ],
       },
       {
         id: 1422,
@@ -2479,7 +2479,7 @@ export const categories: Category[] = [
           { id: 142204, name: { az: 'Tiroid müayinə alətləri', ru: 'Инструменты для обследования щитовидной железы' } },
           { id: 142205, name: { az: 'Diabetik baxım məhsulları', ru: 'Средства ухода для диабетиков' } },
           { id: 142206, name: { az: 'Metabolik sindrom testləri', ru: 'Тесты метаболического синдрома' } },
-        ]
+        ],
       },
       {
         id: 1423,
@@ -2495,7 +2495,7 @@ export const categories: Category[] = [
           { id: 142305, name: { az: 'Təcili dərmanlar', ru: 'Препараты экстренной помощи' } },
           { id: 142306, name: { az: 'Travma baxım dəstləri', ru: 'Наборы для травматологической помощи' } },
           { id: 142307, name: { az: 'Portativ defibrillyatorlar', ru: 'Портативные дефибрилляторы' } },
-        ]
+        ],
       },
     ],
   },
@@ -2518,7 +2518,7 @@ export const categories: Category[] = [
           { id: 150102, name: { az: 'Müxtəlif məhsullar', ru: 'Разные товары' } },
           { id: 150103, name: { az: 'Xüsusi elanlar', ru: 'Специальные объявления' } },
           { id: 150104, name: { az: 'Yeni kateqoriya təklifi', ru: 'Предложение новой категории' } },
-        ]
+        ],
       },
       {
         id: 1502,
@@ -2531,7 +2531,7 @@ export const categories: Category[] = [
           { id: 150202, name: { az: 'Vintage məhsullar', ru: 'Винтажные товары' } },
           { id: 150203, name: { az: 'Kolleksiya əşyaları', ru: 'Коллекционные предметы' } },
           { id: 150204, name: { az: 'Sənət əsərləri', ru: 'Произведения искусства' } },
-        ]
+        ],
       },
       {
         id: 1503,
@@ -2544,7 +2544,7 @@ export const categories: Category[] = [
           { id: 150302, name: { az: 'Əl işi məhsullar', ru: 'Изделия ручной работы' } },
           { id: 150303, name: { az: 'Ekskluziv məhsullar', ru: 'Эксклюзивные товары' } },
           { id: 150304, name: { az: 'Xüsusi layihələr', ru: 'Специальные проекты' } },
-        ]
+        ],
       },
     ],
   },

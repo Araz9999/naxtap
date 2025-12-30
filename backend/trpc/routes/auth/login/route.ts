@@ -15,19 +15,19 @@ export const loginProcedure = publicProcedure
         // Use same error message to prevent email enumeration
         throw new AuthenticationError(
           'Email və ya şifrə yanlışdır',
-          'invalid_credentials'
+          'invalid_credentials',
         );
       }
 
       const isValidPassword = await verifyPassword(input.password, user.passwordHash);
       if (!isValidPassword) {
-        logger.security('Failed login attempt', { 
+        logger.security('Failed login attempt', {
           email: input.email,
-          reason: 'invalid_password' 
+          reason: 'invalid_password',
         });
         throw new AuthenticationError(
           'Email və ya şifrə yanlışdır',
-          'invalid_credentials'
+          'invalid_credentials',
         );
       }
 
@@ -69,7 +69,7 @@ async function verifyPassword(password: string, storedHash: string): Promise<boo
     // Legacy hash format without salt - for backwards compatibility
     return await hashPasswordLegacy(password) === storedHash;
   }
-  
+
   // Try Web Crypto API first (for new passwords)
   try {
     const encoder = new TextEncoder();
@@ -78,43 +78,43 @@ async function verifyPassword(password: string, storedHash: string): Promise<boo
       throw new Error('Invalid salt format');
     }
     const salt = new Uint8Array(saltBytes.map(byte => parseInt(byte, 16)));
-    
+
     const keyMaterial = await crypto.subtle.importKey(
       'raw',
       encoder.encode(password),
       { name: 'PBKDF2' },
       false,
-      ['deriveBits']
+      ['deriveBits'],
     );
-    
+
     const hashBuffer = await crypto.subtle.deriveBits(
       {
         name: 'PBKDF2',
         salt,
         iterations: 100000,
-        hash: 'SHA-256'
+        hash: 'SHA-256',
       },
       keyMaterial,
-      256
+      256,
     );
-    
+
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
+
     if (computedHash === hashHex) {
       return true;
     }
   } catch (error) {
     // Fall through to Node.js crypto verification
   }
-  
+
   // Try Node.js crypto format (for seeded passwords)
   // Seed uses: crypto.pbkdf2(password, salt, 100000, 32, 'sha256')
   // where salt is a hex string
   try {
     const crypto = require('crypto');
     return new Promise((resolve) => {
-      crypto.pbkdf2(password, saltHex, 100000, 32, 'sha256', (err, derivedKey) => {
+      crypto.pbkdf2(password, saltHex, 100000, 32, 'sha256', (err: Error | null, derivedKey: Buffer) => {
         if (err) {
           resolve(false);
           return;

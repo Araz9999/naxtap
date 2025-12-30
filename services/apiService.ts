@@ -14,10 +14,10 @@ export class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -43,7 +43,7 @@ export class ApiService {
   async post<T>(
     endpoint: string,
     data?: Record<string, unknown>,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
   ): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
@@ -55,7 +55,7 @@ export class ApiService {
   async put<T>(
     endpoint: string,
     data?: Record<string, unknown>,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
   ): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
@@ -66,7 +66,7 @@ export class ApiService {
 
   async delete<T>(
     endpoint: string,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
   ): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'DELETE',

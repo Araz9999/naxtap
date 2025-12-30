@@ -25,7 +25,7 @@ export default function TypingIndicator({ name }: TypingIndicatorProps) {
             duration: 400,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
     };
 

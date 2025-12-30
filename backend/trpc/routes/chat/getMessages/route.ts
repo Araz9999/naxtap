@@ -8,7 +8,7 @@ export default protectedProcedure
   .input(
     z.object({
       conversationId: z.string().min(1),
-    })
+    }),
   )
   .query(async ({ ctx, input }) => {
     const userId = ctx.user.userId;
@@ -23,9 +23,9 @@ export default protectedProcedure
     const otherId = conv.participants.find((p) => p !== userId) || '';
     const other = otherId
       ? await prisma.user.findUnique({
-          where: { id: otherId },
-          select: { id: true, name: true, avatar: true, email: true, phone: true },
-        })
+        where: { id: otherId },
+        select: { id: true, name: true, avatar: true, email: true, phone: true },
+      })
       : null;
 
     return {
@@ -35,19 +35,19 @@ export default protectedProcedure
         listingId: conv.listingId,
         otherUser: other
           ? {
-              id: other.id,
-              name: other.name,
-              avatar: other.avatar,
-              email: other.email,
-              phone: other.phone,
-            }
+            id: other.id,
+            name: other.name,
+            avatar: other.avatar,
+            email: other.email,
+            phone: other.phone,
+          }
           : {
-              id: otherId,
-              name: 'Unknown',
-              avatar: null,
-              email: null,
-              phone: null,
-            },
+            id: otherId,
+            name: 'Unknown',
+            avatar: null,
+            email: null,
+            phone: null,
+          },
       },
       messages: chatDb.messages.getByConversationId(conv.id),
       unreadCount: conv.unreadByUserId[userId] || 0,

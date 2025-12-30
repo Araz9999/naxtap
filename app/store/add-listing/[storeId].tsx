@@ -10,7 +10,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Modal,
-  FlatList
+  FlatList,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
@@ -30,7 +30,7 @@ import {
   ChevronDown,
   Check,
   AlertCircle,
-  Package
+  Package,
 } from 'lucide-react-native';
 import { Listing } from '@/types/listing';
 
@@ -42,11 +42,11 @@ export default function AddStoreListingScreen() {
   const { stores, canAddListing, getStoreUsage } = useStoreStore();
   const { addListingToStore } = useListingStore();
   const { currentUser } = useUserStore();
-  
+
   const store = stores.find(s => s.id === storeId);
   const storeUsage = store ? getStoreUsage(store.id) : { used: 0, max: 0, remaining: 0 };
   const canAdd = store ? canAddListing(store.id) : false;
-  
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -64,10 +64,10 @@ export default function AddStoreListingScreen() {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
-  
+
   const selectedLocationData = locations.find(l => l.id === selectedLocation);
   const selectedCategoryData = categories.find(c => c.id === selectedCategory);
-  
+
   if (!store || !currentUser || store.userId !== currentUser.id) {
     return (
       <View style={styles.container}>
@@ -89,7 +89,7 @@ export default function AddStoreListingScreen() {
       </View>
     );
   }
-  
+
   if (!canAdd) {
     return (
       <View style={styles.container}>
@@ -105,11 +105,11 @@ export default function AddStoreListingScreen() {
         <View style={styles.errorContainer}>
           <Package size={48} color={Colors.textSecondary} />
           <Text style={styles.errorText}>
-            {language === 'az' 
+            {language === 'az'
               ? `Mağazanızda maksimum ${storeUsage.max} elan yerləşdirə bilərsiniz. Hazırda ${storeUsage.used} elan istifadə edilib.`
               : `В вашем магазине можно разместить максимум ${storeUsage.max} объявлений. Сейчас используется ${storeUsage.used}.`}
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.upgradeButton}
             onPress={() => router.push('/store/upgrade')}
           >
@@ -121,7 +121,7 @@ export default function AddStoreListingScreen() {
       </View>
     );
   }
-  
+
   const pickImage = async () => {
     try {
       if (Platform.OS !== 'web') {
@@ -129,7 +129,7 @@ export default function AddStoreListingScreen() {
         if (status !== 'granted') {
           Alert.alert(
             language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-            language === 'az' ? 'Qalereya icazəsi lazımdır' : 'Требуется разрешение галереи'
+            language === 'az' ? 'Qalereya icazəsi lazımdır' : 'Требуется разрешение галереи',
           );
           return;
         }
@@ -145,24 +145,24 @@ export default function AddStoreListingScreen() {
       // BUG FIX: Validate assets array exists and has items
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // ✅ Check file size (max 5MB) - same as camera
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert(
             language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
-            language === 'az' 
-              ? 'Maksimum 5MB ölçüsündə şəkil əlavə edin' 
-              : 'Добавьте изображение размером до 5MB'
+            language === 'az'
+              ? 'Maksimum 5MB ölçüsündə şəkil əlavə edin'
+              : 'Добавьте изображение размером до 5MB',
           );
           return;
         }
-        
+
         if (images.length >= 5) {
           Alert.alert(
             language === 'az' ? 'Limit aşıldı' : 'Лимит превышен',
-            language === 'az' 
-              ? 'Maksimum 5 şəkil əlavə edə bilərsiniz' 
-              : 'Можно добавить максимум 5 изображений'
+            language === 'az'
+              ? 'Maksimum 5 şəkil əlavə edə bilərsiniz'
+              : 'Можно добавить максимум 5 изображений',
           );
           return;
         }
@@ -172,19 +172,19 @@ export default function AddStoreListingScreen() {
       storeLogger.error('Gallery error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение'
+        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение',
       );
     }
   };
-  
+
   const takePicture = async () => {
     try {
       if (Platform.OS === 'web') {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' 
-            ? 'Kamera ilə şəkil çəkmək veb versiyada mövcud deyil' 
-            : 'Съемка камерой недоступна в веб-версии'
+          language === 'az'
+            ? 'Kamera ilə şəkil çəkmək veb versiyada mövcud deyil'
+            : 'Съемка камерой недоступна в веб-версии',
         );
         return;
       }
@@ -193,9 +193,9 @@ export default function AddStoreListingScreen() {
       if (status !== 'granted') {
         Alert.alert(
           language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-          language === 'az' 
-            ? 'Kameradan istifadə etmək üçün icazə lazımdır' 
-            : 'Для использования камеры требуется разрешение'
+          language === 'az'
+            ? 'Kameradan istifadə etmək üçün icazə lazımdır'
+            : 'Для использования камеры требуется разрешение',
         );
         return;
       }
@@ -209,24 +209,24 @@ export default function AddStoreListingScreen() {
       // BUG FIX: Validate assets array exists and has items
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // ✅ Check file size (max 5MB)
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert(
             language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
-            language === 'az' 
-              ? 'Maksimum 5MB ölçüsündə şəkil əlavə edin' 
-              : 'Добавьте изображение размером до 5MB'
+            language === 'az'
+              ? 'Maksimum 5MB ölçüsündə şəkil əlavə edin'
+              : 'Добавьте изображение размером до 5MB',
           );
           return;
         }
-        
+
         if (images.length >= 5) {
           Alert.alert(
             language === 'az' ? 'Limit aşıldı' : 'Лимит превышен',
-            language === 'az' 
-              ? 'Maksimum 5 şəkil əlavə edə bilərsiniz' 
-              : 'Можно добавить максимум 5 изображений'
+            language === 'az'
+              ? 'Maksimum 5 şəkil əlavə edə bilərsiniz'
+              : 'Можно добавить максимум 5 изображений',
           );
           return;
         }
@@ -236,97 +236,97 @@ export default function AddStoreListingScreen() {
       storeLogger.error('Camera error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil çəkilə bilmədi' : 'Не удалось сделать фото'
+        language === 'az' ? 'Şəkil çəkilə bilmədi' : 'Не удалось сделать фото',
       );
     }
   };
-  
+
   const handleSubmit = async () => {
     // Validation: Title
     if (!title.trim()) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Elan başlığını daxil edin' : 'Введите заголовок объявления'
+        language === 'az' ? 'Elan başlığını daxil edin' : 'Введите заголовок объявления',
       );
       return;
     }
-    
+
     if (title.trim().length < 5) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Başlıq ən azı 5 simvol olmalıdır' : 'Заголовок должен быть не менее 5 символов'
+        language === 'az' ? 'Başlıq ən azı 5 simvol olmalıdır' : 'Заголовок должен быть не менее 5 символов',
       );
       return;
     }
-    
+
     // Validation: Description
     if (!description.trim()) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Təsvir daxil edin' : 'Введите описание'
+        language === 'az' ? 'Təsvir daxil edin' : 'Введите описание',
       );
       return;
     }
-    
+
     if (description.trim().length < 10) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Təsvir ən azı 10 simvol olmalıdır' : 'Описание должно быть не менее 10 символов'
+        language === 'az' ? 'Təsvir ən azı 10 simvol olmalıdır' : 'Описание должно быть не менее 10 символов',
       );
       return;
     }
-    
+
     // Validation: Price (if not by agreement)
     if (!priceByAgreement) {
       if (!price.trim()) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Qiymət daxil edin' : 'Введите цену'
+          language === 'az' ? 'Qiymət daxil edin' : 'Введите цену',
         );
         return;
       }
-      
+
       const priceValue = parseFloat(price);
       if (isNaN(priceValue) || priceValue <= 0) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Düzgün qiymət daxil edin' : 'Введите корректную цену'
+          language === 'az' ? 'Düzgün qiymət daxil edin' : 'Введите корректную цену',
         );
         return;
       }
-      
+
       if (priceValue > 1000000) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Qiymət maksimum 1,000,000 ola bilər' : 'Цена не должна превышать 1,000,000'
+          language === 'az' ? 'Qiymət maksimum 1,000,000 ola bilər' : 'Цена не должна превышать 1,000,000',
         );
         return;
       }
     }
-    
+
     // Validation: Location
     if (!selectedLocation) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Yerləşdiyiniz yeri seçin' : 'Выберите местоположение'
+        language === 'az' ? 'Yerləşdiyiniz yeri seçin' : 'Выберите местоположение',
       );
       return;
     }
-    
+
     // Validation: Category
     if (!selectedCategory) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию'
+        language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию',
       );
       return;
     }
-    
+
     // Show confirmation dialog
     Alert.alert(
       language === 'az' ? 'Təsdiq' : 'Подтверждение',
-      language === 'az' 
-        ? 'Elanı mağazaya əlavə etmək istədiyinizdən əminsiniz?' 
+      language === 'az'
+        ? 'Elanı mağazaya əlavə etmək istədiyinizdən əminsiniz?'
         : 'Вы уверены, что хотите добавить объявление в магазин?',
       [
         {
@@ -337,26 +337,26 @@ export default function AddStoreListingScreen() {
           text: language === 'az' ? 'Bəli' : 'Да',
           onPress: () => submitListing(),
         },
-      ]
+      ],
     );
   };
-  
+
   const submitListing = async () => {
     setIsSubmitting(true);
-    
+
     try {
       // ✅ Generate unique ID with random component
       const listingId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      
+
       const newListing: Listing = {
         id: listingId,
         title: {
           az: title.trim(),
-          ru: title.trim()
+          ru: title.trim(),
         },
         description: {
           az: description,
-          ru: description
+          ru: description,
         },
         price: priceByAgreement ? 0 : (parseFloat(price) || 0),
         currency: currency as 'AZN' | 'USD',
@@ -366,7 +366,7 @@ export default function AddStoreListingScreen() {
         subSubcategoryId: selectedSubSubcategory || undefined,
         location: {
           az: selectedLocationData?.name.az || '',
-          ru: selectedLocationData?.name.ru || ''
+          ru: selectedLocationData?.name.ru || '',
         },
         storeId,
         storeAddress: store.address,
@@ -383,45 +383,45 @@ export default function AddStoreListingScreen() {
         contactPreference: contactPreference || 'both',
         priceByAgreement,
         condition: condition || undefined,
-        deliveryAvailable: deliveryAvailable !== null ? deliveryAvailable : undefined
+        deliveryAvailable: deliveryAvailable !== null ? deliveryAvailable : undefined,
       };
-      
+
       await addListingToStore(newListing, storeId);
-      
+
       Alert.alert(
         language === 'az' ? 'Uğurlu!' : 'Успешно!',
-        language === 'az' 
-          ? 'Elan mağazanıza uğurla əlavə edildi' 
+        language === 'az'
+          ? 'Elan mağazanıza uğurla əlavə edildi'
           : 'Объявление успешно добавлено в ваш магазин',
         [
           {
             text: 'OK',
             onPress: () => router.back(),
           },
-        ]
+        ],
       );
     } catch (error) {
       storeLogger.error('Failed to add listing to store:', error);
-      
+
       // ✅ Provide specific error feedback
       const errorMessage = error instanceof Error ? error.message : '';
       const isLimitError = errorMessage.toLowerCase().includes('limit') || errorMessage.toLowerCase().includes('maximum');
-      
+
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
         isLimitError
-          ? (language === 'az' 
-              ? 'Mağaza limiti dolub. Paketi yüksəldin.' 
-              : 'Лимит магазина исчерпан. Улучшите пакет.')
-          : (language === 'az' 
-              ? 'Elan əlavə edilərkən xəta baş verdi' 
-              : 'Произошла ошибка при добавлении объявления')
+          ? (language === 'az'
+            ? 'Mağaza limiti dolub. Paketi yüksəldin.'
+            : 'Лимит магазина исчерпан. Улучшите пакет.')
+          : (language === 'az'
+            ? 'Elan əlavə edilərkən xəta baş verdi'
+            : 'Произошла ошибка при добавлении объявления'),
       );
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -437,19 +437,19 @@ export default function AddStoreListingScreen() {
         </Text>
         <View style={styles.placeholder} />
       </View>
-      
+
       <View style={styles.storeInfo}>
         <Package size={20} color={Colors.primary} />
         <View style={styles.storeDetails}>
           <Text style={styles.storeName}>{store.name}</Text>
           <Text style={styles.storeUsageText}>
-            {language === 'az' 
+            {language === 'az'
               ? `${storeUsage.remaining} elan qalıb`
               : `Осталось ${storeUsage.remaining} объявлений`}
           </Text>
         </View>
       </View>
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.form}>
           {/* Images */}
@@ -459,15 +459,15 @@ export default function AddStoreListingScreen() {
               <Text style={styles.optionalText}> ({language === 'az' ? 'istəyə bağlı' : 'необязательно'})</Text>
             </Text>
             <Text style={styles.imageLimit}>
-              {language === 'az' 
-                ? `${images.length}/5 şəkil` 
+              {language === 'az'
+                ? `${images.length}/5 şəkil`
                 : `${images.length}/5 изображений`}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageList}>
               {images.map((image, index) => (
                 <View key={index} style={styles.imageContainer}>
                   <Image source={{ uri: image }} style={styles.image} />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => setImages(images.filter((_, i) => i !== index))}
                   >
@@ -495,7 +495,7 @@ export default function AddStoreListingScreen() {
               )}
             </ScrollView>
           </View>
-          
+
           {/* Title */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
@@ -511,7 +511,7 @@ export default function AddStoreListingScreen() {
             />
             <Text style={styles.charCount}>{title.length}/70</Text>
           </View>
-          
+
           {/* Description */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
@@ -530,20 +530,20 @@ export default function AddStoreListingScreen() {
             />
             <Text style={styles.charCount}>{description.length}/1000</Text>
           </View>
-          
+
           {/* Price */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {language === 'az' ? 'Qiymət *' : 'Цена *'}
             </Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.agreementOption}
               onPress={() => setPriceByAgreement(!priceByAgreement)}
             >
               <View style={[
                 styles.checkbox,
-                priceByAgreement && styles.checkedCheckbox
+                priceByAgreement && styles.checkedCheckbox,
               ]}>
                 {priceByAgreement && <Check size={16} color="white" />}
               </View>
@@ -551,7 +551,7 @@ export default function AddStoreListingScreen() {
                 {language === 'az' ? 'Razılaşma yolu ilə' : 'По договоренности'}
               </Text>
             </TouchableOpacity>
-            
+
             {!priceByAgreement && (
               <>
                 <View style={styles.priceContainer}>
@@ -567,20 +567,20 @@ export default function AddStoreListingScreen() {
                     {currency}
                   </Text>
                 </View>
-                
+
                 <View style={styles.currencyOptions}>
                   {['AZN', 'USD'].map((curr) => (
                     <TouchableOpacity
                       key={curr}
                       style={[
                         styles.currencyOption,
-                        currency === curr && styles.selectedCurrencyOption
+                        currency === curr && styles.selectedCurrencyOption,
                       ]}
                       onPress={() => setCurrency(curr)}
                     >
                       <Text style={[
                         styles.currencyOptionText,
-                        currency === curr && styles.selectedCurrencyOptionText
+                        currency === curr && styles.selectedCurrencyOptionText,
                       ]}>
                         {curr}
                       </Text>
@@ -590,43 +590,43 @@ export default function AddStoreListingScreen() {
               </>
             )}
           </View>
-          
+
           {/* Location */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {language === 'az' ? 'Yer *' : 'Местоположение *'}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.locationButton}
               onPress={() => setShowLocationModal(true)}
             >
               <MapPin size={20} color={Colors.textSecondary} style={styles.locationIcon} />
               <Text style={selectedLocation ? styles.locationText : styles.locationPlaceholder}>
-                {selectedLocation 
+                {selectedLocation
                   ? selectedLocationData?.name[language]
                   : language === 'az' ? 'Şəhər, rayon seçin' : 'Выберите город, район'}
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           {/* Category */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {language === 'az' ? 'Kateqoriya *' : 'Категория *'}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.pickerButton}
               onPress={() => setShowCategoryModal(true)}
             >
               <Text style={selectedCategory ? styles.pickerText : styles.pickerPlaceholder}>
-                {selectedCategory 
+                {selectedCategory
                   ? categories.find(c => c.id === selectedCategory)?.name[language]
                   : language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию'}
               </Text>
               <ChevronDown size={20} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
-          
+
           {/* Condition */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
@@ -634,37 +634,37 @@ export default function AddStoreListingScreen() {
               <Text style={styles.optionalText}> ({language === 'az' ? 'istəyə bağlı' : 'необязательно'})</Text>
             </Text>
             <View style={styles.conditionOptions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.conditionOption,
-                  condition === 'new' && styles.selectedConditionOption
+                  condition === 'new' && styles.selectedConditionOption,
                 ]}
                 onPress={() => setCondition(condition === 'new' ? null : 'new')}
               >
                 <Text style={[
                   styles.conditionOptionText,
-                  condition === 'new' && styles.selectedConditionOptionText
+                  condition === 'new' && styles.selectedConditionOptionText,
                 ]}>
                   {language === 'az' ? 'Yeni' : 'Новое'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.conditionOption,
-                  condition === 'used' && styles.selectedConditionOption
+                  condition === 'used' && styles.selectedConditionOption,
                 ]}
                 onPress={() => setCondition(condition === 'used' ? null : 'used')}
               >
                 <Text style={[
                   styles.conditionOptionText,
-                  condition === 'used' && styles.selectedConditionOptionText
+                  condition === 'used' && styles.selectedConditionOptionText,
                 ]}>
                   {language === 'az' ? 'İşlənmiş' : 'Б/у'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Delivery */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
@@ -672,49 +672,49 @@ export default function AddStoreListingScreen() {
               <Text style={styles.optionalText}> ({language === 'az' ? 'istəyə bağlı' : 'необязательно'})</Text>
             </Text>
             <View style={styles.deliveryOptions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.deliveryOption,
-                  deliveryAvailable === true && styles.selectedDeliveryOption
+                  deliveryAvailable === true && styles.selectedDeliveryOption,
                 ]}
                 onPress={() => setDeliveryAvailable(deliveryAvailable === true ? null : true)}
               >
                 <View style={[
                   styles.checkbox,
-                  deliveryAvailable === true && styles.checkedCheckbox
+                  deliveryAvailable === true && styles.checkedCheckbox,
                 ]}>
                   {deliveryAvailable === true && <Check size={16} color="white" />}
                 </View>
                 <Text style={[
                   styles.deliveryOptionText,
-                  deliveryAvailable === true && styles.selectedDeliveryOptionText
+                  deliveryAvailable === true && styles.selectedDeliveryOptionText,
                 ]}>
                   {language === 'az' ? 'Çatdırılma mümkündür' : 'Возможна доставка'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.deliveryOption,
-                  deliveryAvailable === false && styles.selectedDeliveryOption
+                  deliveryAvailable === false && styles.selectedDeliveryOption,
                 ]}
                 onPress={() => setDeliveryAvailable(deliveryAvailable === false ? null : false)}
               >
                 <View style={[
                   styles.checkbox,
-                  deliveryAvailable === false && styles.checkedCheckbox
+                  deliveryAvailable === false && styles.checkedCheckbox,
                 ]}>
                   {deliveryAvailable === false && <Check size={16} color="white" />}
                 </View>
                 <Text style={[
                   styles.deliveryOptionText,
-                  deliveryAvailable === false && styles.selectedDeliveryOptionText
+                  deliveryAvailable === false && styles.selectedDeliveryOptionText,
                 ]}>
                   {language === 'az' ? 'Çatdırılma yoxdur' : 'Доставка недоступна'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Contact Preference */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
@@ -722,44 +722,44 @@ export default function AddStoreListingScreen() {
               <Text style={styles.optionalText}> ({language === 'az' ? 'istəyə bağlı' : 'необязательно'})</Text>
             </Text>
             <View style={styles.contactOptions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.contactOption,
-                  contactPreference === 'phone' && styles.selectedContactOption
+                  contactPreference === 'phone' && styles.selectedContactOption,
                 ]}
                 onPress={() => setContactPreference(contactPreference === 'phone' ? null : 'phone')}
               >
                 <Text style={[
                   styles.contactOptionText,
-                  contactPreference === 'phone' && styles.selectedContactOptionText
+                  contactPreference === 'phone' && styles.selectedContactOptionText,
                 ]}>
                   {language === 'az' ? 'Telefon' : 'Телефон'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.contactOption,
-                  contactPreference === 'message' && styles.selectedContactOption
+                  contactPreference === 'message' && styles.selectedContactOption,
                 ]}
                 onPress={() => setContactPreference(contactPreference === 'message' ? null : 'message')}
               >
                 <Text style={[
                   styles.contactOptionText,
-                  contactPreference === 'message' && styles.selectedContactOptionText
+                  contactPreference === 'message' && styles.selectedContactOptionText,
                 ]}>
                   {language === 'az' ? 'Mesaj' : 'Сообщение'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.contactOption,
-                  contactPreference === 'both' && styles.selectedContactOption
+                  contactPreference === 'both' && styles.selectedContactOption,
                 ]}
                 onPress={() => setContactPreference(contactPreference === 'both' ? null : 'both')}
               >
                 <Text style={[
                   styles.contactOptionText,
-                  contactPreference === 'both' && styles.selectedContactOptionText
+                  contactPreference === 'both' && styles.selectedContactOptionText,
                 ]}>
                   {language === 'az' ? 'Hər ikisi' : 'Оба'}
                 </Text>
@@ -768,10 +768,10 @@ export default function AddStoreListingScreen() {
           </View>
         </View>
       </ScrollView>
-      
+
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.submitButton, isSubmitting && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[styles.submitButton, isSubmitting && styles.disabledButton]}
           onPress={handleSubmit}
           disabled={isSubmitting}
         >
@@ -782,7 +782,7 @@ export default function AddStoreListingScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-      
+
       {/* Location Selection Modal */}
       <Modal
         visible={showLocationModal}
@@ -808,7 +808,7 @@ export default function AddStoreListingScreen() {
             </Text>
             <View style={styles.modalPlaceholder} />
           </View>
-          
+
           {/* ✅ Search input */}
           <View style={styles.searchContainer}>
             <MapPin size={20} color={Colors.textSecondary} />
@@ -820,13 +820,13 @@ export default function AddStoreListingScreen() {
               onChangeText={setLocationSearchQuery}
             />
           </View>
-          
+
           {/* ✅ Filtered locations */}
           <FlatList
             data={locationSearchQuery
               ? locations.filter(loc =>
-                  loc.name[language].toLowerCase().includes(locationSearchQuery.toLowerCase())
-                )
+                loc.name[language].toLowerCase().includes(locationSearchQuery.toLowerCase()),
+              )
               : locations
             }
             keyExtractor={(item) => item.id}
@@ -842,7 +842,7 @@ export default function AddStoreListingScreen() {
               <TouchableOpacity
                 style={[
                   styles.modalItem,
-                  selectedLocation === item.id && styles.selectedModalItem
+                  selectedLocation === item.id && styles.selectedModalItem,
                 ]}
                 onPress={() => {
                   // ✅ Validate location selection
@@ -850,7 +850,7 @@ export default function AddStoreListingScreen() {
                     storeLogger.error('[AddStoreListing] Invalid location selected');
                     return;
                   }
-                  
+
                   setSelectedLocation(item.id);
                   setShowLocationModal(false);
                   setLocationSearchQuery('');
@@ -859,7 +859,7 @@ export default function AddStoreListingScreen() {
               >
                 <Text style={[
                   styles.modalItemText,
-                  selectedLocation === item.id && styles.selectedModalItemText
+                  selectedLocation === item.id && styles.selectedModalItemText,
                 ]}>
                   {item.name[language]}
                 </Text>
@@ -871,7 +871,7 @@ export default function AddStoreListingScreen() {
           />
         </View>
       </Modal>
-      
+
       {/* Category Selection Modal */}
       <Modal
         visible={showCategoryModal}
@@ -898,7 +898,7 @@ export default function AddStoreListingScreen() {
               <TouchableOpacity
                 style={[
                   styles.modalItem,
-                  selectedCategory === item.id && styles.selectedModalItem
+                  selectedCategory === item.id && styles.selectedModalItem,
                 ]}
                 onPress={() => {
                   setSelectedCategory(item.id);
@@ -908,7 +908,7 @@ export default function AddStoreListingScreen() {
               >
                 <Text style={[
                   styles.modalItemText,
-                  selectedCategory === item.id && styles.selectedModalItemText
+                  selectedCategory === item.id && styles.selectedModalItemText,
                 ]}>
                   {item.name[language]}
                 </Text>

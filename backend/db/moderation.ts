@@ -1,11 +1,11 @@
-import { 
-  Report, 
-  ModerationAction, 
-  SupportTicket, 
+import {
+  Report,
+  ModerationAction,
+  SupportTicket,
   SupportResponse,
   ReportStatus,
   ReportPriority,
-  TicketStatus 
+  TicketStatus,
 } from '../types/moderation';
 import { logger } from '../utils/logger';
 
@@ -25,7 +25,7 @@ export const moderationDb = {
     },
     getByModerator: (moderatorId: string) => {
       return sortByCreatedAtDesc(
-        Array.from(reports.values()).filter(r => r.assignedModeratorId === moderatorId)
+        Array.from(reports.values()).filter(r => r.assignedModeratorId === moderatorId),
       );
     },
     getByReporter: (reporterId: string) => {
@@ -121,8 +121,8 @@ export const moderationDb = {
   },
 
   actions: {
-    getAll: () => Array.from(moderationActions.values()).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    getAll: () => Array.from(moderationActions.values()).sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     ),
     getById: (id: string) => moderationActions.get(id) || null,
     getByModerator: (moderatorId: string) => {
@@ -168,8 +168,8 @@ export const moderationDb = {
   },
 
   tickets: {
-    getAll: () => Array.from(supportTickets.values()).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    getAll: () => Array.from(supportTickets.values()).sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     ),
     getById: (id: string) => supportTickets.get(id) || null,
     getByStatus: (status: TicketStatus) => {

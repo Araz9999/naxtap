@@ -64,7 +64,7 @@ const colorThemes = {
 
 export const getColors = (themeMode: ThemeMode, colorTheme: ColorTheme) => {
   let isDark = false;
-  
+
   if (themeMode === 'dark') {
     isDark = true;
   } else if (themeMode === 'auto') {
@@ -75,10 +75,10 @@ export const getColors = (themeMode: ThemeMode, colorTheme: ColorTheme) => {
       isDark = !!(w && w.matchMedia && w.matchMedia('(prefers-color-scheme: dark)').matches);
     }
   }
-  
+
   const baseTheme = isDark ? darkTheme : lightTheme;
   const colors = colorThemes[colorTheme];
-  
+
   return {
     ...baseTheme,
     ...colors,

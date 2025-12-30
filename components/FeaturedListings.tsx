@@ -12,12 +12,12 @@ export default function FeaturedListings() {
   const { listings } = useListingStore();
   const { themeMode, colorTheme } = useThemeStore();
   const colors = getColors(themeMode, colorTheme);
-  
-  const featuredListings = useMemo(() => 
+
+  const featuredListings = useMemo(() =>
     listings.filter(listing => listing.isFeatured),
-    [listings]
+  [listings],
   );
-  
+
   if (featuredListings.length === 0) {
     return null;
   }

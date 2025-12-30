@@ -17,7 +17,7 @@ export default function AutoRenewalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { language } = useLanguageStore();
   const { listings, updateListing } = useListingStore();
-  
+
   const listing = listings.find(l => l.id === id);
 
   if (!listing) {
@@ -56,9 +56,9 @@ export default function AutoRenewalScreen() {
         </Text>
         <View style={styles.placeholder} />
       </View>
-      
-      <AutoRenewalManager 
-        listing={listing} 
+
+      <AutoRenewalManager
+        listing={listing}
         onUpdate={handleUpdateListing}
       />
     </View>

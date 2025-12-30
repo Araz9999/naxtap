@@ -9,17 +9,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { 
-  Percent, 
-  Zap, 
-  TrendingUp, 
-  Users, 
-  Eye, 
-  MousePointer, 
+import {
+  Percent,
+  Zap,
+  TrendingUp,
+  Users,
+  Eye,
+  MousePointer,
   ShoppingCart,
   DollarSign,
   Calendar,
-  Target
+  Target,
 } from 'lucide-react-native';
 import CountdownTimer from '@/components/CountdownTimer';
 import { useDiscountStore } from '@/store/discountStore';
@@ -34,12 +34,12 @@ export default function DiscountAnalyticsScreen() {
   const { getActiveStoreForUser, applyDiscountToProduct, removeDiscountFromProduct, applyStoreWideDiscount, removeStoreWideDiscount } = useStoreStore();
   const { currentUser } = useUserStore();
   const { listings } = useListingStore();
-  
+
   // ✅ Validate currentUser
   if (!currentUser) {
     logger.warn('[DiscountManager] No current user');
   }
-  
+
   const currentStore = currentUser ? getActiveStoreForUser(currentUser.id) : null;
   const [selectedTab, setSelectedTab] = useState<'overview' | 'discounts' | 'campaigns' | 'quick-actions'>('overview');
 
@@ -71,31 +71,31 @@ export default function DiscountAnalyticsScreen() {
       Alert.alert('Xəta', 'Endirim faizi 1-99 arasında olmalıdır');
       return;
     }
-    
+
     Alert.alert(
       'Sürətli Endirim',
       `Bütün məhsullara ${percentage}% endirim tətbiq etmək istəyirsiniz?`,
       [
         { text: 'Ləğv et', style: 'cancel' },
-        { 
-          text: 'Tətbiq et', 
+        {
+          text: 'Tətbiq et',
           onPress: async () => {
             logger.info('[DiscountManager] Applying quick discount:', { storeId: currentStore.id, percentage });
-            
+
             try {
               await applyStoreWideDiscount(currentStore.id, percentage);
-              
+
               logger.info('[DiscountManager] Quick discount applied successfully');
-              
+
               Alert.alert('Uğurlu', `${percentage}% endirim bütün məhsullara tətbiq edildi`);
             } catch (error) {
               logger.error('[DiscountManager] Error applying quick discount:', error);
-              
+
               Alert.alert('Xəta', 'Endirim tətbiq edilərkən xəta baş verdi');
             }
-          }
+          },
         },
-      ]
+      ],
     );
   };
 
@@ -106,32 +106,32 @@ export default function DiscountAnalyticsScreen() {
       Alert.alert('Xəta', 'Mağaza seçilməyib');
       return;
     }
-    
+
     Alert.alert(
       'Endirimi Ləğv et',
       'Bütün məhsullardan endirimi ləğv etmək istəyirsiniz?',
       [
         { text: 'Ləğv et', style: 'cancel' },
-        { 
-          text: 'Ləğv et', 
+        {
+          text: 'Ləğv et',
           style: 'destructive',
           onPress: async () => {
             logger.info('[DiscountManager] Removing all discounts:', currentStore.id);
-            
+
             try {
               await removeStoreWideDiscount(currentStore.id);
-              
+
               logger.info('[DiscountManager] All discounts removed successfully');
-              
+
               Alert.alert('Uğurlu', 'Bütün endirimlər ləğv edildi');
             } catch (error) {
               logger.error('[DiscountManager] Error removing all discounts:', error);
-              
+
               Alert.alert('Xəta', 'Endirimlər ləğv edilərkən xəta baş verdi');
             }
-          }
+          },
         },
-      ]
+      ],
     );
   };
 
@@ -145,7 +145,7 @@ export default function DiscountAnalyticsScreen() {
           <Text style={styles.statValue}>{activeDiscounts.length}</Text>
           <Text style={styles.statLabel}>Aktiv Endirimlər</Text>
         </View>
-        
+
         <View style={styles.statCard}>
           <View style={styles.statIcon}>
             <Zap size={24} color="#7C3AED" />
@@ -153,7 +153,7 @@ export default function DiscountAnalyticsScreen() {
           <Text style={styles.statValue}>{activeCampaigns.length}</Text>
           <Text style={styles.statLabel}>Aktiv Kampaniyalar</Text>
         </View>
-        
+
         <View style={styles.statCard}>
           <View style={styles.statIcon}>
             <DollarSign size={24} color="#DC2626" />
@@ -161,7 +161,7 @@ export default function DiscountAnalyticsScreen() {
           <Text style={styles.statValue}>{totalRevenue.toFixed(0)} AZN</Text>
           <Text style={styles.statLabel}>Gəlir</Text>
         </View>
-        
+
         <View style={styles.statCard}>
           <View style={styles.statIcon}>
             <TrendingUp size={24} color="#0891B2" />
@@ -173,7 +173,7 @@ export default function DiscountAnalyticsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Performans Məlumatları</Text>
-        
+
         <View style={styles.performanceCard}>
           <View style={styles.performanceRow}>
             <View style={styles.performanceItem}>
@@ -181,20 +181,20 @@ export default function DiscountAnalyticsScreen() {
               <Text style={styles.performanceLabel}>Baxışlar</Text>
               <Text style={styles.performanceValue}>{totalViews.toLocaleString()}</Text>
             </View>
-            
+
             <View style={styles.performanceItem}>
               <MousePointer size={20} color="#6B7280" />
               <Text style={styles.performanceLabel}>Kliklər</Text>
               <Text style={styles.performanceValue}>{totalClicks.toLocaleString()}</Text>
             </View>
-            
+
             <View style={styles.performanceItem}>
               <ShoppingCart size={20} color="#6B7280" />
               <Text style={styles.performanceLabel}>Satışlar</Text>
               <Text style={styles.performanceValue}>{totalConversions}</Text>
             </View>
           </View>
-          
+
           <View style={styles.conversionRate}>
             <Text style={styles.conversionLabel}>Konversiya Dərəcəsi</Text>
             <Text style={styles.conversionValue}>
@@ -207,7 +207,7 @@ export default function DiscountAnalyticsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Aktiv Endirimlər</Text>
-        
+
         {activeDiscounts.slice(0, 3).map((discount) => (
           <View key={discount.id} style={styles.discountPreview}>
             <View style={styles.discountHeader}>
@@ -215,12 +215,12 @@ export default function DiscountAnalyticsScreen() {
               <View style={styles.discountBadge}>
                 <Text style={styles.discountBadgeText}>
                   {discount.type === 'percentage' ? `${discount.value}%` :
-                   discount.type === 'fixed_amount' ? `${discount.value} AZN` :
-                   `${discount.value} Al`}
+                    discount.type === 'fixed_amount' ? `${discount.value} AZN` :
+                      `${discount.value} Al`}
                 </Text>
               </View>
             </View>
-            
+
             {discount.hasCountdown && discount.countdownEndDate && (
               <CountdownTimer
                 endDate={discount.countdownEndDate}
@@ -229,7 +229,7 @@ export default function DiscountAnalyticsScreen() {
                 style={styles.discountTimer}
               />
             )}
-            
+
             <View style={styles.discountStats}>
               <Text style={styles.discountStat}>{discount.usedCount}/{discount.usageLimit || '∞'} istifadə</Text>
               <Text style={styles.discountStat}>{discount.applicableListings.length} məhsul</Text>
@@ -239,15 +239,15 @@ export default function DiscountAnalyticsScreen() {
             </View>
           </View>
         ))}
-        
+
         {activeDiscounts.length === 0 && (
           <Text style={styles.emptyText}>Aktiv endirim yoxdur</Text>
         )}
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Son Kampaniyalar</Text>
-        
+
         {activeCampaigns.slice(0, 3).map((campaign) => (
           <View key={campaign.id} style={styles.campaignPreview}>
             <View style={styles.campaignHeader}>
@@ -255,13 +255,13 @@ export default function DiscountAnalyticsScreen() {
               <View style={styles.campaignType}>
                 <Text style={styles.campaignTypeText}>
                   {campaign.type === 'flash_sale' ? 'Sürətli Satış' :
-                   campaign.type === 'seasonal' ? 'Mövsümi' :
-                   campaign.type === 'clearance' ? 'Təmizlik' :
-                   campaign.type === 'bundle' ? 'Paket' : 'Sadiqlik'}
+                    campaign.type === 'seasonal' ? 'Mövsümi' :
+                      campaign.type === 'clearance' ? 'Təmizlik' :
+                        campaign.type === 'bundle' ? 'Paket' : 'Sadiqlik'}
                 </Text>
               </View>
             </View>
-            
+
             <View style={styles.campaignStats}>
               <Text style={styles.campaignStat}>{campaign.analytics.views} baxış</Text>
               <Text style={styles.campaignStat}>{campaign.analytics.clicks} klik</Text>
@@ -269,7 +269,7 @@ export default function DiscountAnalyticsScreen() {
             </View>
           </View>
         ))}
-        
+
         {activeCampaigns.length === 0 && (
           <Text style={styles.emptyText}>Aktiv kampaniya yoxdur</Text>
         )}
@@ -284,7 +284,7 @@ export default function DiscountAnalyticsScreen() {
         <Text style={styles.sectionDescription}>
           Bütün məhsullara tez endirim tətbiq edin
         </Text>
-        
+
         <View style={styles.quickActionGrid}>
           {[10, 15, 20, 25, 30, 50].map((percentage) => (
             <TouchableOpacity
@@ -297,7 +297,7 @@ export default function DiscountAnalyticsScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        
+
         <TouchableOpacity
           style={styles.removeDiscountButton}
           onPress={handleRemoveAllDiscounts}
@@ -311,9 +311,9 @@ export default function DiscountAnalyticsScreen() {
         <Text style={styles.sectionDescription}>
           Hazır şablonlarla tez kampaniya yaradın
         </Text>
-        
+
         <View style={styles.templateGrid}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.templateCard}
             onPress={() => router.push('/store/campaign/create')}
           >
@@ -321,8 +321,8 @@ export default function DiscountAnalyticsScreen() {
             <Text style={styles.templateTitle}>Sürətli Satış</Text>
             <Text style={styles.templateDescription}>24 saatlıq məhdud təklif</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.templateCard}
             onPress={() => router.push('/store/campaign/create')}
           >
@@ -330,8 +330,8 @@ export default function DiscountAnalyticsScreen() {
             <Text style={styles.templateTitle}>Mövsümi</Text>
             <Text style={styles.templateDescription}>Mövsüm sonu endirimi</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.templateCard}
             onPress={() => router.push('/store/campaign/create')}
           >
@@ -339,8 +339,8 @@ export default function DiscountAnalyticsScreen() {
             <Text style={styles.templateTitle}>Hədəfli</Text>
             <Text style={styles.templateDescription}>Xüsusi müştəri qrupu</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.templateCard}
             onPress={() => router.push('/store/campaign/create')}
           >
@@ -355,8 +355,8 @@ export default function DiscountAnalyticsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Endirim və Kampaniya İdarəsi',
           headerRight: () => (
             <TouchableOpacity
@@ -366,9 +366,9 @@ export default function DiscountAnalyticsScreen() {
               <Text style={styles.addButtonText}>İdarə et</Text>
             </TouchableOpacity>
           ),
-        }} 
+        }}
       />
-      
+
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'overview' && styles.activeTab]}
@@ -378,7 +378,7 @@ export default function DiscountAnalyticsScreen() {
             Ümumi
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'quick-actions' && styles.activeTab]}
           onPress={() => setSelectedTab('quick-actions')}

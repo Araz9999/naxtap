@@ -29,7 +29,7 @@ export const getModeratorsProcedure = adminProcedure.query(async () => {
       },
       orderBy: { createdAt: 'desc' },
     });
-    
+
     return moderators;
   } catch (error) {
     logger.error('[Admin] Get moderators error:', error);

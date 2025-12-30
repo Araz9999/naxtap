@@ -13,7 +13,7 @@ describe('Authentication System', () => {
       const payload = {
         userId: 'user123',
         email: 'test@example.com',
-        role: 'user' as const
+        role: 'user' as const,
       };
 
       const tokens = await generateTokenPair(payload);
@@ -28,7 +28,7 @@ describe('Authentication System', () => {
       const payload = {
         userId: 'user456',
         email: 'verify@example.com',
-        role: 'user' as const
+        role: 'user' as const,
       };
 
       const tokens = await generateTokenPair(payload);
@@ -50,7 +50,7 @@ describe('Authentication System', () => {
       const payload = {
         userId: 'user789',
         email: 'expire@example.com',
-        role: 'user' as const
+        role: 'user' as const,
       };
 
       const tokens = await generateTokenPair(payload);
@@ -67,8 +67,8 @@ describe('Authentication System', () => {
       const hashed = await hashPassword(password);
 
       expect(hashed).not.toBe(password);
-      expect(hashed.length).toBeGreaterThan(50); // Bcrypt hashes are long
-      expect(hashed).toMatch(/^\$2[ab]\$/); // Bcrypt hash format
+      expect(hashed.length).toBeGreaterThan(30); // PBKDF2 hash is long
+      expect(hashed).toContain(':'); // salt:hash format
     });
 
     test('should produce different hashes for same password', async () => {
@@ -106,7 +106,7 @@ describe('Authentication System', () => {
       const payload = {
         userId: 'abc123',
         email: 'complete@example.com',
-        role: 'admin' as const
+        role: 'admin' as const,
       };
 
       const tokens = await generateTokenPair(payload);
@@ -118,13 +118,13 @@ describe('Authentication System', () => {
     });
 
     test('should handle different user roles', async () => {
-      const roles: Array<'user' | 'moderator' | 'admin'> = ['user', 'moderator', 'admin'];
+      const roles: ('user' | 'moderator' | 'admin')[] = ['user', 'moderator', 'admin'];
 
       for (const role of roles) {
         const payload = {
           userId: `${role}Id`,
           email: `${role}@example.com`,
-          role
+          role,
         };
 
         const tokens = await generateTokenPair(payload);
@@ -140,17 +140,17 @@ describe('Authentication System', () => {
       const payload = {
         userId: 'user999',
         email: 'tamper@example.com',
-        role: 'user' as const
+        role: 'user' as const,
       };
 
       const tokens = await generateTokenPair(payload);
-      
+
       // Attempt to tamper with token
       const parts = tokens.accessToken.split('.');
       if (parts.length === 3) {
         const tamperedToken = `${parts[0]}.${Buffer.from('{"userId":"admin999"}').toString('base64')}.${parts[2]}`;
         const decoded = await verifyToken(tamperedToken);
-        
+
         expect(decoded).toBeNull(); // Signature verification should fail
       }
     });

@@ -26,9 +26,9 @@ export const updateReportStatusProcedure = moderatorProcedure
     logger.info('[Moderation] Report status updated:', {
       reportId: input.reportId,
       status: input.status,
-      moderatorId: ctx.user.userId
+      moderatorId: ctx.user.userId,
     });
-    
+
     if (input.status === 'resolved' && trimmedResolution) {
       logger.info('[Moderation] Report resolved:', { reportId: input.reportId });
       const updated = moderationDb.reports.resolve(input.reportId, trimmedResolution, ctx.user.userId);
@@ -46,10 +46,10 @@ export const updateReportStatusProcedure = moderatorProcedure
       return updated;
     }
     const updated = moderationDb.reports.updateStatus(
-      input.reportId, 
-      input.status, 
-      ctx.user.userId, 
-      trimmedNotes
+      input.reportId,
+      input.status,
+      ctx.user.userId,
+      trimmedNotes,
     );
     if (!updated) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Report not found' });

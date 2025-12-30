@@ -16,14 +16,14 @@ export default publicProcedure
     const existingConversation = liveChatDb.conversations
       .getByUserId(input.userId)
       .find(c => c.status !== 'closed');
-    
+
     if (existingConversation) {
       return existingConversation;
     }
-    
+
     const availableAgents = liveChatDb.agents.getAvailable();
     const agent = availableAgents[0];
-    
+
     const conversation: LiveChatConversation = {
       id: `conv-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       userId: input.userId,
@@ -39,12 +39,12 @@ export default publicProcedure
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    
+
     const created = liveChatDb.conversations.create(conversation);
-    
+
     if (agent) {
       liveChatDb.agents.incrementActiveChats(agent.id);
     }
-    
+
     return created;
   });

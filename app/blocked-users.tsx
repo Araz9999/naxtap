@@ -122,34 +122,34 @@ export default function BlockedUsersScreen() {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
         language === 'az' ? 'Hesaba daxil olmalısınız' : 'Вы должны войти в систему',
-        [{ text: 'OK', onPress: () => router.back() }]
+        [{ text: 'OK', onPress: () => router.back() }],
       );
     }
   }, [isAuthenticated, currentUser, language]);
 
   const texts = {
-     az: {
-       title: 'Blok edilmiş istifadəçilər',
-       noBlockedUsers: 'Blok edilmiş istifadəçi yoxdur',
-       noBlockedUsersDesc: 'Hələ heç bir istifadəçini blok etməmisiniz. Geri qayıdıb ayarlardan istifadəçiləri blok edə bilərsiniz.',
-       unblock: 'Blokdan çıxar',
-       unblockConfirm: 'Bu istifadəçini blokdan çıxarmaq istədiyinizə əminsinizmi?',
-       unblockSuccess: 'İstifadəçi blokdan çıxarıldı',
-       yes: 'Bəli',
-       no: 'Xeyr',
-       goBack: 'Geri qayıt'
-     },
-     ru: {
-       title: 'Заблокированные пользователи',
-       noBlockedUsers: 'Нет заблокированных пользователей',
-       noBlockedUsersDesc: 'Вы еще не заблокировали ни одного пользователя. Вы можете вернуться и заблокировать пользователей в настройках.',
-       unblock: 'Разблокировать',
-       unblockConfirm: 'Вы уверены, что хотите разблокировать этого пользователя?',
-       unblockSuccess: 'Пользователь разблокирован',
-       yes: 'Да',
-       no: 'Нет',
-       goBack: 'Назад'
-     },
+    az: {
+      title: 'Blok edilmiş istifadəçilər',
+      noBlockedUsers: 'Blok edilmiş istifadəçi yoxdur',
+      noBlockedUsersDesc: 'Hələ heç bir istifadəçini blok etməmisiniz. Geri qayıdıb ayarlardan istifadəçiləri blok edə bilərsiniz.',
+      unblock: 'Blokdan çıxar',
+      unblockConfirm: 'Bu istifadəçini blokdan çıxarmaq istədiyinizə əminsinizmi?',
+      unblockSuccess: 'İstifadəçi blokdan çıxarıldı',
+      yes: 'Bəli',
+      no: 'Xeyr',
+      goBack: 'Geri qayıt',
+    },
+    ru: {
+      title: 'Заблокированные пользователи',
+      noBlockedUsers: 'Нет заблокированных пользователей',
+      noBlockedUsersDesc: 'Вы еще не заблокировали ни одного пользователя. Вы можете вернуться и заблокировать пользователей в настройках.',
+      unblock: 'Разблокировать',
+      unblockConfirm: 'Вы уверены, что хотите разблокировать этого пользователя?',
+      unblockSuccess: 'Пользователь разблокирован',
+      yes: 'Да',
+      no: 'Нет',
+      goBack: 'Назад',
+    },
   };
 
   const t = texts[language];
@@ -161,7 +161,7 @@ export default function BlockedUsersScreen() {
     }
     return users.filter(user => user && typeof user.id === 'string' && blockedUsers.includes(user.id));
   }, [blockedUsers]);
-  
+
   // ... (handleUnblock function remains the same) ...
   const handleUnblock = async (userId: string, userName: string) => {
     if (!isAuthenticated || !currentUser) {
@@ -194,14 +194,14 @@ export default function BlockedUsersScreen() {
               Alert.alert(
                 language === 'az' ? 'Uğurlu' : 'Успешно',
                 language === 'az' ? `${userName} blokdan çıxarıldı` : `${userName} разблокирован`,
-                [{ text: 'OK' }]
+                [{ text: 'OK' }],
               );
               logger.info('[BlockedUsersScreen] User unblocked successfully:', userId);
             } catch (error) {
               logger.error('[BlockedUsersScreen] Error unblocking user:', error);
-              let errorMessage = language === 'az' ? 'Blokdan çıxarılarkən xəta baş verdi' : 'Произошла ошибка при разблокировке';
+              const errorMessage = language === 'az' ? 'Blokdan çıxarılarkən xəta baş verdi' : 'Произошла ошибка при разблокировке';
               if (error instanceof Error) {
-                  // Specific error handling...
+                // Specific error handling...
               }
               Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', errorMessage);
             } finally {
@@ -209,10 +209,10 @@ export default function BlockedUsersScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
-  
+
   // --- RENDER FUNCTIONS ---
   const renderBlockedUser = ({ item }: { item: typeof users[0] }) => {
     if (!item || !item.id || !item.name) {

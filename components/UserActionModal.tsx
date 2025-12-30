@@ -14,25 +14,25 @@ import {
   Share,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { 
-  Badge, 
-  UserX, 
-  UserCheck, 
-  X, 
-  Flag, 
-  UserPlus, 
-  UserMinus, 
-  Heart, 
-  HeartOff, 
-  VolumeX, 
-  Volume2, 
-  Share2, 
-  Shield, 
-  ShieldOff, 
-  Bell, 
-  BellOff, 
-  StickyNote, 
-  Edit3 
+import {
+  Badge,
+  UserX,
+  UserCheck,
+  X,
+  Flag,
+  UserPlus,
+  UserMinus,
+  Heart,
+  HeartOff,
+  VolumeX,
+  Volume2,
+  Share2,
+  Shield,
+  ShieldOff,
+  Bell,
+  BellOff,
+  StickyNote,
+  Edit3,
 } from 'lucide-react-native';
 import { useUserStore } from '@/store/userStore';
 import { useNotificationStore } from '@/store/notificationStore';
@@ -56,13 +56,13 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.info('[UserActionModal] Modal opened:', { userId: user.id, userName: user.name });
     }
   }, [visible, user]);
-  
+
   const { language } = useLanguageStore();
-  const { 
-    blockUser, 
-    unblockUser, 
-    isUserBlocked, 
-    canNudgeUser, 
+  const {
+    blockUser,
+    unblockUser,
+    isUserBlocked,
+    canNudgeUser,
     nudgeUser,
     muteUser,
     unmuteUser,
@@ -84,16 +84,16 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
     addUserNote,
     removeUserNote,
     getUserNote,
-    currentUser 
+    currentUser,
   } = useUserStore();
   const { addNotification } = useNotificationStore();
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [showReportInput, setShowReportInput] = useState(false);
   const [reportText, setReportText] = useState('');
-  
+
   const isBlocked = isUserBlocked(user.id);
   const canNudge = canNudgeUser(user.id);
   const isMuted = isUserMuted(user.id);
@@ -242,11 +242,11 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for nudge');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
-    
+
     if (!canNudge) {
       logger.warn('[UserActionModal] Nudge limit reached:', { userId: user.id });
       Alert.alert('', t.nudgeLimit);
@@ -254,11 +254,11 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
     }
 
     logger.info('[UserActionModal] Nudging user:', { userId: user.id, userName: user.name });
-    
+
     setIsLoading(true);
     try {
       nudgeUser(user.id);
-      
+
       // Add notification for the nudged user (simulated)
       addNotification({
         type: 'nudge',
@@ -267,7 +267,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
         fromUserId: currentUser?.id,
         fromUserName: currentUser?.name,
         fromUserAvatar: currentUser?.avatar,
-        data: { userId: currentUser?.id }
+        data: { userId: currentUser?.id },
       });
 
       logger.info('[UserActionModal] Nudge successful:', { userId: user.id });
@@ -277,7 +277,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Nudge error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Dürtmə uğursuz oldu' : 'Не удалось подтолкнуть'
+        language === 'az' ? 'Dürtmə uğursuz oldu' : 'Не удалось подтолкнуть',
       );
     } finally {
       setIsLoading(false);
@@ -290,54 +290,54 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Invalid user for blocking');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Yanlış istifadəçi' : 'Неверный пользователь'
+        language === 'az' ? 'Yanlış istifadəçi' : 'Неверный пользователь',
       );
       return;
     }
-    
+
     // ✅ Check if already loading
     if (isLoading) {
       logger.warn('[UserActionModal] Action already in progress');
       return;
     }
-    
+
     Alert.alert(
       language === 'az' ? 'Blok et' : 'Заблокировать',
-      language === 'az' 
+      language === 'az'
         ? `${user.name} istifadəçisini blok etmək istədiyinizə əminsinizmi?\n\nBlok etdikdə:\n• Mesajlarını görə bilməyəcəksiniz\n• Elanlarını görə bilməyəcəksiniz\n• Sizinlə əlaqə saxlaya bilməyəcək`
         : `Вы уверены, что хотите заблокировать ${user.name}?\n\nПосле блокировки:\n• Вы не увидите его сообщения\n• Вы не увидите его объявления\n• Он не сможет с вами связаться`,
       [
-        { 
-          text: t.no, 
+        {
+          text: t.no,
           style: 'cancel',
-          onPress: () => logger.info('[UserActionModal] Block cancelled:', { userId: user.id })
+          onPress: () => logger.info('[UserActionModal] Block cancelled:', { userId: user.id }),
         },
         {
           text: t.yes,
           style: 'destructive',
           onPress: async () => {
             setIsLoading(true);
-            
+
             try {
               logger.debug('[UserActionModal] Blocking user:', user.id);
               blockUser(user.id);
-              
+
               Alert.alert(
                 language === 'az' ? 'Uğurlu' : 'Успешно',
-                language === 'az' 
-                  ? `${user.name} blok edildi` 
+                language === 'az'
+                  ? `${user.name} blok edildi`
                   : `${user.name} заблокирован`,
-                [{ text: 'OK', onPress: () => onClose() }]
+                [{ text: 'OK', onPress: () => onClose() }],
               );
-              
+
               logger.info('[UserActionModal] User blocked successfully:', user.id);
             } catch (error) {
               logger.error('[UserActionModal] Error blocking user:', error);
-              
-              let errorMessage = language === 'az' 
-                ? 'Blok edərkən xəta baş verdi' 
+
+              let errorMessage = language === 'az'
+                ? 'Blok edərkən xəta baş verdi'
                 : 'Произошла ошибка при блокировке';
-              
+
               if (error instanceof Error) {
                 if (error.message.includes('Özünüzü') || error.message.includes('yourself')) {
                   errorMessage = language === 'az'
@@ -349,17 +349,17 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
                     : 'Пользователь уже заблокирован';
                 }
               }
-              
+
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
-                errorMessage
+                errorMessage,
               );
             } finally {
               setIsLoading(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -369,53 +369,53 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Invalid user for unblocking');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Yanlış istifadəçi' : 'Неверный пользователь'
+        language === 'az' ? 'Yanlış istifadəçi' : 'Неверный пользователь',
       );
       return;
     }
-    
+
     // ✅ Check if already loading
     if (isLoading) {
       logger.warn('[UserActionModal] Action already in progress');
       return;
     }
-    
+
     Alert.alert(
       language === 'az' ? 'Blokdan çıxar' : 'Разблокировать',
-      language === 'az' 
+      language === 'az'
         ? `${user.name} istifadəçisini blokdan çıxarmaq istədiyinizə əminsinizmi?\n\nOnunla yenidən əlaqə saxlaya biləcəksiniz.`
         : `Вы уверены, что хотите разблокировать ${user.name}?\n\nВы снова сможете связаться с ним.`,
       [
-        { 
-          text: t.no, 
+        {
+          text: t.no,
           style: 'cancel',
-          onPress: () => logger.info('[UserActionModal] Unblock cancelled:', { userId: user.id })
+          onPress: () => logger.info('[UserActionModal] Unblock cancelled:', { userId: user.id }),
         },
         {
           text: t.yes,
           onPress: async () => {
             setIsLoading(true);
-            
+
             try {
               logger.debug('[UserActionModal] Unblocking user:', user.id);
               unblockUser(user.id);
-              
+
               Alert.alert(
                 language === 'az' ? 'Uğurlu' : 'Успешно',
-                language === 'az' 
-                  ? `${user.name} blokdan çıxarıldı` 
+                language === 'az'
+                  ? `${user.name} blokdan çıxarıldı`
                   : `${user.name} разблокирован`,
-                [{ text: 'OK', onPress: () => onClose() }]
+                [{ text: 'OK', onPress: () => onClose() }],
               );
-              
+
               logger.info('[UserActionModal] User unblocked successfully:', user.id);
             } catch (error) {
               logger.error('[UserActionModal] Error unblocking user:', error);
-              
-              let errorMessage = language === 'az' 
-                ? 'Blokdan çıxarılarkən xəta baş verdi' 
+
+              let errorMessage = language === 'az'
+                ? 'Blokdan çıxarılarkən xəta baş verdi'
                 : 'Произошла ошибка при разблокировке';
-              
+
               if (error instanceof Error) {
                 if (error.message.includes('blok edilməyib') || error.message.includes('not blocked')) {
                   errorMessage = language === 'az'
@@ -423,17 +423,17 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
                     : 'Пользователь не заблокирован';
                 }
               }
-              
+
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
-                errorMessage
+                errorMessage,
               );
             } finally {
               setIsLoading(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -442,17 +442,17 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for report');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
-    
+
     // ✅ Prevent opening report input if loading
     if (isLoading) {
       logger.warn('[UserActionModal] Cannot open report input while operation in progress');
       return;
     }
-    
+
     logger.info('[UserActionModal] Opening report input:', { userId: user.id, userName: user.name });
     setShowReportInput(true);
   };
@@ -462,7 +462,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
     if (!reportText.trim()) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şikayət səbəbini yazın' : 'Напишите причину жалобы'
+        language === 'az' ? 'Şikayət səbəbini yazın' : 'Напишите причину жалобы',
       );
       return;
     }
@@ -471,7 +471,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
     if (!user?.id) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -495,7 +495,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Report error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şikayət göndərilmədi' : 'Не удалось отправить жалобу'
+        language === 'az' ? 'Şikayət göndərilmədi' : 'Не удалось отправить жалобу',
       );
     } finally {
       setIsLoading(false);
@@ -508,7 +508,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for follow/unfollow');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -536,7 +536,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Follow/unfollow error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İzləmə əməliyyatı uğursuz oldu' : 'Не удалось выполнить операцию подписки'
+        language === 'az' ? 'İzləmə əməliyyatı uğursuz oldu' : 'Не удалось выполнить операцию подписки',
       );
     } finally {
       setIsLoading(false);
@@ -549,7 +549,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for favorite/unfavorite');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -577,7 +577,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Favorite/unfavorite error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Sevimlilər əməliyyatı uğursuz oldu' : 'Не удалось выполнить операцию избранного'
+        language === 'az' ? 'Sevimlilər əməliyyatı uğursuz oldu' : 'Не удалось выполнить операцию избранного',
       );
     } finally {
       setIsLoading(false);
@@ -590,7 +590,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for mute/unmute');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -618,7 +618,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Mute/unmute error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Səssizə alma əməliyyatı uğursuz oldu' : 'Не удалось выполнить операцию отключения звука'
+        language === 'az' ? 'Səssizə alma əməliyyatı uğursuz oldu' : 'Не удалось выполнить операцию отключения звука',
       );
     } finally {
       setIsLoading(false);
@@ -635,7 +635,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
     try {
       // ✅ Safe location access
       const location = user.location?.[language] || user.location?.az || user.location?.en || '';
-      
+
       const profileWebUrl = getProfileWebUrl(user.id);
       const profileDeepLink = getProfileDeepLink(user.id);
 
@@ -656,34 +656,34 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       const shareMessage =
         language === 'az'
           ? [
-              user.name,
-              location ? `Yer: ${location}` : '',
-              ratingText ? `Reytinq: ${ratingText}` : '',
-              '',
-              `Profil linki: ${profileWebUrl}`,
-              `Tətbiqdə aç: ${profileDeepLink}`,
-            ]
-              .filter(Boolean)
-              .join('\n')
+            user.name,
+            location ? `Yer: ${location}` : '',
+            ratingText ? `Reytinq: ${ratingText}` : '',
+            '',
+            `Profil linki: ${profileWebUrl}`,
+            `Tətbiqdə aç: ${profileDeepLink}`,
+          ]
+            .filter(Boolean)
+            .join('\n')
           : [
-              user.name,
-              location ? `Место: ${location}` : '',
-              ratingText ? `Рейтинг: ${ratingText}` : '',
-              '',
-              `Ссылка на профиль: ${profileWebUrl}`,
-              `Открыть в приложении: ${profileDeepLink}`,
-            ]
-              .filter(Boolean)
-              .join('\n');
+            user.name,
+            location ? `Место: ${location}` : '',
+            ratingText ? `Рейтинг: ${ratingText}` : '',
+            '',
+            `Ссылка на профиль: ${profileWebUrl}`,
+            `Открыть в приложении: ${profileDeepLink}`,
+          ]
+            .filter(Boolean)
+            .join('\n');
 
       logger.debug('[handleShare] Sharing user profile:', user.id);
-      
+
       await Share.share({
         message: shareMessage,
         url: profileWebUrl,
         title: user.name,
       });
-      
+
       logger.debug('[handleShare] Share successful');
     } catch (error) {
       // ✅ User cancelled sharing is not an error
@@ -691,11 +691,11 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
         logger.debug('[handleShare] User cancelled share');
         return;
       }
-      
+
       logger.error('[handleShare] Share error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться'
+        language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться',
       );
     }
   };
@@ -706,7 +706,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for trust/untrust');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -734,7 +734,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Trust/untrust error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Etibar əməliyyatı uğursuz oldu' : 'Не удалось выполнить операцию доверия'
+        language === 'az' ? 'Etibar əməliyyatı uğursuz oldu' : 'Не удалось выполнить операцию доверия',
       );
     } finally {
       setIsLoading(false);
@@ -747,7 +747,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for subscribe/unsubscribe');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -769,7 +769,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Subscribe/unsubscribe error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Əməliyyat uğursuz oldu' : 'Операция не удалась'
+        language === 'az' ? 'Əməliyyat uğursuz oldu' : 'Операция не удалась',
       );
     } finally {
       setIsLoading(false);
@@ -782,7 +782,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for note');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -794,7 +794,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
     }
 
     logger.info('[UserActionModal] Opening note input:', { userId: user.id, hasExistingNote: !!userNote });
-    
+
     if (userNote) {
       setNoteText(userNote);
     } else {
@@ -809,7 +809,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] No user for save note');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -839,7 +839,7 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
       logger.error('[UserActionModal] Note save error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Qeyd yadda saxlanmadı' : 'Не удалось сохранить заметку'
+        language === 'az' ? 'Qeyd yadda saxlanmadı' : 'Не удалось сохранить заметку',
       );
     } finally {
       setIsLoading(false);
@@ -863,329 +863,329 @@ export default function UserActionModal({ visible, onClose, user }: UserActionMo
           <View style={styles.container}>
             <View style={styles.header}>
               <Text style={styles.title}>{t.userActions}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   logger.info('[UserActionModal] Modal closed via X button');
                   onClose();
-                }} 
+                }}
                 style={styles.closeButton}
               >
                 <X size={24} color="#666" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView 
-              style={styles.scrollContent} 
+            <ScrollView
+              style={styles.scrollContent}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               bounces={false}
             >
               <View style={styles.content}>
-            {!showNoteInput && !showReportInput ? (
-              <>
-                {!isBlocked && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, !canNudge && styles.disabledButton]}
-                    onPress={handleNudge}
-                    disabled={!canNudge || isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      <Badge size={20} color={canNudge ? "#007AFF" : "#999"} />
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={[styles.actionTitle, !canNudge && styles.disabledText]}>
-                        {t.nudge}
-                      </Text>
-                      <Text style={[styles.actionDesc, !canNudge && styles.disabledText]}>
-                        {t.nudgeDesc}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                {!showNoteInput && !showReportInput ? (
+                  <>
+                    {!isBlocked && (
+                      <TouchableOpacity
+                        style={[styles.actionButton, !canNudge && styles.disabledButton]}
+                        onPress={handleNudge}
+                        disabled={!canNudge || isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          <Badge size={20} color={canNudge ? '#007AFF' : '#999'} />
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={[styles.actionTitle, !canNudge && styles.disabledText]}>
+                            {t.nudge}
+                          </Text>
+                          <Text style={[styles.actionDesc, !canNudge && styles.disabledText]}>
+                            {t.nudgeDesc}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {!isBlocked && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleFollow}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      {isFollowed ? (
-                        <UserMinus size={20} color="#FF9500" />
-                      ) : (
-                        <UserPlus size={20} color="#007AFF" />
-                      )}
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={styles.actionTitle}>
-                        {isFollowed ? t.unfollow : t.follow}
-                      </Text>
-                      <Text style={styles.actionDesc}>
-                        {isFollowed ? t.unfollowDesc : t.followDesc}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                    {!isBlocked && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleFollow}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          {isFollowed ? (
+                            <UserMinus size={20} color="#FF9500" />
+                          ) : (
+                            <UserPlus size={20} color="#007AFF" />
+                          )}
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={styles.actionTitle}>
+                            {isFollowed ? t.unfollow : t.follow}
+                          </Text>
+                          <Text style={styles.actionDesc}>
+                            {isFollowed ? t.unfollowDesc : t.followDesc}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {!isBlocked && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleFavorite}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      {isFavorite ? (
-                        <HeartOff size={20} color="#FF3B30" />
-                      ) : (
-                        <Heart size={20} color="#FF3B30" />
-                      )}
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={styles.actionTitle}>
-                        {isFavorite ? t.removeFromFavorites : t.addToFavorites}
-                      </Text>
-                      <Text style={styles.actionDesc}>
-                        {isFavorite ? t.removeFromFavoritesDesc : t.addToFavoritesDesc}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                    {!isBlocked && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleFavorite}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          {isFavorite ? (
+                            <HeartOff size={20} color="#FF3B30" />
+                          ) : (
+                            <Heart size={20} color="#FF3B30" />
+                          )}
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={styles.actionTitle}>
+                            {isFavorite ? t.removeFromFavorites : t.addToFavorites}
+                          </Text>
+                          <Text style={styles.actionDesc}>
+                            {isFavorite ? t.removeFromFavoritesDesc : t.addToFavoritesDesc}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {!isBlocked && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleMute}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      {isMuted ? (
-                        <Volume2 size={20} color="#34C759" />
-                      ) : (
-                        <VolumeX size={20} color="#FF9500" />
-                      )}
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={styles.actionTitle}>
-                        {isMuted ? t.unmute : t.mute}
-                      </Text>
-                      <Text style={styles.actionDesc}>
-                        {isMuted ? t.unmuteDesc : t.muteDesc}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                    {!isBlocked && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleMute}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          {isMuted ? (
+                            <Volume2 size={20} color="#34C759" />
+                          ) : (
+                            <VolumeX size={20} color="#FF9500" />
+                          )}
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={styles.actionTitle}>
+                            {isMuted ? t.unmute : t.mute}
+                          </Text>
+                          <Text style={styles.actionDesc}>
+                            {isMuted ? t.unmuteDesc : t.muteDesc}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {!isBlocked && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleShare}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      <Share2 size={20} color="#007AFF" />
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={styles.actionTitle}>{t.share}</Text>
-                      <Text style={styles.actionDesc}>{t.shareDesc}</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                    {!isBlocked && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleShare}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          <Share2 size={20} color="#007AFF" />
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={styles.actionTitle}>{t.share}</Text>
+                          <Text style={styles.actionDesc}>{t.shareDesc}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {!isBlocked && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleTrust}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      {isTrusted ? (
-                        <ShieldOff size={20} color="#FF9500" />
-                      ) : (
-                        <Shield size={20} color="#34C759" />
-                      )}
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={styles.actionTitle}>
-                        {isTrusted ? t.untrust : t.trust}
-                      </Text>
-                      <Text style={styles.actionDesc}>
-                        {isTrusted ? t.untrustDesc : t.trustDesc}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                    {!isBlocked && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleTrust}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          {isTrusted ? (
+                            <ShieldOff size={20} color="#FF9500" />
+                          ) : (
+                            <Shield size={20} color="#34C759" />
+                          )}
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={styles.actionTitle}>
+                            {isTrusted ? t.untrust : t.trust}
+                          </Text>
+                          <Text style={styles.actionDesc}>
+                            {isTrusted ? t.untrustDesc : t.trustDesc}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {!isBlocked && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleSubscribe}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      {isSubscribed ? (
-                        <BellOff size={20} color="#FF9500" />
-                      ) : (
-                        <Bell size={20} color="#007AFF" />
-                      )}
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={styles.actionTitle}>
-                        {isSubscribed ? t.unsubscribe : t.subscribe}
-                      </Text>
-                      <Text style={styles.actionDesc}>
-                        {isSubscribed ? t.unsubscribeDesc : t.subscribeDesc}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                    {!isBlocked && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleSubscribe}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          {isSubscribed ? (
+                            <BellOff size={20} color="#FF9500" />
+                          ) : (
+                            <Bell size={20} color="#007AFF" />
+                          )}
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={styles.actionTitle}>
+                            {isSubscribed ? t.unsubscribe : t.subscribe}
+                          </Text>
+                          <Text style={styles.actionDesc}>
+                            {isSubscribed ? t.unsubscribeDesc : t.subscribeDesc}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {!isBlocked && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleNote}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      {userNote ? (
-                        <Edit3 size={20} color="#007AFF" />
-                      ) : (
-                        <StickyNote size={20} color="#007AFF" />
-                      )}
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={styles.actionTitle}>
-                        {userNote ? t.editNote : t.addNote}
-                      </Text>
-                      <Text style={styles.actionDesc}>
-                        {userNote ? t.editNoteDesc : t.addNoteDesc}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                    {!isBlocked && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleNote}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          {userNote ? (
+                            <Edit3 size={20} color="#007AFF" />
+                          ) : (
+                            <StickyNote size={20} color="#007AFF" />
+                          )}
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={styles.actionTitle}>
+                            {userNote ? t.editNote : t.addNote}
+                          </Text>
+                          <Text style={styles.actionDesc}>
+                            {userNote ? t.editNoteDesc : t.addNoteDesc}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {!isBlocked && !isReported && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleReport}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      <Flag size={20} color="#FF3B30" />
-                    </View>
-                    <View style={styles.actionText}>
-                      <Text style={[styles.actionTitle, { color: '#FF3B30' }]}>
-                        {t.report}
-                      </Text>
-                      <Text style={styles.actionDesc}>{t.reportDesc}</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                    {!isBlocked && !isReported && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleReport}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          <Flag size={20} color="#FF3B30" />
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={[styles.actionTitle, { color: '#FF3B30' }]}>
+                            {t.report}
+                          </Text>
+                          <Text style={styles.actionDesc}>{t.reportDesc}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
 
-                {isBlocked ? (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleUnblock}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      <UserCheck size={20} color="#34C759" />
+                    {isBlocked ? (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleUnblock}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          <UserCheck size={20} color="#34C759" />
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={styles.actionTitle}>{t.unblock}</Text>
+                          <Text style={styles.actionDesc}>{t.unblockDesc}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleBlock}
+                        disabled={isLoading}
+                      >
+                        <View style={styles.actionIcon}>
+                          <UserX size={20} color="#FF3B30" />
+                        </View>
+                        <View style={styles.actionText}>
+                          <Text style={[styles.actionTitle, { color: '#FF3B30' }]}>
+                            {t.block}
+                          </Text>
+                          <Text style={styles.actionDesc}>{t.blockDesc}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : showNoteInput ? (
+                  <View style={styles.noteInputContainer}>
+                    <Text style={styles.noteInputTitle}>
+                      {userNote ? t.editNote : t.addNote}
+                    </Text>
+                    <TextInput
+                      style={styles.noteInput}
+                      value={noteText}
+                      onChangeText={setNoteText}
+                      placeholder={t.notePlaceholder}
+                      multiline
+                      numberOfLines={4}
+                      textAlignVertical="top"
+                    />
+                    <View style={styles.noteButtons}>
+                      <TouchableOpacity
+                        style={[styles.noteButton, styles.cancelNoteButton]}
+                        onPress={() => {
+                          logger.info('[UserActionModal] Note input cancelled');
+                          setShowNoteInput(false);
+                          setNoteText('');
+                        }}
+                      >
+                        <Text style={styles.cancelNoteText}>{t.cancel}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.noteButton, styles.saveNoteButton]}
+                        onPress={handleSaveNote}
+                      >
+                        <Text style={styles.saveNoteText}>{t.save}</Text>
+                      </TouchableOpacity>
                     </View>
-                    <View style={styles.actionText}>
-                      <Text style={styles.actionTitle}>{t.unblock}</Text>
-                      <Text style={styles.actionDesc}>{t.unblockDesc}</Text>
-                    </View>
-                  </TouchableOpacity>
+                  </View>
                 ) : (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleBlock}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.actionIcon}>
-                      <UserX size={20} color="#FF3B30" />
+                  <View style={styles.noteInputContainer}>
+                    <Text style={styles.noteInputTitle}>
+                      {t.reportReason}
+                    </Text>
+                    <TextInput
+                      style={styles.noteInput}
+                      value={reportText}
+                      onChangeText={setReportText}
+                      placeholder={t.reportDesc}
+                      multiline
+                      numberOfLines={4}
+                      textAlignVertical="top"
+                    />
+                    <View style={styles.noteButtons}>
+                      <TouchableOpacity
+                        style={[styles.noteButton, styles.cancelNoteButton]}
+                        onPress={() => {
+                          logger.info('[UserActionModal] Report input cancelled');
+                          setShowReportInput(false);
+                          setReportText('');
+                        }}
+                      >
+                        <Text style={styles.cancelNoteText}>{t.cancel}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.noteButton, styles.saveNoteButton]}
+                        onPress={handleSubmitReport}
+                      >
+                        <Text style={styles.saveNoteText}>{t.report}</Text>
+                      </TouchableOpacity>
                     </View>
-                    <View style={styles.actionText}>
-                      <Text style={[styles.actionTitle, { color: '#FF3B30' }]}>
-                        {t.block}
-                      </Text>
-                      <Text style={styles.actionDesc}>{t.blockDesc}</Text>
-                    </View>
-                  </TouchableOpacity>
+                  </View>
                 )}
-              </>
-            ) : showNoteInput ? (
-              <View style={styles.noteInputContainer}>
-                <Text style={styles.noteInputTitle}>
-                  {userNote ? t.editNote : t.addNote}
-                </Text>
-                <TextInput
-                  style={styles.noteInput}
-                  value={noteText}
-                  onChangeText={setNoteText}
-                  placeholder={t.notePlaceholder}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-                <View style={styles.noteButtons}>
-                  <TouchableOpacity
-                    style={[styles.noteButton, styles.cancelNoteButton]}
-                    onPress={() => {
-                      logger.info('[UserActionModal] Note input cancelled');                 
-                      setShowNoteInput(false);
-                      setNoteText('');
-                    }}
-                  >
-                    <Text style={styles.cancelNoteText}>{t.cancel}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.noteButton, styles.saveNoteButton]}
-                    onPress={handleSaveNote}
-                  >
-                    <Text style={styles.saveNoteText}>{t.save}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.noteInputContainer}>
-                <Text style={styles.noteInputTitle}>
-                  {t.reportReason}
-                </Text>
-                <TextInput
-                  style={styles.noteInput}
-                  value={reportText}
-                  onChangeText={setReportText}
-                  placeholder={t.reportDesc}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-                <View style={styles.noteButtons}>
-                  <TouchableOpacity
-                    style={[styles.noteButton, styles.cancelNoteButton]}
-                    onPress={() => {
-                      logger.info('[UserActionModal] Report input cancelled');                     
-                      setShowReportInput(false);
-                      setReportText('');
-                    }}
-                  >
-                    <Text style={styles.cancelNoteText}>{t.cancel}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.noteButton, styles.saveNoteButton]}
-                    onPress={handleSubmitReport}
-                  >
-                    <Text style={styles.saveNoteText}>{t.report}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
               </View>
             </ScrollView>
 
             {!showNoteInput && !showReportInput && (
-              <TouchableOpacity 
-                style={styles.cancelButton} 
+              <TouchableOpacity
+                style={styles.cancelButton}
                 onPress={() => {
                   logger.info('[UserActionModal] Modal closed by user');
                   onClose();

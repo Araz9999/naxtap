@@ -94,7 +94,7 @@ export class ErrorBoundary extends Component<Props, State> {
       // Default error UI
       return (
         <View style={styles.container}>
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >

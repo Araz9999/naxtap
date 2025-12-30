@@ -19,7 +19,7 @@ import Colors from '@/constants/colors';
 import { logger } from '@/utils/logger';
 export default function CardSaveScreen() {
   const router = useRouter();
-  
+
   const [amount, setAmount] = useState('4');
   const [description, setDescription] = useState('Kartı yadda saxla');
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ export default function CardSaveScreen() {
 
   const handleCardSave = async () => {
     const amountNum = parseFloat(amount);
-    
+
     if (isNaN(amountNum) || amountNum <= 0) {
       Alert.alert('Xəta', 'Məbləğ 0-dan böyük olmalıdır');
       return;

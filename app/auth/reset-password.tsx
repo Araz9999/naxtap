@@ -29,68 +29,68 @@ export default function ResetPasswordScreen() {
 
   const handleResetPassword = async () => {
     // ===== VALIDATION START =====
-    
+
     // 1. Token validation
     if (!token || typeof token !== 'string' || token.trim().length === 0) {
       Alert.alert(
         'Xəta',
-        'Reset token yoxdur və ya etibarsızdır. Yenidən forgot password səhifəsinə kedin.'
+        'Reset token yoxdur və ya etibarsızdır. Yenidən forgot password səhifəsinə kedin.',
       );
       return;
     }
-    
+
     // 2. Password required
     if (!password || typeof password !== 'string' || password.trim().length === 0) {
       Alert.alert('Xəta', 'Şifrə daxil edin');
       return;
     }
-    
+
     // 3. Confirm password required
     if (!confirmPassword || typeof confirmPassword !== 'string' || confirmPassword.trim().length === 0) {
       Alert.alert('Xəta', 'Şifrəni təsdiqləyin');
       return;
     }
-    
+
     // 4. Minimum length
     if (password.length < 8) {
       Alert.alert('Xəta', 'Şifrə ən azı 8 simvoldan ibarət olmalıdır');
       return;
     }
-    
+
     // 5. Maximum length
     if (password.length > 128) {
       Alert.alert('Xəta', 'Şifrə çox uzundur (maks 128 simvol)');
       return;
     }
-    
+
     // 6. Password strength
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
-    
+
     if (!hasUpperCase || !hasLowerCase || !hasNumber) {
       Alert.alert(
         'Xəta',
-        'Şifrə ən azı 1 böyük hərf, 1 kiçik hərf və 1 rəqəm ehtiva etməlidir'
+        'Şifrə ən azı 1 böyük hərf, 1 kiçik hərf və 1 rəqəm ehtiva etməlidir',
       );
       return;
     }
-    
+
     // 7. Password match
     if (password !== confirmPassword) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şifrələr uyğun gəlmir' : 'Пароли не совпадают'
+        language === 'az' ? 'Şifrələr uyğun gəlmir' : 'Пароли не совпадают',
       );
       return;
     }
-    
+
     // 8. No whitespace
     if (/\s/.test(password)) {
       Alert.alert('Xəta', 'Şifrədə boşluq ola bilməz');
       return;
     }
-    
+
     // ===== VALIDATION END =====
 
     try {
@@ -109,14 +109,14 @@ export default function ResetPasswordScreen() {
             text: language === 'az' ? 'Giriş et' : 'Войти',
             onPress: () => router.replace('/auth/login'),
           },
-        ]
+        ],
       );
     } catch (error: any) {
       logger.error('Password reset error:', error);
-      
+
       // User-friendly error messages
       let errorMessage = 'Şifrə dəyişdirilə bilmədi';
-      
+
       if (error.message) {
         if (error.message.includes('token')) {
           errorMessage = 'Reset linki etibarsızdır və ya müddəti bitib. Yenidən forgot password səhifəsinə kedin.';
@@ -126,22 +126,22 @@ export default function ResetPasswordScreen() {
           errorMessage = 'Şəbəkə xətası. İnternet əlaqənizi yoxlayın.';
         }
       }
-      
+
       Alert.alert('Xəta', errorMessage);
     }
   };
-   return (
+  return (
     <>
-      <Stack.Screen options={{ 
-        title: language === 'az' ? 'Şifrə Sıfırlama' : 'Сброс пароля', 
-        headerShown: true 
+      <Stack.Screen options={{
+        title: language === 'az' ? 'Şifrə Sıfırlama' : 'Сброс пароля',
+        headerShown: true,
       }} />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
@@ -153,7 +153,7 @@ export default function ResetPasswordScreen() {
               {language === 'az' ? 'Yeni Şifrə' : 'Новый пароль'}
             </Text>
             <Text style={styles.description}>
-              {language === 'az' 
+              {language === 'az'
                 ? 'Yeni şifrənizi daxil edin (min 8 simvol, böyük/kiçik hərf, rəqəm)'
                 : 'Введите новый пароль (мин 8 символов, загл/строчн, цифра)'}
             </Text>
@@ -221,7 +221,7 @@ export default function ResetPasswordScreen() {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              {language === 'az' 
+              {language === 'az'
                 ? 'Köməyə ehtiyacınız varsa, bizim dəstək komandası ilə əlaqə saxlayın'
                 : 'Если вам нужна помощь, свяжитесь с нашей службой поддержки'}
             </Text>
@@ -230,9 +230,8 @@ export default function ResetPasswordScreen() {
       </KeyboardAvoidingView>
     </>
   );
-  };
+}
 
- 
 
 const styles = StyleSheet.create({
   container: {

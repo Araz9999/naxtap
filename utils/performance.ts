@@ -1,7 +1,7 @@
 /**
  * Performance Optimization Utilities
  * @module utils/performance
- * 
+ *
  * Provides utilities for optimizing React Native app performance:
  * - Memoization helpers
  * - Debouncing and throttling
@@ -9,13 +9,13 @@
  * - List rendering optimization
  */
 
-import { useCallback, useEffect, useRef, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import { InteractionManager, Platform } from 'react-native';
 
 /**
  * Custom hook for debouncing values
  * Useful for search inputs, API calls, etc.
- * 
+ *
  * @example
  * const debouncedSearchTerm = useDebounce(searchTerm, 500);
  * useEffect(() => {
@@ -41,17 +41,17 @@ export function useDebounce<T>(value: T, delay: number): T {
 /**
  * Custom hook for throttling callbacks
  * Limits function execution rate
- * 
+ *
  * @example
  * const throttledScroll = useThrottle(handleScroll, 200);
  * <ScrollView onScroll={throttledScroll} />
  */
 export function useThrottle<T extends (...args: any[]) => any>(
   callback: T,
-  delay: number
+  delay: number,
 ): T {
   const lastRan = useRef(Date.now());
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   return useCallback(
     ((...args) => {
@@ -71,14 +71,14 @@ export function useThrottle<T extends (...args: any[]) => any>(
         }, delay - timeSinceLastRan);
       }
     }) as T,
-    [callback, delay]
+    [callback, delay],
   );
 }
 
 /**
  * Defer execution until after interactions complete
  * Prevents UI jank during animations/gestures
- * 
+ *
  * @example
  * runAfterInteractions(() => {
  *   expensiveOperation();
@@ -93,7 +93,7 @@ export function runAfterInteractions(callback: () => void): void {
 /**
  * Memoize expensive computations
  * Returns cached result if inputs haven't changed
- * 
+ *
  * @example
  * const expensiveResult = useMemoizedCallback(
  *   () => complexCalculation(data),
@@ -102,7 +102,7 @@ export function runAfterInteractions(callback: () => void): void {
  */
 export function useMemoizedCallback<T>(
   factory: () => T,
-  deps: React.DependencyList
+  deps: React.DependencyList,
 ): T {
   return useMemo(factory, deps);
 }
@@ -166,7 +166,7 @@ export const ListOptimization = {
     }),
 
     // Key extraction
-    keyExtractor: (item: any, index: number) => 
+    keyExtractor: (item: any, index: number) =>
       item.id || `item-${index}`,
   }),
 
@@ -244,7 +244,7 @@ export class PerformanceMonitor {
    */
   static async measure<T>(
     label: string,
-    fn: () => T | Promise<T>
+    fn: () => T | Promise<T>,
   ): Promise<T> {
     this.start(label);
     try {
@@ -266,7 +266,7 @@ export const BundleOptimization = {
    * Lazy load heavy modules
    */
   lazyImport: <T>(
-    importFn: () => Promise<{ default: T }>
+    importFn: () => Promise<{ default: T }>,
   ): (() => Promise<T>) => {
     let module: T | null = null;
 

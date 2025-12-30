@@ -13,13 +13,13 @@ export const deleteUserProcedure = adminProcedure
       if (actorId === input.userId) {
         throw new Error('You cannot delete your own account');
       }
-      
+
       const user = await prisma.user.findUnique({ where: { id: input.userId } });
-      
+
       if (!user) {
         throw new Error('User not found');
       }
-      
+
       // Prevent deleting the last admin
       if (user.role === 'ADMIN') {
         const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
@@ -27,7 +27,7 @@ export const deleteUserProcedure = adminProcedure
           throw new Error('Cannot delete the last admin');
         }
       }
-      
+
       // Delete related data
       await prisma.$transaction([
         prisma.socialAccount.deleteMany({ where: { userId: input.userId } }),
@@ -35,9 +35,9 @@ export const deleteUserProcedure = adminProcedure
         prisma.passwordResetToken.deleteMany({ where: { userId: input.userId } }),
         prisma.user.delete({ where: { id: input.userId } }),
       ]);
-      
+
       logger.info('[Admin] User deleted:', { userId: input.userId, deletedBy: actorId });
-      
+
       return { success: true };
     } catch (error) {
       logger.error('[Admin] Delete user error:', error);

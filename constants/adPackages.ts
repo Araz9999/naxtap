@@ -451,24 +451,24 @@ export const storeRenewalPackages: StoreRenewalPackage[] = [
       {
         az: '20% endirim',
         ru: '20% скидка',
-        en: '20% discount'
+        en: '20% discount',
       },
       {
         az: 'Bonus 5 gün',
         ru: 'Бонус 5 дней',
-        en: 'Bonus 5 days'
+        en: 'Bonus 5 days',
       },
       {
         az: 'Prioritet dəstək',
         ru: 'Приоритетная поддержка',
-        en: 'Priority support'
+        en: 'Priority support',
       },
       {
         az: 'Reklam krediti',
         ru: 'Рекламный кредит',
-        en: 'Ad credit'
-      }
-    ]
+        en: 'Ad credit',
+      },
+    ],
   },
   {
     id: 'last-minute-offer',
@@ -493,19 +493,19 @@ export const storeRenewalPackages: StoreRenewalPackage[] = [
       {
         az: '10% endirim',
         ru: '10% скидка',
-        en: '10% discount'
+        en: '10% discount',
       },
       {
         az: 'Dərhal aktivləşmə',
         ru: 'Немедленная активация',
-        en: 'Instant activation'
+        en: 'Instant activation',
       },
       {
         az: 'Məlumat itikisi yoxdur',
         ru: 'Нет потери данных',
-        en: 'No data loss'
-      }
-    ]
+        en: 'No data loss',
+      },
+    ],
   },
   {
     id: 'grace-period-package',
@@ -530,25 +530,25 @@ export const storeRenewalPackages: StoreRenewalPackage[] = [
       {
         az: '7% endirim',
         ru: '7% скидка',
-        en: '7% discount'
+        en: '7% discount',
       },
       {
         az: 'Məlumatlar qorunur',
         ru: 'Данные сохраняются',
-        en: 'Data preserved'
+        en: 'Data preserved',
       },
       {
         az: 'Reytinq saxlanılır',
         ru: 'Рейтинг сохраняется',
-        en: 'Rating retained'
+        en: 'Rating retained',
       },
       {
         az: 'İzləyicilər qalır',
         ru: 'Подписчики остаются',
-        en: 'Followers remain'
-      }
-    ]
-  }
+        en: 'Followers remain',
+      },
+    ],
+  },
 ];
 
 // Listing renewal packages for expired listings

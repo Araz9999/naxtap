@@ -29,27 +29,27 @@ export default function MyListingsScreen() {
   const [showExpirationSettings, setShowExpirationSettings] = useState(false);
   const [archivedListings, setArchivedListings] = useState<Listing[]>([]);
   const [showArchived, setShowArchived] = useState(false);
-  
+
   // ✅ Memoize current user
   const currentUser = useMemo(() => users[0], []);
-  
+
   // ✅ Memoize user listings to prevent infinite loops
   const userListings = useMemo(() => listings.filter(listing => {
     if (listing.userId !== currentUser.id) return false;
-    
+
     // Include personal listings (not in stores)
     if (!listing.storeId) return true;
-    
+
     // Include promoted listings from stores
     return listing.isPremium || listing.isFeatured || listing.isVip || (listing.purchasedViews && listing.purchasedViews > 0);
   }), [listings]);
-  
+
   // Check for expiring listings (3 days or less)
   // ✅ Memoized for performance
   const expiringListings = React.useMemo(() => {
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-    
+
     return userListings.filter(listing => {
       const expirationDate = new Date(listing.expiresAt);
       return expirationDate <= threeDaysFromNow && expirationDate > now;
@@ -59,20 +59,20 @@ export default function MyListingsScreen() {
   const checkExpiringListings = useCallback(() => {
     // ✅ FIX: Define 'now' inside the callback
     const now = new Date();
-    
+
     const notificationMessages = expiringListings.map(listing => {
       const expirationDate = new Date(listing.expiresAt);
       const daysLeft = Math.ceil((expirationDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-      
-      return language === 'az' 
+
+      return language === 'az'
         ? `"${listing.title.az}" elanınızın müddəti ${daysLeft} gün sonra bitəcək`
         : `Срок действия объявления "${listing.title.ru}" истекает через ${daysLeft} дней`;
     });
-    
+
     setNotifications(notificationMessages);
     logger.info('[MyListings] Checked expiring listings:', { count: expiringListings.length });
   }, [expiringListings, language]);
-  
+
   // ✅ Load persisted auto-renewal settings and archived listings on mount
   useEffect(() => {
     const loadPersistedData = async () => {
@@ -83,7 +83,7 @@ export default function MyListingsScreen() {
           setAutoRenewalSettings(JSON.parse(storedSettings));
           logger.info('[MyListings] Loaded auto-renewal settings:', JSON.parse(storedSettings));
         }
-        
+
         // Load archived listings
         const storedArchived = await AsyncStorage.getItem('archivedListings');
         if (storedArchived) {
@@ -94,34 +94,34 @@ export default function MyListingsScreen() {
         logger.error('[MyListings] Failed to load persisted data:', error);
       }
     };
-    
+
     if (isAuthenticated) {
       loadPersistedData();
       checkExpiringListings();
     }
   }, [isAuthenticated, checkExpiringListings]);
-  
+
   // ✅ Improved refresh with actual data reload
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     logger.info('[MyListings] Refreshing listings...');
-    
+
     try {
       // Reload auto-renewal settings
       const storedSettings = await AsyncStorage.getItem('autoRenewalSettings');
       if (storedSettings) {
         setAutoRenewalSettings(JSON.parse(storedSettings));
       }
-      
+
       // Reload archived listings
       const storedArchived = await AsyncStorage.getItem('archivedListings');
       if (storedArchived) {
         setArchivedListings(JSON.parse(storedArchived));
       }
-      
+
       // Check expiring listings
       checkExpiringListings();
-      
+
       logger.info('[MyListings] Refresh completed successfully');
     } catch (error) {
       logger.error('[MyListings] Refresh failed:', error);
@@ -129,37 +129,37 @@ export default function MyListingsScreen() {
       setRefreshing(false);
     }
   }, [checkExpiringListings]);
-  
+
   const handleAutoRenewal = async (listingId: string) => {
     // ✅ Validate listingId
     if (!listingId || typeof listingId !== 'string') {
       logger.error('[MyListings] Invalid listingId for auto-renewal');
       Alert.alert(
         language === 'az' ? 'Xəta!' : 'Ошибка!',
-        language === 'az' ? 'Elan ID səhvdir' : 'Неверный ID объявления'
+        language === 'az' ? 'Elan ID səhvdir' : 'Неверный ID объявления',
       );
       return;
     }
-    
+
     const listing = userListings.find(l => l.id === listingId);
     if (!listing) {
       logger.error('[MyListings] Listing not found for auto-renewal:', listingId);
       Alert.alert(
         language === 'az' ? 'Xəta!' : 'Ошибка!',
-        language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено'
+        language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено',
       );
       return;
     }
-    
+
     const isActive = autoRenewalSettings[listingId];
     const autoRenewalCost = 5; // 5 AZN per month
-    
+
     logger.info('[MyListings] Toggling auto-renewal:', { listingId, isActive, cost: autoRenewalCost });
-    
+
     if (!isActive && !canAfford(autoRenewalCost)) {
       Alert.alert(
         language === 'az' ? 'Balans kifayət etmir' : 'Недостаточно средств',
-        language === 'az' 
+        language === 'az'
           ? `Avtomatik uzatma üçün ${autoRenewalCost} AZN lazımdır. Balansınız: ${getTotalBalance()} AZN`
           : `Для автопродления требуется ${autoRenewalCost} AZN. Ваш баланс: ${getTotalBalance()} AZN`,
         [
@@ -171,14 +171,14 @@ export default function MyListingsScreen() {
             text: language === 'az' ? 'Balansı artır' : 'Пополнить баланс',
             onPress: () => router.push('/wallet'),
           },
-        ]
+        ],
       );
       return;
     }
-    
+
     Alert.alert(
       language === 'az' ? 'Avtomatik uzatma' : 'Автоматическое продление',
-      language === 'az' 
+      language === 'az'
         ? (isActive ? 'Avtomatik uzatmanı deaktivləşdirmək istəyirsiniz?' : `Bu elan üçün avtomatik uzatmanı aktivləşdirmək istəyirsiniz?\n\nQiymət: ${autoRenewalCost} AZN/ay\nBalansınız: ${getTotalBalance()} AZN`)
         : (isActive ? 'Хотите деактивировать автоматическое продление?' : `Хотите активировать автоматическое продление для этого объявления?\n\nЦена: ${autoRenewalCost} AZN/мес\nВаш баланс: ${getTotalBalance()} AZN`),
       [
@@ -196,7 +196,7 @@ export default function MyListingsScreen() {
                 if (success) {
                   const newSettings = { ...autoRenewalSettings, [listingId]: true };
                   setAutoRenewalSettings(newSettings);
-                  
+
                   // ✅ Persist to AsyncStorage
                   try {
                     await AsyncStorage.setItem('autoRenewalSettings', JSON.stringify(newSettings));
@@ -204,24 +204,24 @@ export default function MyListingsScreen() {
                   } catch (error) {
                     logger.error('[MyListings] Failed to persist auto-renewal settings:', error);
                   }
-                  
+
                   Alert.alert(
                     language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                    language === 'az' 
+                    language === 'az'
                       ? `Avtomatik uzatma aktivləşdirildi. ${autoRenewalCost} AZN balansınızdan çıxarıldı.\n\n⚠️ Qeyd: Elan müddəti bitəndə avtomatik olaraq 30 gün uzadılacaq.`
-                      : `Автоматическое продление активировано. ${autoRenewalCost} AZN списано с баланса.\n\n⚠️ Примечание: Объявление будет автоматически продлено на 30 дней после истечения.`
+                      : `Автоматическое продление активировано. ${autoRenewalCost} AZN списано с баланса.\n\n⚠️ Примечание: Объявление будет автоматически продлено на 30 дней после истечения.`,
                   );
                 } else {
                   Alert.alert(
                     language === 'az' ? 'Xəta!' : 'Ошибка!',
-                    language === 'az' ? 'Balans kifayət etmir' : 'Недостаточно средств'
+                    language === 'az' ? 'Balans kifayət etmir' : 'Недостаточно средств',
                   );
                 }
               } else {
                 // Deactivating auto-renewal - no charge
                 const newSettings = { ...autoRenewalSettings, [listingId]: false };
                 setAutoRenewalSettings(newSettings);
-                
+
                 // ✅ Persist to AsyncStorage
                 try {
                   await AsyncStorage.setItem('autoRenewalSettings', JSON.stringify(newSettings));
@@ -229,24 +229,24 @@ export default function MyListingsScreen() {
                 } catch (error) {
                   logger.error('[MyListings] Failed to persist auto-renewal settings:', error);
                 }
-                
+
                 Alert.alert(
                   language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                  language === 'az' 
+                  language === 'az'
                     ? 'Avtomatik uzatma deaktivləşdirildi'
-                    : 'Автоматическое продление деактивировано'
+                    : 'Автоматическое продление деактивировано',
                 );
               }
             } catch (error) {
               logger.error('[MyListings] Error toggling auto renewal:', error);
               Alert.alert(
                 language === 'az' ? 'Xəta!' : 'Ошибка!',
-                language === 'az' ? 'Tənzimləmə zamanı xəta baş verdi' : 'Произошла ошибка при настройке'
+                language === 'az' ? 'Tənzimləmə zamanı xəta baş verdi' : 'Произошла ошибка при настройке',
               );
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -256,28 +256,28 @@ export default function MyListingsScreen() {
       logger.error('[MyListings] Invalid listingId for extension');
       return;
     }
-    
+
     const listing = userListings.find(l => l.id === listingId);
     if (!listing) {
       logger.error('[MyListings] Listing not found for extension:', listingId);
       return;
     }
-    
+
     logger.info('[MyListings] Extending listing:', { listingId, expiresAt: listing.expiresAt });
-    
+
     const daysLeft = getDaysLeft(listing.expiresAt);
     const isExpiringSoon = daysLeft <= 3;
     const discountMultiplier = isExpiringSoon ? 0.8 : 1; // 20% discount
-    
+
     // ✅ Use helper function for precise calculation
     const sevenDayPrice = calculatePrice(2, discountMultiplier);
     const thirtyDayPrice = calculatePrice(5, discountMultiplier);
-    
+
     const discountText = isExpiringSoon ? ' (20% endirim)' : '';
-    
+
     Alert.alert(
       language === 'az' ? 'Elanı uzat' : 'Продлить объявление',
-      language === 'az' 
+      language === 'az'
         ? `Elanınızın müddətini uzatmaq istəyirsiniz?${isExpiringSoon ? '\n\n🎉 Müddəti bitən elanlar üçün 20% endirim!' : ''}\n\nBalansınız: ${getTotalBalance()} AZN`
         : `Хотите продлить срок действия объявления?${isExpiringSoon ? '\n\n🎉 Скидка 20% для истекающих объявлений!' : ''}\n\nВаш баланс: ${getTotalBalance()} AZN`,
       [
@@ -291,7 +291,7 @@ export default function MyListingsScreen() {
             if (!canAfford(sevenDayPrice)) {
               Alert.alert(
                 language === 'az' ? 'Balans kifayət etmir' : 'Недостаточно средств',
-                language === 'az' 
+                language === 'az'
                   ? `${sevenDayPrice} AZN lazımdır. Balansınız: ${getTotalBalance()} AZN`
                   : `Требуется ${sevenDayPrice} AZN. Ваш баланс: ${getTotalBalance()} AZN`,
                 [
@@ -300,34 +300,34 @@ export default function MyListingsScreen() {
                     text: language === 'az' ? 'Balansı artır' : 'Пополнить баланс',
                     onPress: () => router.push('/wallet'),
                   },
-                ]
+                ],
               );
               return;
             }
-            
+
             try {
               if (spendFromBalance(sevenDayPrice)) {
                 const newExpirationDate = new Date(listing.expiresAt);
                 newExpirationDate.setDate(newExpirationDate.getDate() + 7);
-                
+
                 updateListing(listingId, {
-                  expiresAt: newExpirationDate.toISOString()
+                  expiresAt: newExpirationDate.toISOString(),
                 });
-                
+
                 logger.info('[MyListings] Listing extended by 7 days:', { listingId, newExpiresAt: newExpirationDate.toISOString() });
-                
+
                 Alert.alert(
                   language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                  language === 'az' 
+                  language === 'az'
                     ? `Elanınız 7 gün uzadıldı${isExpiringSoon ? ' (20% endirim tətbiq edildi)' : ''}. ${sevenDayPrice} AZN balansınızdan çıxarıldı.`
-                    : `Объявление продлено на 7 дней${isExpiringSoon ? ' (применена скидка 20%)' : ''}. ${sevenDayPrice} AZN списано с баланса.`
+                    : `Объявление продлено на 7 дней${isExpiringSoon ? ' (применена скидка 20%)' : ''}. ${sevenDayPrice} AZN списано с баланса.`,
                 );
               }
             } catch (error) {
               logger.error('[MyListings] Error extending listing:', error);
               Alert.alert(
                 language === 'az' ? 'Xəta!' : 'Ошибка!',
-                language === 'az' ? 'Uzatma zamanı xəta baş verdi' : 'Произошла ошибка при продлении'
+                language === 'az' ? 'Uzatma zamanı xəta baş verdi' : 'Произошла ошибка при продлении',
               );
             }
           },
@@ -338,7 +338,7 @@ export default function MyListingsScreen() {
             if (!canAfford(thirtyDayPrice)) {
               Alert.alert(
                 language === 'az' ? 'Balans kifayət etmir' : 'Недостаточно средств',
-                language === 'az' 
+                language === 'az'
                   ? `${thirtyDayPrice} AZN lazımdır. Balansınız: ${getTotalBalance()} AZN`
                   : `Требуется ${thirtyDayPrice} AZN. Ваш баланс: ${getTotalBalance()} AZN`,
                 [
@@ -347,27 +347,27 @@ export default function MyListingsScreen() {
                     text: language === 'az' ? 'Balansı artır' : 'Пополнить баланс',
                     onPress: () => router.push('/wallet'),
                   },
-                ]
+                ],
               );
               return;
             }
-            
+
             try {
               if (spendFromBalance(thirtyDayPrice)) {
                 const newExpirationDate = new Date(listing.expiresAt);
                 newExpirationDate.setDate(newExpirationDate.getDate() + 30);
-                
+
                 updateListing(listingId, {
-                  expiresAt: newExpirationDate.toISOString()
+                  expiresAt: newExpirationDate.toISOString(),
                 });
-                
+
                 logger.info('[MyListings] Listing extended by 30 days:', { listingId, newExpiresAt: newExpirationDate.toISOString() });
-                
+
                 Alert.alert(
                   language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                  language === 'az' 
+                  language === 'az'
                     ? `Elanınız 30 gün uzadıldı${isExpiringSoon ? ' (20% endirim tətbiq edildi)' : ''}. ${thirtyDayPrice} AZN balansınızdan çıxarıldı.`
-                    : `Объявление продлено на 30 дней${isExpiringSoon ? ' (применена скидка 20%)' : ''}. ${thirtyDayPrice} AZN списано с баланса.`
+                    : `Объявление продлено на 30 дней${isExpiringSoon ? ' (применена скидка 20%)' : ''}. ${thirtyDayPrice} AZN списано с баланса.`,
                 );
               }
             } catch (error) {
@@ -375,10 +375,10 @@ export default function MyListingsScreen() {
               Alert.alert(
                 language === 'az' ? 'Xəta!' : 'Ошибка!',
                 language === 'az' ? 'Uzatma zamanı xəta baş verdi' : 'Произошла ошибка при продлении',
-    )}
+              );}
           },
         },
-      ]
+      ],
     );
   };
 
@@ -388,18 +388,18 @@ export default function MyListingsScreen() {
       logger.error('[MyListings] Invalid listingId for archiving');
       return;
     }
-    
+
     const listing = userListings.find(l => l.id === listingId);
     if (!listing) {
       logger.error('[MyListings] Listing not found for archiving:', listingId);
       return;
     }
-    
+
     logger.info('[MyListings] Archiving listing:', listingId);
-    
+
     Alert.alert(
       language === 'az' ? 'Elanı arxivləşdir' : 'Архивировать объявление',
-      language === 'az' 
+      language === 'az'
         ? 'Bu elanı arxivə köçürmək istəyirsiniz? Arxivdən sonra yenidən aktivləşdirə bilərsiniz.'
         : 'Хотите переместить это объявление в архив? Вы сможете реактивировать его позже.',
       [
@@ -413,7 +413,7 @@ export default function MyListingsScreen() {
             try {
               const newArchived = [...archivedListings, listing];
               setArchivedListings(newArchived);
-              
+
               // ✅ Persist archived listings
               try {
                 await AsyncStorage.setItem('archivedListings', JSON.stringify(newArchived));
@@ -421,7 +421,7 @@ export default function MyListingsScreen() {
               } catch (storageError) {
                 logger.error('[MyListings] Failed to persist archived listing:', storageError);
               }
-              
+
               // ✅ Remove auto-renewal if active
               if (autoRenewalSettings[listingId]) {
                 const newSettings = { ...autoRenewalSettings, [listingId]: false };
@@ -429,32 +429,32 @@ export default function MyListingsScreen() {
                 await AsyncStorage.setItem('autoRenewalSettings', JSON.stringify(newSettings));
                 logger.info('[MyListings] Auto-renewal removed for archived listing:', listingId);
               }
-              
+
               deleteListing(listingId);
-              
+
               Alert.alert(
                 language === 'az' ? 'Arxivləndi' : 'Архивировано',
-                language === 'az' 
+                language === 'az'
                   ? 'Elan arxivə köçürüldü. Arxiv bölməsindən yenidən aktivləşdirə bilərsiniz.'
-                  : 'Объявление перемещено в архив. Вы можете реактивировать его из раздела архива.'
+                  : 'Объявление перемещено в архив. Вы можете реактивировать его из раздела архива.',
               );
             } catch (error) {
               logger.error('[MyListings] Error archiving listing:', error);
               Alert.alert(
                 language === 'az' ? 'Xəta!' : 'Ошибка!',
-                language === 'az' ? 'Arxivləmə zamanı xəta baş verdi' : 'Произошла ошибка при архивировании'
+                language === 'az' ? 'Arxivləmə zamanı xəta baş verdi' : 'Произошла ошибка при архивировании',
               );
             }
           },
         },
-      ]
+      ],
     );
   };
 
   const handleReactivateListing = (listing: Listing) => {
     Alert.alert(
       language === 'az' ? 'Elanı yenidən aktivləşdir' : 'Реактивировать объявление',
-      language === 'az' 
+      language === 'az'
         ? 'Bu elanı yenidən aktivləşdirmək istəyirsiniz? Elan 30 gün müddətində yayımlanacaq.'
         : 'Хотите реактивировать это объявление? Объявление будет опубликовано на 30 дней.',
       [
@@ -475,49 +475,49 @@ export default function MyListingsScreen() {
                 views: 0,
                 isPremium: false,
                 isFeatured: false,
-                isVip: false
+                isVip: false,
               };
-              
+
               // Add back to active listings
               const { addListing } = useListingStore.getState();
               addListing(reactivatedListing);
-              
+
               // Remove from archived
               setArchivedListings(prev => prev.filter(l => l.id !== listing.id));
-              
+
               Alert.alert(
                 language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                language === 'az' 
+                language === 'az'
                   ? 'Elan yenidən aktivləşdirildi və 30 gün müddətində yayımlanacaq'
-                  : 'Объявление реактивировано и будет опубликовано на 30 дней'
+                  : 'Объявление реактивировано и будет опубликовано на 30 дней',
               );
             } catch (error) {
               logger.error('[MyListings] Error reactivating listing:', error);
               Alert.alert(
                 language === 'az' ? 'Xəta!' : 'Ошибка!',
-                language === 'az' ? 'Aktivləşdirmə zamanı xəta baş verdi' : 'Произошла ошибка при реактивации'
+                language === 'az' ? 'Aktivləşdirmə zamanı xəta baş verdi' : 'Произошла ошибка при реактивации',
               );
             }
           },
         },
-      ]
+      ],
     );
   };
-  
+
   const getDaysLeft = (expiresAt: string) => {
     const now = new Date();
     const expirationDate = new Date(expiresAt);
     const daysLeft = Math.ceil((expirationDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
     return Math.max(0, daysLeft);
   };
-  
+
   const getStatusColor = (listing: Listing) => {
     const daysLeft = getDaysLeft(listing.expiresAt);
     if (daysLeft <= 1) return Colors.error;
     if (daysLeft <= 3) return Colors.warning;
     return Colors.success;
   };
-  
+
   const getStatusText = (listing: Listing) => {
     const daysLeft = getDaysLeft(listing.expiresAt);
     if (daysLeft === 0) {
@@ -528,14 +528,14 @@ export default function MyListingsScreen() {
     }
     return language === 'az' ? `${daysLeft} gün qalıb` : `Осталось ${daysLeft} дней`;
   };
-  
+
   if (!isAuthenticated) {
     return (
       <View style={styles.authContainer}>
         <Text style={styles.authTitle}>
           {language === 'az' ? 'Elanlarınızı görmək üçün hesabınıza daxil olun' : 'Войдите в аккаунт, чтобы увидеть свои объявления'}
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.authButton}
           onPress={() => router.push('/auth/login')}
         >
@@ -546,9 +546,9 @@ export default function MyListingsScreen() {
       </View>
     );
   }
-  
+
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -570,7 +570,7 @@ export default function MyListingsScreen() {
           ))}
         </View>
       )}
-      
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -579,23 +579,23 @@ export default function MyListingsScreen() {
               {language === 'az' ? 'Mənim Elanlarım' : 'Мои Объявления'}
             </Text>
             <Text style={styles.subtitle}>
-              {language === 'az' 
+              {language === 'az'
                 ? `${userListings.length} elan (şəxsi və təşviq edilən)`
                 : `${userListings.length} объявлений (личные и продвигаемые)`
               }
             </Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => setShowExpirationSettings(!showExpirationSettings)}
           >
             <Settings size={20} color={Colors.primary} />
           </TouchableOpacity>
         </View>
-        
+
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.quickActionCard}
             onPress={() => router.push('/renewal-offers')}
           >
@@ -611,8 +611,8 @@ export default function MyListingsScreen() {
               </Text>
             </View>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.quickActionCard}
             onPress={() => router.push('/archived-listings')}
           >
@@ -629,14 +629,14 @@ export default function MyListingsScreen() {
             </View>
           </TouchableOpacity>
         </View>
-        
+
         {/* Expiration Settings Panel */}
         {showExpirationSettings && (
           <View style={styles.settingsPanel}>
             <Text style={styles.settingsPanelTitle}>
               {language === 'az' ? 'Müddət Bitməsi Tənzimləmələri' : 'Настройки истечения срока'}
             </Text>
-            
+
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <Bell size={16} color={Colors.primary} />
@@ -648,7 +648,7 @@ export default function MyListingsScreen() {
                 {language === 'az' ? '7, 3, 1 gün əvvəl' : 'За 7, 3, 1 день'}
               </Text>
             </View>
-            
+
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <RefreshCw size={16} color={Colors.success} />
@@ -660,7 +660,7 @@ export default function MyListingsScreen() {
                 {language === 'az' ? 'Elan səviyyəsində' : 'На уровне объявления'}
               </Text>
             </View>
-            
+
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <Archive size={16} color={Colors.textSecondary} />
@@ -672,7 +672,7 @@ export default function MyListingsScreen() {
                 {language === 'az' ? 'Müddət bitdikdən sonra' : 'После истечения'}
               </Text>
             </View>
-            
+
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <DollarSign size={16} color={Colors.secondary} />
@@ -684,7 +684,7 @@ export default function MyListingsScreen() {
                 {language === 'az' ? '7gün:15% • 3gün:10% • 1gün:5%' : '7дн:15% • 3дн:10% • 1дн:5%'}
               </Text>
             </View>
-            
+
             <TouchableOpacity
               style={styles.viewOffersButton}
               onPress={() => router.push('/renewal-offers')}
@@ -697,7 +697,7 @@ export default function MyListingsScreen() {
           </View>
         )}
       </View>
-      
+
       {/* Listings */}
       {showArchived ? (
         <View style={styles.listingsContainer}>
@@ -708,7 +708,7 @@ export default function MyListingsScreen() {
             <View style={styles.emptyContainer}>
               <Archive size={48} color={Colors.textSecondary} />
               <Text style={styles.emptyText}>
-                {language === 'az' 
+                {language === 'az'
                   ? 'Arxivdə elan yoxdur'
                   : 'В архиве нет объявлений'
                 }
@@ -719,7 +719,7 @@ export default function MyListingsScreen() {
               <View key={listing.id} style={styles.archivedListingWrapper}>
                 <ListingCard listing={listing} />
                 <View style={styles.archivedActions}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.reactivateButton}
                     onPress={() => handleReactivateListing(listing)}
                   >
@@ -728,13 +728,13 @@ export default function MyListingsScreen() {
                       {language === 'az' ? 'Yenidən aktivləşdir' : 'Реактивировать'}
                     </Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.permanentDeleteButton}
                     onPress={() => {
                       Alert.alert(
                         language === 'az' ? 'Həmişəlik sil' : 'Удалить навсегда',
-                        language === 'az' 
+                        language === 'az'
                           ? 'Bu elanı həmişəlik silmək istəyirsiniz?'
                           : 'Хотите удалить это объявление навсегда?',
                         [
@@ -746,7 +746,7 @@ export default function MyListingsScreen() {
                               setArchivedListings(prev => prev.filter(l => l.id !== listing.id));
                             },
                           },
-                        ]
+                        ],
                       );
                     }}
                   >
@@ -763,12 +763,12 @@ export default function MyListingsScreen() {
       ) : userListings.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {language === 'az' 
+            {language === 'az'
               ? 'Hələ heç bir elanınız yoxdur'
               : 'У вас пока нет объявлений'
             }
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.createButton}
             onPress={() => router.push('/create-listing')}
           >
@@ -804,13 +804,13 @@ export default function MyListingsScreen() {
                   )}
                 </View>
               </View>
-              
+
               {/* Listing Card */}
               <ListingCard listing={listing} />
-              
+
               {/* Action Buttons */}
               <View style={styles.actionButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.actionButton, styles.editButton]}
                   onPress={() => router.push(`/listing/edit/${listing.id}`)}
                 >
@@ -819,9 +819,9 @@ export default function MyListingsScreen() {
                     {language === 'az' ? 'Redaktə' : 'Ред.'}
                   </Text>
                 </TouchableOpacity>
-                
+
                 {getDaysLeft(listing.expiresAt) <= 7 && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.actionButton, styles.extendButton]}
                     onPress={() => handleExtendListing(listing.id)}
                   >
@@ -831,8 +831,8 @@ export default function MyListingsScreen() {
                     </Text>
                   </TouchableOpacity>
                 )}
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.actionButton, styles.autoRenewalButton, autoRenewalSettings[listing.id] && styles.autoRenewalButtonActive]}
                   onPress={() => handleAutoRenewal(listing.id)}
                 >
@@ -841,8 +841,8 @@ export default function MyListingsScreen() {
                     {language === 'az' ? 'Avto' : 'Авто'}
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.actionButton, styles.promoteButton]}
                   onPress={() => router.push(`/listing/promote/${listing.id}`)}
                 >
@@ -851,8 +851,8 @@ export default function MyListingsScreen() {
                     {language === 'az' ? 'Təşviq' : 'Продв.'}
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.actionButton, styles.discountButton]}
                   onPress={() => router.push(`/listing/discount/${listing.id}`)}
                 >
@@ -861,8 +861,8 @@ export default function MyListingsScreen() {
                     {language === 'az' ? 'Endirim' : 'Скидка'}
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.actionButton, styles.archiveButton]}
                   onPress={() => handleArchiveListing(listing.id)}
                 >

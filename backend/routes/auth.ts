@@ -41,7 +41,7 @@ function validateState(state: string): boolean {
 
 auth.get('/:provider/login', async (c) => {
   const provider = c.req.param('provider');
-  
+
   logger.info(`[Auth] Initiating ${provider} login`, { provider });
 
   if (!['google', 'facebook', 'vk'].includes(provider)) {
@@ -50,21 +50,21 @@ auth.get('/:provider/login', async (c) => {
   }
 
   if (!oauthService.isConfigured(provider)) {
-    logger.warn(`[Auth] Provider not configured:`, { provider });
-    return c.json({ 
+    logger.warn('[Auth] Provider not configured:', { provider });
+    return c.json({
       error: 'Provider not configured',
-      message: `${provider} OAuth is not configured. Please add the required environment variables.`
+      message: `${provider} OAuth is not configured. Please add the required environment variables.`,
     }, 503);
   }
 
   try {
     const state = generateState();
     stateStore.set(state, { provider, createdAt: Date.now() });
-    
+
     logger.info('[Auth] State generated and stored:', { provider, stateLength: state.length });
 
     const authUrl = oauthService.getAuthorizationUrl(provider, state);
-    
+
     logger.info(`[Auth] Redirecting to ${provider} authorization URL`, { provider });
     return c.redirect(authUrl);
   } catch (error) {
@@ -79,11 +79,11 @@ auth.get('/:provider/callback', async (c) => {
   const state = c.req.query('state');
   const error = c.req.query('error');
 
-  logger.info(`[Auth] Received ${provider} callback`, { 
+  logger.info(`[Auth] Received ${provider} callback`, {
     provider,
     hasCode: !!code,
     hasState: !!state,
-    hasError: !!error
+    hasError: !!error,
   });
 
   if (error) {
@@ -96,18 +96,18 @@ auth.get('/:provider/callback', async (c) => {
   }
 
   if (!code || !state) {
-    logger.error(`[Auth] Missing code or state in ${provider} callback`, { 
+    logger.error(`[Auth] Missing code or state in ${provider} callback`, {
       provider,
       hasCode: !!code,
-      hasState: !!state
+      hasState: !!state,
     });
     return c.json({ error: 'Missing code or state' }, 400);
   }
 
   if (!validateState(state)) {
-    logger.error(`[Auth] Invalid or expired state in ${provider} callback`, { 
+    logger.error(`[Auth] Invalid or expired state in ${provider} callback`, {
       provider,
-      state: state.substring(0, 8) + '...'
+      state: state.substring(0, 8) + '...',
     });
     return c.json({ error: 'Invalid or expired state' }, 400);
   }
@@ -115,11 +115,11 @@ auth.get('/:provider/callback', async (c) => {
   try {
     logger.info(`[Auth] Exchanging code for token with ${provider}`);
     const tokenResponse = await oauthService.exchangeCodeForToken(provider, code);
-    
+
     logger.info(`[Auth] Fetching user info from ${provider}`);
     const userInfo = await oauthService.getUserInfo(provider, tokenResponse.access_token, tokenResponse);
 
-    logger.info(`[Auth] Looking up user by social ID`);
+    logger.info('[Auth] Looking up user by social ID');
     let user = await prisma.user.findFirst({
       where: {
         socialAccounts: {
@@ -132,19 +132,19 @@ auth.get('/:provider/callback', async (c) => {
     });
 
     if (!user) {
-      logger.info(`[Auth] User not found, checking by email:`, { 
+      logger.info('[Auth] User not found, checking by email:', {
         provider,
-        email: userInfo.email
+        email: userInfo.email,
       });
       user = await prisma.user.findUnique({
         where: { email: userInfo.email.toLowerCase() },
       });
 
       if (user) {
-        logger.info(`[Auth] Found existing user by email, linking ${provider} account`, { 
+        logger.info(`[Auth] Found existing user by email, linking ${provider} account`, {
           provider,
           userId: user.id,
-          email: user.email
+          email: user.email,
         });
         // BUG FIX: Validate provider type before using
         if (provider !== 'google' && provider !== 'facebook' && provider !== 'vk') {
@@ -172,15 +172,15 @@ auth.get('/:provider/callback', async (c) => {
             avatar: userInfo.avatar,
           },
         });
-        logger.info(`[Auth] Social provider linked successfully`, { 
+        logger.info('[Auth] Social provider linked successfully', {
           provider,
-          userId: user.id
+          userId: user.id,
         });
       } else {
-        logger.info(`[Auth] Creating new user from ${provider} data`, { 
+        logger.info(`[Auth] Creating new user from ${provider} data`, {
           provider,
           email: userInfo.email,
-          name: userInfo.name
+          name: userInfo.name,
         });
         // BUG FIX: Validate provider type before using
         if (provider !== 'google' && provider !== 'facebook' && provider !== 'vk') {
@@ -206,25 +206,25 @@ auth.get('/:provider/callback', async (c) => {
             },
           },
         });
-        logger.info(`[Auth] New user created from ${provider}`, { 
+        logger.info(`[Auth] New user created from ${provider}`, {
           provider,
           userId: user.id,
-          email: user.email
+          email: user.email,
         });
       }
     } else {
-      logger.info(`[Auth] User found by social ID`, { 
+      logger.info('[Auth] User found by social ID', {
         provider,
         userId: user.id,
-        email: user.email
+        email: user.email,
       });
     }
 
-    logger.info(`[Auth] Generating JWT tokens for user`, { 
+    logger.info('[Auth] Generating JWT tokens for user', {
       provider,
       userId: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
     });
     const tokens = await generateTokenPair({
       userId: user.id,
@@ -232,10 +232,10 @@ auth.get('/:provider/callback', async (c) => {
       role: user.role,
     });
 
-    logger.info(`[Auth] JWT tokens generated successfully`, { provider, userId: user.id });
+    logger.info('[Auth] JWT tokens generated successfully', { provider, userId: user.id });
 
     stateStore.delete(state);
-    logger.info(`[Auth] State cleaned up`, { provider });
+    logger.info('[Auth] State cleaned up', { provider });
 
     // SECURITY: Store tokens in httpOnly cookies instead of URL parameters
     setCookie(c, 'accessToken', tokens.accessToken, {
@@ -265,7 +265,7 @@ auth.get('/:provider/callback', async (c) => {
       email: user.email,
       phone: user.phone,
       avatar: user.avatar,
-      role: user.role
+      role: user.role,
     }))}`;
 
     logger.info(`[Auth] ${provider} login successful, redirecting to app`);
@@ -284,12 +284,12 @@ auth.post('/logout', async (c) => {
   try {
     const authHeader = c.req.header('authorization') || c.req.header('Authorization');
     const userId = authHeader ? 'authenticated' : 'unknown';
-    
+
     logger.info('[Auth] User logout requested', { userId });
   } catch (error) {
     logger.warn('[Auth] Could not extract user info for logout:', error);
   }
-  
+
   setCookie(c, 'accessToken', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -312,18 +312,18 @@ auth.post('/logout', async (c) => {
 
 auth.get('/status', async (c) => {
   logger.info('[Auth] Status check requested');
-  
+
   const providers = ['google', 'facebook', 'vk'];
   const status = providers.reduce((acc, provider) => {
     acc[provider] = oauthService.isConfigured(provider);
     return acc;
   }, {} as Record<string, boolean>);
 
-  logger.info('[Auth] Status check result:', { 
+  logger.info('[Auth] Status check result:', {
     google: status.google,
     facebook: status.facebook,
     vk: status.vk,
-    availableCount: Object.values(status).filter(Boolean).length
+    availableCount: Object.values(status).filter(Boolean).length,
   });
 
   return c.json({
@@ -336,7 +336,7 @@ auth.get('/status', async (c) => {
 auth.delete('/delete', async (c) => {
   try {
     logger.info('[Auth] Account deletion requested');
-    
+
     const authHeader = c.req.header('authorization') || c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       logger.warn('[Auth] Unauthorized deletion attempt');

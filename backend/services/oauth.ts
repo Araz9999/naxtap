@@ -71,11 +71,11 @@ class OAuthService {
   }
 
   getAuthorizationUrl(provider: string, state: string): string {
-    logger.info(`[OAuth] Generating authorization URL`, { provider });
-    
+    logger.info('[OAuth] Generating authorization URL', { provider });
+
     const config = this.configs[provider];
     if (!config) {
-      logger.error(`[OAuth] Unknown provider requested:`, { provider });
+      logger.error('[OAuth] Unknown provider requested:', { provider });
       throw new Error(`Unknown OAuth provider: ${provider}`);
     }
 
@@ -90,36 +90,36 @@ class OAuthService {
     if (provider === 'google') {
       params.append('access_type', 'offline');
       params.append('prompt', 'consent');
-      logger.debug(`[OAuth] Added Google-specific params`);
+      logger.debug('[OAuth] Added Google-specific params');
     }
 
     if (provider === 'vk') {
       params.append('v', '5.131');
       params.append('display', 'page');
-      logger.debug(`[OAuth] Added VK-specific params`);
+      logger.debug('[OAuth] Added VK-specific params');
     }
 
     const authUrl = `${config.authorizationUrl}?${params.toString()}`;
-    logger.info(`[OAuth] Authorization URL generated`, { 
+    logger.info('[OAuth] Authorization URL generated', {
       provider,
-      urlLength: authUrl.length
+      urlLength: authUrl.length,
     });
-    
+
     return authUrl;
   }
 
   async exchangeCodeForToken(provider: string, code: string): Promise<OAuthTokenResponse> {
-    logger.info(`[OAuth] Starting token exchange`, { provider });
-    
+    logger.info('[OAuth] Starting token exchange', { provider });
+
     const config = this.configs[provider];
     if (!config) {
-      logger.error(`[OAuth] Unknown provider for token exchange:`, { provider });
+      logger.error('[OAuth] Unknown provider for token exchange:', { provider });
       throw new Error(`Unknown OAuth provider: ${provider}`);
     }
 
-    logger.info(`[OAuth] Exchanging code for token with ${provider}`, { 
+    logger.info(`[OAuth] Exchanging code for token with ${provider}`, {
       provider,
-      codeLength: code.length
+      codeLength: code.length,
     });
 
     const params = new URLSearchParams({
@@ -131,11 +131,11 @@ class OAuthService {
     });
 
     try {
-      logger.info(`[OAuth] Sending token exchange request`, { 
+      logger.info('[OAuth] Sending token exchange request', {
         provider,
-        tokenUrl: config.tokenUrl
+        tokenUrl: config.tokenUrl,
       });
-      
+
       const response = await fetch(config.tokenUrl, {
         method: 'POST',
         headers: {
@@ -147,21 +147,21 @@ class OAuthService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error(`[OAuth] Token exchange failed for ${provider}:`, { 
+        logger.error(`[OAuth] Token exchange failed for ${provider}:`, {
           provider,
           status: response.status,
           statusText: response.statusText,
-          error: errorText
+          error: errorText,
         });
         throw new Error(`Token exchange failed: ${response.statusText}`);
       }
 
       const data = await response.json() as any;
-      logger.info(`[OAuth] Successfully exchanged code for token with ${provider}`, { 
+      logger.info(`[OAuth] Successfully exchanged code for token with ${provider}`, {
         provider,
         hasAccessToken: !!data.access_token,
         hasRefreshToken: !!data.refresh_token,
-        expiresIn: data.expires_in
+        expiresIn: data.expires_in,
       });
       return data as OAuthTokenResponse;
     } catch (error) {
@@ -171,17 +171,17 @@ class OAuthService {
   }
 
   async getUserInfo(provider: string, accessToken: string, tokenResponse?: OAuthTokenResponse): Promise<OAuthUserInfo> {
-    logger.info(`[OAuth] Starting user info fetch`, { provider });
-    
+    logger.info('[OAuth] Starting user info fetch', { provider });
+
     const config = this.configs[provider];
     if (!config) {
-      logger.error(`[OAuth] Unknown provider for user info:`, { provider });
+      logger.error('[OAuth] Unknown provider for user info:', { provider });
       throw new Error(`Unknown OAuth provider: ${provider}`);
     }
 
-    logger.info(`[OAuth] Fetching user info from ${provider}`, { 
+    logger.info(`[OAuth] Fetching user info from ${provider}`, {
       provider,
-      tokenLength: accessToken.length
+      tokenLength: accessToken.length,
     });
 
     try {
@@ -201,20 +201,20 @@ class OAuthService {
         delete headers.Authorization;
       }
 
-      logger.info(`[OAuth] Sending user info request`, { 
+      logger.info('[OAuth] Sending user info request', {
         provider,
-        url
+        url,
       });
-      
+
       const response = await fetch(url, { headers });
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error(`[OAuth] User info fetch failed for ${provider}:`, { 
+        logger.error(`[OAuth] User info fetch failed for ${provider}:`, {
           provider,
           status: response.status,
           statusText: response.statusText,
-          error: errorText
+          error: errorText,
         });
         throw new Error(`Failed to fetch user info: ${response.statusText}`);
       }
@@ -223,13 +223,13 @@ class OAuthService {
       logger.info(`[OAuth] Successfully fetched user info from ${provider}`, { provider });
 
       const normalizedInfo = this.normalizeUserInfo(provider, data, tokenResponse);
-      logger.info(`[OAuth] User info normalized`, { 
+      logger.info('[OAuth] User info normalized', {
         provider,
         userId: normalizedInfo.id,
         email: normalizedInfo.email,
-        hasAvatar: !!normalizedInfo.avatar
+        hasAvatar: !!normalizedInfo.avatar,
       });
-      
+
       return normalizedInfo;
     } catch (error) {
       logger.error(`[OAuth] Error fetching user info from ${provider}:`, error);
@@ -238,11 +238,11 @@ class OAuthService {
   }
 
   private normalizeUserInfo(provider: string, data: any, tokenResponse?: OAuthTokenResponse): OAuthUserInfo {
-    logger.debug(`[OAuth] Normalizing user info`, { provider });
-    
+    logger.debug('[OAuth] Normalizing user info', { provider });
+
     switch (provider) {
       case 'google':
-        logger.debug(`[OAuth] Normalizing Google user data`);
+        logger.debug('[OAuth] Normalizing Google user data');
         return {
           id: data.id,
           email: data.email,
@@ -251,8 +251,8 @@ class OAuthService {
         };
 
       case 'facebook':
-        logger.debug(`[OAuth] Normalizing Facebook user data`, { 
-          hasEmail: !!data.email 
+        logger.debug('[OAuth] Normalizing Facebook user data', {
+          hasEmail: !!data.email,
         });
         return {
           id: data.id,
@@ -262,7 +262,7 @@ class OAuthService {
         };
 
       case 'vk':
-        logger.debug(`[OAuth] Normalizing VK user data`);
+        logger.debug('[OAuth] Normalizing VK user data');
         const user = data.response?.[0];
         // VK email handling with proper typing
         interface VKTokenResponse {
@@ -271,17 +271,17 @@ class OAuthService {
         interface VKUserData {
           email?: string;
         }
-        const vkEmail = 
-          (tokenResponse as VKTokenResponse)?.email || 
-          (data as VKUserData)?.email || 
+        const vkEmail =
+          (tokenResponse as VKTokenResponse)?.email ||
+          (data as VKUserData)?.email ||
           `vk_${user?.id}@vk.placeholder`;
-        
-        logger.debug(`[OAuth] VK email resolved:`, { 
+
+        logger.debug('[OAuth] VK email resolved:', {
           hasTokenEmail: !!(tokenResponse as VKTokenResponse)?.email,
           hasDataEmail: !!(data as VKUserData)?.email,
-          usingPlaceholder: vkEmail.includes('@vk.placeholder')
+          usingPlaceholder: vkEmail.includes('@vk.placeholder'),
         });
-        
+
         return {
           id: user?.id?.toString() || '',
           email: vkEmail,
@@ -290,7 +290,7 @@ class OAuthService {
         };
 
       default:
-        logger.error(`[OAuth] Unknown provider in normalizeUserInfo:`, { provider });
+        logger.error('[OAuth] Unknown provider in normalizeUserInfo:', { provider });
         throw new Error(`Unknown provider: ${provider}`);
     }
   }
@@ -298,7 +298,7 @@ class OAuthService {
   isConfigured(provider: string): boolean {
     const config = this.configs[provider];
     if (!config) {
-      logger.debug(`[OAuth] Config check: provider not found`, { provider });
+      logger.debug('[OAuth] Config check: provider not found', { provider });
       return false;
     }
 
@@ -308,23 +308,23 @@ class OAuthService {
       !config.clientId.includes('your-') &&
       !config.clientSecret.includes('your-')
     );
-    
-    logger.debug(`[OAuth] Config check:`, { 
+
+    logger.debug('[OAuth] Config check:', {
       provider,
       isConfigured,
       hasClientId: !!config.clientId,
-      hasClientSecret: !!config.clientSecret
+      hasClientSecret: !!config.clientSecret,
     });
-    
+
     return isConfigured;
   }
 
   getAllConfiguredProviders(): string[] {
     const configured = Object.keys(this.configs).filter(provider => this.isConfigured(provider));
-    logger.info(`[OAuth] Getting all configured providers:`, { 
+    logger.info('[OAuth] Getting all configured providers:', {
       total: Object.keys(this.configs).length,
       configured: configured.length,
-      providers: configured
+      providers: configured,
     });
     return configured;
   }

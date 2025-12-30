@@ -10,15 +10,15 @@ export default protectedProcedure.query(async ({ ctx }) => {
     new Set(
       conversations
         .map((c) => c.participants.find((p) => p !== userId))
-        .filter((v): v is string => typeof v === 'string' && v.length > 0)
-    )
+        .filter((v): v is string => typeof v === 'string' && v.length > 0),
+    ),
   );
 
   const otherUsers = otherUserIds.length
     ? await prisma.user.findMany({
-        where: { id: { in: otherUserIds } },
-        select: { id: true, name: true, avatar: true, email: true, phone: true },
-      })
+      where: { id: { in: otherUserIds } },
+      select: { id: true, name: true, avatar: true, email: true, phone: true },
+    })
     : [];
 
   const userMap = new Map(otherUsers.map((u) => [u.id, u]));
@@ -35,19 +35,19 @@ export default protectedProcedure.query(async ({ ctx }) => {
       unreadCount: c.unreadByUserId[userId] || 0,
       otherUser: other
         ? {
-            id: other.id,
-            name: other.name,
-            avatar: other.avatar,
-            email: other.email,
-            phone: other.phone,
-          }
+          id: other.id,
+          name: other.name,
+          avatar: other.avatar,
+          email: other.email,
+          phone: other.phone,
+        }
         : {
-            id: otherId,
-            name: 'Unknown',
-            avatar: null,
-            email: null,
-            phone: null,
-          },
+          id: otherId,
+          name: 'Unknown',
+          avatar: null,
+          email: null,
+          phone: null,
+        },
     };
   });
 });

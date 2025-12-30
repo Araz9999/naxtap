@@ -11,7 +11,7 @@ export const getMyTicketsProcedure = protectedProcedure
       .object({
         status: statusSchema.optional(),
       })
-      .optional()
+      .optional(),
   )
   .query(async ({ input, ctx }) => {
     try {

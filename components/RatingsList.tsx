@@ -29,7 +29,7 @@ export default function RatingsList({ ratings, onUserPress }: RatingsListProps) 
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return language === 'az' ? 'Bu gün' : 'Сегодня';
     } else if (diffDays === 1) {

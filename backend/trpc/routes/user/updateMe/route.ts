@@ -9,7 +9,7 @@ export const updateMeProcedure = protectedProcedure
       name: z.string().min(2).max(100).optional(),
       phone: z.string().max(32).optional(),
       avatar: z.string().max(500).optional(),
-    })
+    }),
   )
   .mutation(async ({ input, ctx }) => {
     const userId = ctx.user.userId;

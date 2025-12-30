@@ -24,8 +24,8 @@ const supportAgents: SupportAgent[] = [
 
 export const liveChatDb = {
   conversations: {
-    getAll: () => Array.from(conversations.values()).sort((a, b) => 
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    getAll: () => Array.from(conversations.values()).sort((a, b) =>
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     ),
     getById: (id: string) => conversations.get(id) || null,
     getByUserId: (userId: string) => {
@@ -92,7 +92,7 @@ export const liveChatDb = {
       return null;
     },
   },
-  
+
   messages: {
     getByConversationId: (conversationId: string) => {
       return messages.get(conversationId) || [];
@@ -100,12 +100,12 @@ export const liveChatDb = {
     getById: (id: string) => messageIndex.get(id) || null,
     create: (message: LiveChatMessage) => {
       logger.info('[LiveChatDB] Creating message in conversation:', message.conversationId);
-      
+
       const convMessages = messages.get(message.conversationId) || [];
       convMessages.push(message);
       messages.set(message.conversationId, convMessages);
       messageIndex.set(message.id, message);
-      
+
       // Update conversation's last message
       const conversation = conversations.get(message.conversationId);
       if (conversation) {
@@ -117,7 +117,7 @@ export const liveChatDb = {
         };
         conversations.set(message.conversationId, updated);
       }
-      
+
       logger.info('[LiveChatDB] Message created. Total messages in conversation:', convMessages.length);
       return message;
     },
@@ -127,7 +127,7 @@ export const liveChatDb = {
       if (message) {
         message.status = status;
         messageIndex.set(id, message);
-        
+
         const convMessages = messages.get(message.conversationId);
         if (convMessages) {
           const index = convMessages.findIndex(m => m.id === id);
@@ -167,7 +167,7 @@ export const liveChatDb = {
           }
         });
         messages.set(conversationId, convMessages);
-        
+
         // Update conversation unread count
         const conversation = conversations.get(conversationId);
         if (conversation && conversation.unreadCount > 0) {
@@ -180,7 +180,7 @@ export const liveChatDb = {
       return false;
     },
   },
-  
+
   agents: {
     getAll: () => supportAgents,
     getById: (id: string) => supportAgents.find(a => a.id === id) || null,

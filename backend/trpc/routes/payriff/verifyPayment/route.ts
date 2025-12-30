@@ -8,7 +8,7 @@ export const verifyPaymentProcedure = publicProcedure
     z.object({
       orderId: z.string().min(1).describe('Order ID to verify'),
       transactionId: z.string().min(1).describe('Transaction ID from Payriff'),
-    })
+    }),
   )
   .query(async ({ input }) => {
     logger.debug('Verifying Payriff payment:', input);

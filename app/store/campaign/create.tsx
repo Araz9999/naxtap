@@ -23,9 +23,9 @@ export default function CreateCampaignScreen() {
   const { getActiveStoreForUser } = useStoreStore();
   const { currentUser } = useUserStore();
   const { listings } = useListingStore();
-  
+
   const currentStore = currentUser ? getActiveStoreForUser(currentUser.id) : null;
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -36,9 +36,9 @@ export default function CreateCampaignScreen() {
     priority: 1,
     isActive: true,
   });
-  
+
   const [selectedListings, setSelectedListings] = useState<string[]>([]);
-  
+
   if (!currentStore) {
     return (
       <SafeAreaView style={styles.container}>
@@ -49,50 +49,50 @@ export default function CreateCampaignScreen() {
       </SafeAreaView>
     );
   }
-  
+
   const storeListings = listings.filter(l => l.storeId === currentStore.id && !l.deletedAt);
-  
+
   const handleSubmit = () => {
     // Validation: Title
     if (!formData.title.trim()) {
       Alert.alert('Xəta', 'Kampaniya başlığı daxil edin');
       return;
     }
-    
+
     if (formData.title.trim().length < 3) {
       Alert.alert('Xəta', 'Kampaniya başlığı ən azı 3 simvol olmalıdır');
       return;
     }
-    
+
     if (formData.title.trim().length > 100) {
       Alert.alert('Xəta', 'Kampaniya başlığı maksimum 100 simvol ola bilər');
       return;
     }
-    
+
     // Validation: Description (optional but if provided)
     if (formData.description.trim() && formData.description.trim().length < 10) {
       Alert.alert('Xəta', 'Açıqlama ən azı 10 simvol olmalıdır');
       return;
     }
-    
+
     // Validation: Listings
     if (selectedListings.length === 0) {
       Alert.alert('Xəta', 'Ən azı bir məhsul seçin');
       return;
     }
-    
+
     // Validation: Date range
     if (formData.startDate >= formData.endDate) {
       Alert.alert('Xəta', 'Başlama tarixi bitmə tarixindən əvvəl olmalıdır');
       return;
     }
-    
+
     // Validation: Priority
     if (formData.priority < 1 || formData.priority > 10) {
       Alert.alert('Xəta', 'Prioritet 1-10 arasında olmalıdır');
       return;
     }
-    
+
     addCampaign({
       storeId: currentStore.id,
       title: formData.title.trim(),
@@ -111,20 +111,20 @@ export default function CreateCampaignScreen() {
         revenue: 0,
       },
     });
-    
+
     Alert.alert('Uğurlu', 'Kampaniya yaradıldı', [
-      { text: 'OK', onPress: () => router.back() }
+      { text: 'OK', onPress: () => router.back() },
     ]);
   };
-  
+
   const toggleListingSelection = (listingId: string) => {
-    setSelectedListings(prev => 
-      prev.includes(listingId) 
+    setSelectedListings(prev =>
+      prev.includes(listingId)
         ? prev.filter(id => id !== listingId)
-        : [...prev, listingId]
+        : [...prev, listingId],
     );
   };
-  
+
   const selectAllListings = () => {
     if (selectedListings.length === storeListings.length) {
       setSelectedListings([]);
@@ -146,21 +146,21 @@ export default function CreateCampaignScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Kampaniya Yarat',
           headerRight: () => (
             <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
               <Text style={styles.saveButtonText}>Yadda saxla</Text>
             </TouchableOpacity>
           ),
-        }} 
+        }}
       />
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Əsas Məlumatlar</Text>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Kampaniya Başlığı *</Text>
             <TextInput
@@ -171,7 +171,7 @@ export default function CreateCampaignScreen() {
               placeholderTextColor="#9CA3AF"
             />
           </View>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Açıqlama</Text>
             <TextInput
@@ -185,10 +185,10 @@ export default function CreateCampaignScreen() {
             />
           </View>
         </View>
-        
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Kampaniya Növü</Text>
-          
+
           <View style={styles.typeGrid}>
             {[
               { key: 'flash_sale', label: 'Sürətli Satış', icon: 'flash_sale' },
@@ -204,7 +204,7 @@ export default function CreateCampaignScreen() {
               >
                 <View style={[styles.typeIcon, formData.type === type.key && styles.activeTypeIcon]}>
                   {React.cloneElement(getCampaignTypeIcon(type.icon), {
-                    color: formData.type === type.key ? '#FFFFFF' : '#6B7280'
+                    color: formData.type === type.key ? '#FFFFFF' : '#6B7280',
                   })}
                 </View>
                 <Text style={[styles.typeButtonText, formData.type === type.key && styles.activeTypeButtonText]}>
@@ -214,10 +214,10 @@ export default function CreateCampaignScreen() {
             ))}
           </View>
         </View>
-        
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Hədəf Auditoriya</Text>
-          
+
           <View style={styles.audienceContainer}>
             {[
               { key: 'all', label: 'Bütün Müştərilər' },
@@ -236,16 +236,16 @@ export default function CreateCampaignScreen() {
             ))}
           </View>
         </View>
-        
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Seçilmiş Məhsullar</Text>
-          
+
           <TouchableOpacity style={styles.selectAllButton} onPress={selectAllListings}>
             <Text style={styles.selectAllButtonText}>
               {selectedListings.length === storeListings.length ? 'Hamısını Ləğv et' : 'Hamısını Seç'}
             </Text>
           </TouchableOpacity>
-          
+
           {storeListings.map((listing) => (
             <TouchableOpacity
               key={listing.id}
@@ -264,10 +264,10 @@ export default function CreateCampaignScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Əlavə Parametrlər</Text>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Prioritet (1-10)</Text>
             <TextInput
@@ -288,7 +288,7 @@ export default function CreateCampaignScreen() {
             />
             <Text style={styles.helperText}>Yüksək prioritet kampaniyalar daha çox göstərilir</Text>
           </View>
-          
+
           <View style={styles.switchRow}>
             <Text style={styles.label}>Dərhal Aktivləşdir</Text>
             <Switch

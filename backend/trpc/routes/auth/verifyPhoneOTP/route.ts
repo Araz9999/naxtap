@@ -13,34 +13,34 @@ export const verifyPhoneOTPProcedure = publicProcedure
       phone: z.string().min(1),
       otp: z.string().length(6),
       name: z.string().min(1),
-    })
+    }),
   )
   .mutation(async ({ input }) => {
     try {
       const phone = input.phone.trim().replace(/\s+/g, '');
       const otp = input.otp.trim();
-      
+
       // Validate phone number
       if (!validatePhone(phone)) {
         throw new Error('Yanlış telefon nömrəsi formatı');
       }
-      
+
       // Check OTP
       const storedOTP = phoneOtpStore.get(phone);
-      
+
       if (!storedOTP) {
         throw new Error('OTP tapılmadı. Zəhmət olmasa yenidən göndərin');
       }
-      
+
       if (storedOTP.code !== otp) {
         throw new Error('Yanlış OTP kodu');
       }
-      
+
       if (Date.now() > storedOTP.expiresAt) {
         phoneOtpStore.delete(phone);
         throw new Error('OTP müddəti bitib. Zəhmət olmasa yenidən göndərin');
       }
-      
+
       // OTP verified, create user
       const user = await createUser({
         email: `phone_${phone.replace(/[^0-9]/g, '')}@naxtap.local`, // Temporary email
@@ -51,23 +51,23 @@ export const verifyPhoneOTPProcedure = publicProcedure
         role: 'USER',
         balance: 0,
       });
-      
+
       if (!user) {
         throw new Error('İstifadəçi yaradıla bilmədi');
       }
-      
+
       // Clean up OTP
       phoneOtpStore.delete(phone);
-      
+
       // Generate tokens
       const tokens = await generateTokenPair({
         userId: user.id,
         email: user.email,
         role: user.role,
       });
-      
+
       logger.info(`[Phone Registration] User created: ${user.id}`);
-      
+
       return {
         user: {
           id: user.id,

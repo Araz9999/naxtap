@@ -11,7 +11,7 @@ export const addTicketResponseProcedure = protectedProcedure
       message: z.string().min(1).max(2000),
       attachments: z.array(z.string()).optional().default([]),
       // allow moderators to mark internal messages later if needed
-    })
+    }),
   )
   .mutation(async ({ input, ctx }) => {
     try {

@@ -7,17 +7,17 @@ import Colors from '@/constants/colors';
 
 export default function CreateListingModal() {
   const { language } = useLanguageStore();
-  
+
   return (
     <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: language === 'az' ? 'Yeni elan yerləşdir' : 'Разместить новое объявление',
           headerStyle: {
             backgroundColor: Colors.card,
           },
           headerTintColor: Colors.primary,
-        }} 
+        }}
       />
       <CreateListingScreen />
     </View>

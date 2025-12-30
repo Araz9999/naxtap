@@ -48,7 +48,7 @@ export const getAnalyticsProcedure = adminProcedure.query(async () => {
         _count: { _all: true },
       }),
     ]);
-    
+
     // Get users with social accounts
     const usersWithSocial = await prisma.user.count({
       where: {
@@ -57,7 +57,7 @@ export const getAnalyticsProcedure = adminProcedure.query(async () => {
         },
       },
     });
-    
+
     return {
       users: {
         total: totalUsers,

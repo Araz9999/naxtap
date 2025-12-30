@@ -20,14 +20,14 @@ import { logger } from '@/utils/logger';
 export default function NotificationsScreen() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
-  const { 
-    notifications, 
-    unreadCount, 
-    markAsRead, 
-    markAllAsRead, 
-    removeNotification, 
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
     clearAll,
-    getNavigationPath 
+    getNavigationPath,
   } = useNotificationStore();
   const colors = getColors(themeMode, colorTheme);
 
@@ -74,26 +74,26 @@ export default function NotificationsScreen() {
     try {
       const now = new Date();
       const date = new Date(dateString);
-      
+
       // \u2705 Validate date
       if (isNaN(date.getTime())) {
         return t.now; // Fallback for invalid dates
       }
-      
+
       const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      
+
       // \u2705 Handle future dates (negative diff)
       if (diffInMinutes < 0) {
         return t.now; // Treat future dates as "now"
       }
-      
+
       // \u2705 Handle edge cases
       if (diffInMinutes < 1) return t.now;
       if (diffInMinutes < 60) return `${diffInMinutes} ${t.minutesAgo}`;
       if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} ${t.hoursAgo}`;
-      
+
       const days = Math.floor(diffInMinutes / 1440);
-      
+
       // \u2705 Cap at 30 days, show date for older
       if (days > 30) {
         return date.toLocaleDateString(language === 'az' ? 'az-AZ' : 'ru-RU', {
@@ -102,7 +102,7 @@ export default function NotificationsScreen() {
           year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
         });
       }
-      
+
       return `${days} ${t.daysAgo}`;
     } catch (error) {
       return t.now; // Fallback for any errors
@@ -120,7 +120,7 @@ export default function NotificationsScreen() {
           style: 'destructive',
           onPress: clearAll,
         },
-      ]
+      ],
     );
   };
 
@@ -129,7 +129,7 @@ export default function NotificationsScreen() {
     const hasAvatar = item.fromUserAvatar && typeof item.fromUserAvatar === 'string' && item.fromUserAvatar.trim().length > 0;
     const hasUserName = item.fromUserName && typeof item.fromUserName === 'string' && item.fromUserName.trim().length > 0;
     const hasMessage = item.message && typeof item.message === 'string' && item.message.trim().length > 0;
-    
+
     // \u2705 Get notification type text
     const getTypeText = () => {
       switch (item.type) {
@@ -139,13 +139,13 @@ export default function NotificationsScreen() {
         default: return item.title || '';
       }
     };
-    
+
     return (
       <TouchableOpacity
         style={[
-          styles.notificationCard, 
+          styles.notificationCard,
           { backgroundColor: colors.card },
-          !item.isRead && { backgroundColor: colors.primary + '10', borderLeftColor: colors.primary }
+          !item.isRead && { backgroundColor: colors.primary + '10', borderLeftColor: colors.primary },
         ]}
         onPress={() => {
           if (!item.isRead) {
@@ -155,8 +155,8 @@ export default function NotificationsScreen() {
       >
         <View style={styles.notificationContent}>
           {hasAvatar && (
-            <Image 
-              source={{ uri: item.fromUserAvatar }} 
+            <Image
+              source={{ uri: item.fromUserAvatar }}
               style={styles.avatar}
               // defaultSource={require('@/assets/images/default-avatar.png')}
               onError={() => {
@@ -172,8 +172,8 @@ export default function NotificationsScreen() {
               {getTypeText()}
             </Text>
             {hasMessage && (
-              <Text 
-                style={[styles.notificationMessage, { color: colors.textSecondary }]} 
+              <Text
+                style={[styles.notificationMessage, { color: colors.textSecondary }]}
                 numberOfLines={3}
               >
                 {item.message}
@@ -194,12 +194,12 @@ export default function NotificationsScreen() {
               language === 'az' ? 'Bu bildiri\u015fi silm\u0259k ist\u0259yirsiniz?' : '\u0425\u043e\u0442\u0438\u0442\u0435 \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u044d\u0442\u043e \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0435?',
               [
                 { text: language === 'az' ? 'X\u0259yr' : '\u041d\u0435\u0442', style: 'cancel' },
-                { 
-                  text: language === 'az' ? 'B\u0259li' : '\u0414\u0430', 
+                {
+                  text: language === 'az' ? 'B\u0259li' : '\u0414\u0430',
                   style: 'destructive',
-                  onPress: () => removeNotification(item.id)
+                  onPress: () => removeNotification(item.id),
                 },
-              ]
+              ],
             );
           }}
         >

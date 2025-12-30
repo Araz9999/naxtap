@@ -3,7 +3,7 @@
  * Fixes React hooks and component safety issues
  */
 
-import { useRef, useEffect, useCallback, DependencyList } from 'react';
+import { useRef, useEffect, useCallback, DependencyList, useState } from 'react';
 
 /**
  * Safe state update
@@ -31,13 +31,13 @@ export function useSafeState() {
  */
 export function useSafeAsyncEffect(
   effect: (isCancelled: () => boolean) => void | Promise<void>,
-  deps?: DependencyList
+  deps?: DependencyList,
 ) {
   useEffect(() => {
     let cancelled = false;
-    
+
     const isCancelled = () => cancelled;
-    
+
     Promise.resolve(effect(isCancelled)).catch((error) => {
       if (!cancelled) {
         console.error('[SafeAsyncEffect] Error:', error);
@@ -55,7 +55,7 @@ export function useSafeAsyncEffect(
  */
 export function useSafeCallback<T extends (...args: any[]) => any>(
   callback: T,
-  deps: DependencyList
+  deps: DependencyList,
 ): T {
   const isMounted = useRef(true);
 
@@ -71,7 +71,7 @@ export function useSafeCallback<T extends (...args: any[]) => any>(
         return callback(...args);
       }
     }) as T,
-    deps
+    deps,
   );
 }
 
@@ -81,9 +81,9 @@ export function useSafeCallback<T extends (...args: any[]) => any>(
 export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   delay: number,
-  deps: DependencyList
+  deps: DependencyList,
 ): T {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
@@ -103,7 +103,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
         callback(...args);
       }, delay);
     }) as T,
-    [delay, ...deps]
+    [delay, ...deps],
   );
 }
 
@@ -113,7 +113,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
 export function useThrottledCallback<T extends (...args: any[]) => any>(
   callback: T,
   limit: number,
-  deps: DependencyList
+  deps: DependencyList,
 ): T {
   const inThrottle = useRef(false);
 
@@ -127,7 +127,7 @@ export function useThrottledCallback<T extends (...args: any[]) => any>(
         }, limit);
       }
     }) as T,
-    [limit, ...deps]
+    [limit, ...deps],
   );
 }
 
@@ -135,7 +135,7 @@ export function useThrottledCallback<T extends (...args: any[]) => any>(
  * Previous value hook
  */
 export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>();
+  const ref = useRef<T | undefined>(undefined);
 
   useEffect(() => {
     ref.current = value;
@@ -149,7 +149,7 @@ export function usePrevious<T>(value: T): T | undefined {
  */
 export function useSafeInterval(
   callback: () => void,
-  delay: number | null
+  delay: number | null,
 ) {
   const savedCallback = useRef(callback);
 
@@ -175,7 +175,7 @@ export function useSafeInterval(
  */
 export function useSafeTimeout(
   callback: () => void,
-  delay: number | null
+  delay: number | null,
 ) {
   const savedCallback = useRef(callback);
 

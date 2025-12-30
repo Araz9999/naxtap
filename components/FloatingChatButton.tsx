@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated
+  Animated,
 } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -13,7 +13,6 @@ import { useUserStore } from '@/store/userStore';
 import { getColors } from '@/constants/colors';
 import { MessageCircle } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
-
 
 
 import { logger } from '@/utils/logger';
@@ -36,7 +35,7 @@ export default function FloatingChatButton() {
     {
       enabled: !!currentUser?.id,
       refetchInterval: 5000,
-    }
+    },
   );
 
   const userConversations = conversationsQuery.data || [];
@@ -87,8 +86,8 @@ export default function FloatingChatButton() {
         style={[
           styles.container,
           {
-            transform: [{ scale: pulseAnim }]
-          }
+            transform: [{ scale: pulseAnim }],
+          },
         ]}
       >
         <TouchableOpacity
@@ -97,21 +96,21 @@ export default function FloatingChatButton() {
             styles.button,
             {
               backgroundColor: colors.primary,
-              shadowColor: colors.primary
-            }
+              shadowColor: colors.primary,
+            },
           ]}
           onPress={handlePress}
           activeOpacity={0.8}
         >
           <MessageCircle size={24} color="#fff" />
-          
+
           {/* Notification Badge */}
           {hasActiveChat && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{activeConversations.length}</Text>
             </View>
           )}
-          
+
           {/* Online Indicator */}
           {availableCount > 0 && (
             <View style={styles.onlineIndicator}>
@@ -119,12 +118,12 @@ export default function FloatingChatButton() {
             </View>
           )}
         </TouchableOpacity>
-        
+
         {/* Tooltip */}
         <View style={[styles.tooltip, { backgroundColor: colors.card }]}>
           <Text style={[styles.tooltipText, { color: colors.text }]}>
-            {language === 'az' 
-              ? hasActiveChat 
+            {language === 'az'
+              ? hasActiveChat
                 ? 'Aktiv söhbət'
                 : 'Canlı dəstək'
               : hasActiveChat

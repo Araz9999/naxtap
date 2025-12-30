@@ -22,10 +22,10 @@ import { SavedCard } from '@/types/payment';
 import { logger } from '@/utils/logger';
 export default function SavedCardsScreen() {
   const router = useRouter();
-  
+
   const { data: cardsData, isLoading, refetch } = trpc.payriff.getSavedCards.useQuery();
   const deleteCardMutation = trpc.payriff.deleteCard.useMutation();
-  
+
   const savedCards = cardsData?.cards || [];
   const [refreshing, setRefreshing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -65,7 +65,7 @@ export default function SavedCardsScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -94,7 +94,7 @@ export default function SavedCardsScreen() {
 
     try {
       const orderId = `AUTO-${Date.now()}`;
-      
+
       const response = await payriffService.autoPay({
         amount,
         cardUuid: selectedCard.cardUuid,
@@ -111,7 +111,7 @@ export default function SavedCardsScreen() {
         Alert.alert(
           'Uğurlu Ödəniş',
           `Ödənişiniz uğurla tamamlandı!\nMəbləğ: ${amount} AZN\nSifariş ID: ${orderId}`,
-          [{ text: 'OK' }]
+          [{ text: 'OK' }],
         );
       } else {
         throw new Error(response.payload?.responseDescription || 'Ödəniş uğursuz oldu');
@@ -147,8 +147,8 @@ export default function SavedCardsScreen() {
         }}
       />
 
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         contentContainerStyle={styles.contentContainer}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -179,7 +179,7 @@ export default function SavedCardsScreen() {
                 <View style={[styles.cardBrand, { backgroundColor: getBrandColor(card.brand) }]}>
                   <Text style={styles.cardBrandText}>{card.brand}</Text>
                 </View>
-                
+
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardNumber}>{card.pan}</Text>
                   {card.cardHolderName && (
@@ -197,7 +197,7 @@ export default function SavedCardsScreen() {
                   >
                     <DollarSign size={20} color="#fff" />
                   </TouchableOpacity>
-                  
+
                   <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => handleDeleteCard(card)}

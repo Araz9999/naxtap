@@ -14,7 +14,7 @@ export const resetPasswordProcedure = publicProcedure
         .regex(/[A-Z]/, 'Şifrə ən azı 1 böyük hərf olmalıdır')
         .regex(/[a-z]/, 'Şifrə ən azı 1 kiçik hərf olmalıdır')
         .regex(/[0-9]/, 'Şifrə ən azı 1 rəqəm olmalıdır'),
-    })
+    }),
   )
   .mutation(async ({ input }) => {
     logger.debug('[Auth] Password reset attempt');

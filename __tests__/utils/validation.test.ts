@@ -9,7 +9,7 @@ import {
   isValidPhone,
   isValidPrice,
   sanitizeInput,
-  validateListingData
+  validateListingData,
 } from '@/utils/validation';
 
 describe('Validation Utils', () => {
@@ -103,7 +103,7 @@ describe('Validation Utils', () => {
       price: 100,
       categoryId: 1,
       subcategoryId: 1,
-      images: ['image1.jpg']
+      images: ['image1.jpg'],
     };
 
     test('should accept valid listing data', () => {

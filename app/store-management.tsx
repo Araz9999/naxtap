@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Modal,
-  Image
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -35,7 +35,7 @@ import {
   BarChart3,
   CreditCard,
   ShoppingBag,
-  Palette
+  Palette,
 } from 'lucide-react-native';
 import { users } from '@/mocks/users';
 
@@ -54,110 +54,110 @@ export default function StoreManagementScreen() {
   const [promotionType, setPromotionType] = useState<'vip' | 'premium' | 'featured'>('vip');
   const [showSettingsMenu, setShowSettingsMenu] = useState<boolean>(false);
   const [isDeletingStore, setIsDeletingStore] = useState<boolean>(false);
-  
+
   // Mock current user (first user in the list)
   const currentUser = users[0];
   const userStores = currentUser ? getAllUserStores(currentUser.id) : [];
   const primaryStore = userStores.length > 0 ? userStores[0] : null;
-  
+
   const handleCreateStore = (isFirstStore: boolean = false) => {
     logger.debug('🏪 handleCreateStore called - SIMPLE NAVIGATION');
     logger.debug('isFirstStore:', isFirstStore);
-    
+
     // IMPORTANT: NO PAYMENT HERE - Just navigate to store creation
     // Payment will be handled AFTER package selection in the store creation flow
     router.push('/store/create');
   };
-  
+
   const handleDeleteStore = (storeId: string) => {
     // ✅ VALIDATION START
-    
+
     // 1. Check authentication
     if (!currentUser || !currentUser.id) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Daxil olmamısınız' : 'Вы не вошли в систему'
+        language === 'az' ? 'Daxil olmamısınız' : 'Вы не вошли в систему',
       );
       return;
     }
-    
+
     // 2. Validate storeId
     if (!storeId || typeof storeId !== 'string' || storeId.trim().length === 0) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Düzgün olmayan mağaza ID' : 'Некорректный ID магазина'
+        language === 'az' ? 'Düzgün olmayan mağaza ID' : 'Некорректный ID магазина',
       );
       return;
     }
-    
+
     // 3. Find store
     const store = stores.find(s => s.id === storeId);
-    
+
     if (!store) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден'
+        language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден',
       );
       return;
     }
-    
+
     // 4. Check ownership
     if (store.userId !== currentUser.id) {
       Alert.alert(
         language === 'az' ? 'İcazə yoxdur' : 'Нет разрешения',
-        language === 'az' 
-          ? 'Siz bu mağazanı silə bilməzsiniz. Yalnız öz mağazalarınızı silə bilərsiniz.' 
-          : 'Вы не можете удалить этот магазин. Вы можете удалить только свои собственные магазины.'
+        language === 'az'
+          ? 'Siz bu mağazanı silə bilməzsiniz. Yalnız öz mağazalarınızı silə bilərsiniz.'
+          : 'Вы не можете удалить этот магазин. Вы можете удалить только свои собственные магазины.',
       );
       return;
     }
-    
+
     // 5. Check if already being deleted
     if (isDeletingStore) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza artıq silinir' : 'Магазин уже удаляется'
+        language === 'az' ? 'Mağaza artıq silinir' : 'Магазин уже удаляется',
       );
       return;
     }
-    
+
     // 6. Check if store is already deleted
     if (store.status === 'archived' || store.archivedAt) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza artıq silinib' : 'Магазин уже удален'
+        language === 'az' ? 'Mağaza artıq silinib' : 'Магазин уже удален',
       );
       return;
     }
-    
+
     // ✅ VALIDATION END
-    
+
     // Get store data for detailed confirmation
-    const storeListings = listings.filter(l => 
-      l.storeId === storeId && 
+    const storeListings = listings.filter(l =>
+      l.storeId === storeId &&
       !l.deletedAt &&
-      !store.deletedListings.includes(l.id)
+      !store.deletedListings.includes(l.id),
     );
     const activeListingsCount = storeListings.length;
-    const deletedListingsCount = Array.isArray(store.deletedListings) 
-      ? store.deletedListings.length 
+    const deletedListingsCount = Array.isArray(store.deletedListings)
+      ? store.deletedListings.length
       : 0;
-    const followersCount = Array.isArray(store.followers) 
-      ? store.followers.length 
+    const followersCount = Array.isArray(store.followers)
+      ? store.followers.length
       : 0;
     const totalListingsCount = activeListingsCount + deletedListingsCount;
     const storeUsage = getStoreUsage(storeId);
-    
+
     // First confirmation with detailed info
     Alert.alert(
       language === 'az' ? '⚠️ Mağazanı sil' : '⚠️ Удалить магазин',
-      language === 'az' 
+      language === 'az'
         ? `"${store.name}" mağazasını silmək istədiyinizə əminsiniz?\n\n📊 Mağaza məlumatları:\n• Ad: ${store.name}\n• Aktiv elanlar: ${activeListingsCount}\n• Silinmiş elanlar: ${deletedListingsCount}\n• Ümumi elanlar: ${totalListingsCount}\n• İzləyicilər: ${followersCount}\n• İstifadə: ${storeUsage?.used || 0}/${storeUsage?.max || 0}\n• Status: ${store.status}\n\n${activeListingsCount > 0 ? '⚠️ DİQQƏT: Mağazada aktiv elanlar var! Əvvəlcə bütün elanları silməlisiniz.\n\n' : ''}⚠️ Bu əməliyyat geri qaytarıla bilməz!\n• Bütün mağaza məlumatları silinəcək\n• İzləyicilərə bildiriş göndəriləcək\n• Mağazaya giriş mümkün olmayacaq`
         : `Вы уверены, что хотите удалить магазин "${store.name}"?\n\n📊 Данные магазина:\n• Название: ${store.name}\n• Активные объявления: ${activeListingsCount}\n• Удаленные объявления: ${deletedListingsCount}\n• Всего объявлений: ${totalListingsCount}\n• Подписчики: ${followersCount}\n• Использование: ${storeUsage?.used || 0}/${storeUsage?.max || 0}\n• Статус: ${store.status}\n\n${activeListingsCount > 0 ? '⚠️ ВНИМАНИЕ: В магазине есть активные объявления! Сначала нужно удалить все объявления.\n\n' : ''}⚠️ Это действие нельзя отменить!\n• Все данные магазина будут удалены\n• Подписчики будут уведомлены\n• Доступ к магазину будет закрыт`,
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: language === 'az' ? 'Davam et' : 'Продолжить',
@@ -174,34 +174,34 @@ export default function StoreManagementScreen() {
                 [
                   {
                     text: language === 'az' ? 'Ləğv et' : 'Отмена',
-                    style: 'cancel'
+                    style: 'cancel',
                   },
                   {
                     text: language === 'az' ? 'MƏN ƏMİNƏM' : 'Я УВЕРЕН',
                     style: 'destructive',
                     onPress: async () => {
                       setIsDeletingStore(true);
-                      
+
                       try {
                         await deleteStore(storeId);
-                        
+
                         Alert.alert(
                           language === 'az' ? '✅ Uğurlu!' : '✅ Успешно!',
-                          language === 'az' 
+                          language === 'az'
                             ? `"${store.name}" mağazası silindi.\n\n${followersCount > 0 ? `${followersCount} izləyiciyə bildiriş göndərildi.\n\n` : ''}Siz indi yeni mağaza yarada bilərsiniz.`
                             : `Магазин "${store.name}" удален.\n\n${followersCount > 0 ? `${followersCount} подписчикам отправлено уведомление.\n\n` : ''}Теперь вы можете создать новый магазин.`,
                           [
                             {
-                              text: 'OK'
-                            }
+                              text: 'OK',
+                            },
                           ],
-                          { cancelable: false }
+                          { cancelable: false },
                         );
                       } catch (error) {
-                        let errorMessage = language === 'az' 
-                          ? 'Mağaza silinərkən xəta baş verdi' 
+                        let errorMessage = language === 'az'
+                          ? 'Mağaza silinərkən xəta baş verdi'
                           : 'Ошибка при удалении магазина';
-                        
+
                         if (error instanceof Error) {
                           if (error.message.includes('tapılmadı') || error.message.includes('not found')) {
                             errorMessage = language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден';
@@ -210,36 +210,36 @@ export default function StoreManagementScreen() {
                           } else if (error.message.includes('active listings') || error.message.includes('aktiv elan')) {
                             const match = error.message.match(/(\d+)/);
                             const count = match ? match[1] : '?';
-                            errorMessage = language === 'az' 
+                            errorMessage = language === 'az'
                               ? `Mağazada ${count} aktiv elan var. Əvvəlcə bütün elanları silməlisiniz.`
                               : `В магазине ${count} активных объявлений. Сначала удалите все объявления.`;
                           } else if (error.message.includes('network') || error.message.includes('timeout')) {
-                            errorMessage = language === 'az' 
-                              ? 'Şəbəkə xətası. Yenidən cəhd edin.' 
+                            errorMessage = language === 'az'
+                              ? 'Şəbəkə xətası. Yenidən cəhd edin.'
                               : 'Ошибка сети. Попробуйте снова.';
                           } else if (error.message.includes('Invalid')) {
                             errorMessage = language === 'az' ? 'Düzgün olmayan məlumat' : 'Некорректные данные';
                           }
                         }
-                        
+
                         Alert.alert(
                           language === 'az' ? 'Xəta' : 'Ошибка',
-                          errorMessage
+                          errorMessage,
                         );
                       } finally {
                         setIsDeletingStore(false);
                       }
-                    }
-                  }
-                ]
+                    },
+                  },
+                ],
               );
             }, 300); // Delay for emphasis
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
-  
+
   if (!isAuthenticated) {
     return (
       <View style={styles.container}>
@@ -264,7 +264,7 @@ export default function StoreManagementScreen() {
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -275,16 +275,16 @@ export default function StoreManagementScreen() {
           {language === 'az' ? 'Mağaza yarat' : 'Создать магазин'}
         </Text>
         <View style={styles.settingsContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setShowSettingsMenu(!showSettingsMenu)}
             style={styles.settingsButton}
           >
             <Settings size={24} color={Colors.text} />
           </TouchableOpacity>
-          
+
           {showSettingsMenu && (
             <View style={styles.settingsMenu}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.settingsMenuItem}
                 onPress={() => {
                   setShowSettingsMenu(false);
@@ -296,8 +296,8 @@ export default function StoreManagementScreen() {
                   {language === 'az' ? 'Mağaza Tənzimləmələri' : 'Настройки магазина'}
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.settingsMenuItem}
                 onPress={() => {
                   setShowSettingsMenu(false);
@@ -309,8 +309,8 @@ export default function StoreManagementScreen() {
                   {language === 'az' ? 'Mağaza Görünüşü' : 'Внешний вид магазина'}
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.settingsMenuItem}
                 onPress={() => {
                   setShowSettingsMenu(false);
@@ -322,8 +322,8 @@ export default function StoreManagementScreen() {
                   {language === 'az' ? 'Rəyləri İdarə Et' : 'Управлять отзывами'}
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.settingsMenuItem}
                 onPress={() => {
                   setShowSettingsMenu(false);
@@ -335,8 +335,8 @@ export default function StoreManagementScreen() {
                   {language === 'az' ? 'Ödəniş Tarixçəsi' : 'История платежей'}
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.settingsMenuItem}
                 onPress={() => {
                   setShowSettingsMenu(false);
@@ -352,15 +352,15 @@ export default function StoreManagementScreen() {
           )}
         </View>
       </View>
-      
+
       {showSettingsMenu && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.overlay}
           activeOpacity={1}
           onPress={() => setShowSettingsMenu(false)}
         />
       )}
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Create Store Section */}
         <View style={styles.createStoreSection}>
@@ -372,9 +372,9 @@ export default function StoreManagementScreen() {
               {language === 'az' ? 'Mağaza yarat' : 'Создать магазин'}
             </Text>
           </View>
-          
+
           <View style={styles.createStoreOptions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.createStoreOption}
               onPress={() => handleCreateStore(userStores.length === 0)}
             >
@@ -386,7 +386,7 @@ export default function StoreManagementScreen() {
                   {language === 'az' ? 'İlk mağaza' : 'Первый магазин'}
                 </Text>
                 <Text style={styles.createStoreOptionDescription}>
-                  {language === 'az' 
+                  {language === 'az'
                     ? 'İlk mağazanızı yaradın'
                     : 'Создайте свой первый магазин'}
                 </Text>
@@ -395,19 +395,19 @@ export default function StoreManagementScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[
                 styles.createStoreOption,
-                userStores.length === 0 && styles.createStoreOptionDisabled
+                userStores.length === 0 && styles.createStoreOptionDisabled,
               ]}
               onPress={() => {
                 if (userStores.length === 0) {
                   Alert.alert(
                     language === 'az' ? 'Xəta' : 'Ошибка',
-                    language === 'az' 
+                    language === 'az'
                       ? 'Əlavə mağaza yaratmaq üçün əvvəlcə ilk mağazanızı yaradın'
-                      : 'Для создания дополнительного магазина сначала создайте первый магазин'
+                      : 'Для создания дополнительного магазина сначала создайте первый магазин',
                   );
                   return;
                 }
@@ -420,16 +420,16 @@ export default function StoreManagementScreen() {
               <View style={styles.createStoreOptionContent}>
                 <Text style={[
                   styles.createStoreOptionTitle,
-                  userStores.length === 0 && styles.createStoreOptionTitleDisabled
+                  userStores.length === 0 && styles.createStoreOptionTitleDisabled,
                 ]}>
                   {language === 'az' ? 'Əlavə mağaza' : 'Дополнительный магазин'}
                 </Text>
                 <Text style={[
                   styles.createStoreOptionDescription,
-                  userStores.length === 0 && styles.createStoreOptionDescriptionDisabled
+                  userStores.length === 0 && styles.createStoreOptionDescriptionDisabled,
                 ]}>
-                  {language === 'az' 
-                    ? userStores.length > 0 
+                  {language === 'az'
+                    ? userStores.length > 0
                       ? 'Daha çox satış üçün əlavə mağaza (25% endirim)'
                       : 'İlk mağaza yaratdıqdan sonra mövcud olacaq'
                     : userStores.length > 0
@@ -438,7 +438,7 @@ export default function StoreManagementScreen() {
                 </Text>
                 <Text style={[
                   styles.createStoreOptionPrice,
-                  userStores.length === 0 && styles.createStoreOptionPriceDisabled
+                  userStores.length === 0 && styles.createStoreOptionPriceDisabled,
                 ]}>
                   {userStores.length > 0 ? '75 AZN' : '---'}
                 </Text>
@@ -446,7 +446,7 @@ export default function StoreManagementScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {/* My Stores Section */}
         <View style={styles.myStoresSection}>
           <View style={styles.sectionHeader}>
@@ -460,22 +460,22 @@ export default function StoreManagementScreen() {
               {userStores.length} {language === 'az' ? 'mağaza' : 'магазинов'}
             </Text>
           </View>
-          
+
           {userStores.length > 0 ? (
             <View style={styles.storesList}>
               {userStores.map((store) => {
                 const storeUsage = getStoreUsage(store.id);
-                const storeListings = listings.filter(listing => 
-                  listing.userId === currentUser?.id && 
+                const storeListings = listings.filter(listing =>
+                  listing.userId === currentUser?.id &&
                   listing.storeId === store.id &&
-                  !store.deletedListings.includes(listing.id)
+                  !store.deletedListings.includes(listing.id),
                 );
-                
+
                 return (
                   <View key={store.id} style={styles.storeCard}>
                     {/* Store Expiration Manager */}
                     <StoreExpirationManager storeId={store.id} showCompact={true} />
-                    
+
                     <View style={styles.storeHeader}>
                       <View style={styles.storeIconContainer}>
                         <Store size={20} color={Colors.primary} />
@@ -485,13 +485,13 @@ export default function StoreManagementScreen() {
                         <Text style={styles.storeCategory}>{store.categoryName}</Text>
                       </View>
                       <View style={styles.storeActions}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.storeActionButton}
                           onPress={() => router.push(`/store/${store.id}`)}
                         >
                           <Eye size={16} color={Colors.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.storeActionButton}
                           onPress={() => handleDeleteStore(store.id)}
                         >
@@ -499,7 +499,7 @@ export default function StoreManagementScreen() {
                         </TouchableOpacity>
                       </View>
                     </View>
-                    
+
                     <View style={styles.storeStats}>
                       <View style={styles.statItem}>
                         <Package size={14} color={Colors.primary} />
@@ -525,25 +525,25 @@ export default function StoreManagementScreen() {
                         </Text>
                       </View>
                     </View>
-                    
+
                     <View style={styles.usageBar}>
                       <View style={styles.usageBarBackground}>
-                        <View 
+                        <View
                           style={[
                             styles.usageBarFill,
-                            { width: `${((storeUsage?.used || 0) / (storeUsage?.max || 1)) * 100}%` }
+                            { width: `${((storeUsage?.used || 0) / (storeUsage?.max || 1)) * 100}%` },
                           ]}
                         />
                       </View>
                       <Text style={styles.usageText}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? `${storeUsage?.remaining || 0} elan qalıb`
                           : `Осталось ${storeUsage?.remaining || 0} объявлений`}
                       </Text>
                     </View>
-                    
+
                     <View style={styles.storeQuickActions}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.quickActionButton}
                         onPress={() => router.push(`/store/add-listing/${store.id}`)}
                       >
@@ -552,8 +552,8 @@ export default function StoreManagementScreen() {
                           {language === 'az' ? 'Elan əlavə et' : 'Добавить объявление'}
                         </Text>
                       </TouchableOpacity>
-                      
-                      <TouchableOpacity 
+
+                      <TouchableOpacity
                         style={styles.quickActionButton}
                         onPress={() => router.push(`/store-analytics?storeId=${store.id}`)}
                       >
@@ -576,11 +576,11 @@ export default function StoreManagementScreen() {
                 {language === 'az' ? 'Hələ mağaza yoxdur' : 'Пока нет магазинов'}
               </Text>
               <Text style={styles.noStoresDescription}>
-                {language === 'az' 
+                {language === 'az'
                   ? 'İlk mağazanızı yaradın və satışa başlayın'
                   : 'Создайте свой первый магазин и начните продавать'}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.createFirstStoreButton}
                 onPress={() => handleCreateStore(true)}
               >
@@ -592,42 +592,42 @@ export default function StoreManagementScreen() {
             </View>
           )}
         </View>
-        
+
         {/* Store Management Tips */}
         <View style={styles.tipsSection}>
           <Text style={styles.tipsSectionTitle}>
             {language === 'az' ? 'Mağaza idarəetməsi məsləhətləri' : 'Советы по управлению магазином'}
           </Text>
-          
+
           <View style={styles.tipsList}>
             <View style={styles.tipItem}>
               <View style={styles.tipIcon}>
                 <Star size={16} color={Colors.secondary} />
               </View>
               <Text style={styles.tipText}>
-                {language === 'az' 
+                {language === 'az'
                   ? 'Keyfiyyətli şəkillər və təfərrüatlı təsvirlər əlavə edin'
                   : 'Добавляйте качественные фото и подробные описания'}
               </Text>
             </View>
-            
+
             <View style={styles.tipItem}>
               <View style={styles.tipIcon}>
                 <TrendingUp size={16} color={Colors.primary} />
               </View>
               <Text style={styles.tipText}>
-                {language === 'az' 
+                {language === 'az'
                   ? 'Elanlarınızı irəli çəkərək daha çox görünürlük əldə edin'
                   : 'Продвигайте объявления для большей видимости'}
               </Text>
             </View>
-            
+
             <View style={styles.tipItem}>
               <View style={styles.tipIcon}>
                 <Users size={16} color={Colors.success} />
               </View>
               <Text style={styles.tipText}>
-                {language === 'az' 
+                {language === 'az'
                   ? 'Müştərilərlə aktiv ünsiyyət qurun və sürətli cavab verin'
                   : 'Активно общайтесь с клиентами и быстро отвечайте'}
               </Text>

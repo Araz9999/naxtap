@@ -11,7 +11,7 @@ export const mockStores: Store[] = [
       phone: '+994501234567',
       email: 'info@techmart.az',
       website: 'https://techmart.az',
-      whatsapp: '+994501234567'
+      whatsapp: '+994501234567',
     },
     description: 'Ən yeni texnologiyalar və elektronika məhsulları',
     logo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center',
@@ -41,7 +41,7 @@ export const mockStores: Store[] = [
     contactInfo: {
       phone: '+994502345678',
       email: 'contact@fashionhouse.az',
-      whatsapp: '+994502345678'
+      whatsapp: '+994502345678',
     },
     description: 'Ən son moda trendləri və keyfiyyətli geyimlər',
     logo: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=200&h=200&fit=crop&crop=center',
@@ -71,7 +71,7 @@ export const mockStores: Store[] = [
     contactInfo: {
       phone: '+994503456789',
       email: 'sales@autoparts.az',
-      website: 'https://autoparts.az'
+      website: 'https://autoparts.az',
     },
     description: 'Avtomobil ehtiyat hissələri və aksesuarları',
     logo: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=200&h=200&fit=crop&crop=center',
@@ -101,7 +101,7 @@ export const mockStores: Store[] = [
     contactInfo: {
       phone: '+994504567890',
       email: 'info@homegarden.az',
-      whatsapp: '+994504567890'
+      whatsapp: '+994504567890',
     },
     description: 'Ev və bağ üçün hər şey',
     logo: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=200&h=200&fit=crop&crop=center',
@@ -132,7 +132,7 @@ export const mockStores: Store[] = [
       phone: '+994505678901',
       email: 'contact@sportszone.az',
       website: 'https://sportszone.az',
-      whatsapp: '+994505678901'
+      whatsapp: '+994505678901',
     },
     description: 'İdman avadanlıqları və aksesuarları',
     logo: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&h=200&fit=crop&crop=center',
@@ -152,5 +152,5 @@ export const mockStores: Store[] = [
     followers: ['user2', 'user3'],
     rating: 16, // Total rating points
     totalRatings: 4, // Number of ratings (average: 4.0)
-  }
+  },
 ];

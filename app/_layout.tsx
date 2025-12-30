@@ -1,7 +1,7 @@
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState, useMemo } from "react";
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect, useState, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { useThemeStore } from '@/store/themeStore';
 import { useRatingStore } from '@/store/ratingStore';
@@ -18,9 +18,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc, trpcClient } from '@/lib/trpc';
 
 import { logger } from '@/utils/logger';
-import React from "react";
+import React from 'react';
 export const unstable_settings = {
-  initialRouteName: "(tabs)",
+  initialRouteName: '(tabs)',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -76,17 +76,17 @@ function RootLayoutNav() {
   const { themeMode, colorTheme } = useThemeStore();
   const { loadRatings } = useRatingStore();
   const { initializeSounds } = useCallStore();
-  
+
   // Memoize colors to prevent recalculation
   const colors = useMemo(() => getColors(themeMode, colorTheme), [themeMode, colorTheme]);
-  
+
   // Load ratings on app start (only once)
   useEffect(() => {
     loadRatings().catch((error) => {
       if (__DEV__) logger.error('Failed to load ratings:', error);
     });
   }, []); // Safe to ignore loadRatings dependency as it's stable
-  
+
   // Initialize call sounds (delayed for better startup performance)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -94,10 +94,10 @@ function RootLayoutNav() {
         if (__DEV__) logger.error('Failed to initialize sounds:', error);
       });
     }, 2000); // Increased delay for better startup
-    
+
     return () => clearTimeout(timer);
   }, []); // Safe to ignore initializeSounds dependency as it's stable
-  
+
   // Initialize services (only once)
   useEffect(() => {
     initializeServices().catch((error) => {
@@ -115,13 +115,13 @@ function RootLayoutNav() {
       cleanupStoreStoreInterval();
     };
   }, []);
-  
+
   return (
     <>
-      <StatusBar style={themeMode === 'dark' || (themeMode === 'auto' && colors.background === '#111827') ? "light" : "dark"} />
+      <StatusBar style={themeMode === 'dark' || (themeMode === 'auto' && colors.background === '#111827') ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
-          headerBackTitle: "Back",
+          headerBackTitle: 'Back',
           headerStyle: {
             backgroundColor: colors.card,
           },
@@ -133,346 +133,346 @@ function RootLayoutNav() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen 
-          name="listing/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="listing/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="category" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="category"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="profile/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="profile/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
         <Stack.Screen
           name="profile/edit"
           options={{
-            title: "",
+            title: '',
             presentation: 'card',
           }}
         />
-        <Stack.Screen 
-          name="auth/login" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="auth/login"
+          options={{
+            title: '',
             presentation: 'modal',
             headerShown: false,
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="auth/register" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="auth/register"
+          options={{
+            title: '',
             presentation: 'modal',
             headerShown: false,
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="create-listing" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="create-listing"
+          options={{
+            title: '',
             presentation: 'modal',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="about" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="about"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="wallet" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="wallet"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="favorites" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="favorites"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="stores" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="stores"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="my-store" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="my-store"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store/create" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store/create"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store/add-listing/[storeId]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store/add-listing/[storeId]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store/promote/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store/promote/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="conversation/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="conversation/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="settings" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="settings"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="my-listings" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="my-listings"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store-management" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store-management"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store/edit/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store/edit/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store/discounts/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store/discounts/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="listing/promote/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="listing/promote/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="listing/edit/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="listing/edit/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="call/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="call/[id]"
+          options={{
+            title: '',
             presentation: 'fullScreenModal',
             headerShown: false,
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="call-history" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="call-history"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="blocked-users" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="blocked-users"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="notifications" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="notifications"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store-settings" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store-settings"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store-analytics" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store-analytics"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store-theme" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store-theme"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="payment-history" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="payment-history"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="store-reviews" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="store-reviews"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="auth/forgot-password" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="auth/forgot-password"
+          options={{
+            title: '',
             presentation: 'modal',
             headerShown: false,
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="listing/auto-renewal/[id]" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="listing/auto-renewal/[id]"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="support" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="support"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="moderation" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="moderation"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="admin-reports" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="admin-reports"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="admin-tickets" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="admin-tickets"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="admin-users" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="admin-users"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="admin-moderators" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="admin-moderators"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="admin-analytics" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="admin-analytics"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="admin-moderation-settings" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="admin-moderation-settings"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="operator-dashboard" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="operator-dashboard"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="live-chat" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="live-chat"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="terms" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="terms"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="privacy" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="privacy"
+          options={{
+            title: '',
             presentation: 'card',
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="auth/success" 
-          options={{ 
-            title: "",
+        <Stack.Screen
+          name="auth/success"
+          options={{
+            title: '',
             presentation: 'modal',
             headerShown: false,
-          }} 
+          }}
         />
       </Stack>
       <IncomingCallModal />

@@ -22,15 +22,15 @@ export default function HomeScreen() {
   const languageStore = useLanguageStore();
   const language = languageStore?.language || 'az';
   const { themeMode, colorTheme, fontSize, autoRefresh } = useThemeStore();
-  
+
   // Memoize colors to prevent recalculation on every render
   const colors = React.useMemo(() => getColors(themeMode, colorTheme), [themeMode, colorTheme]);
-  
+
   // Animation values for Naxtap
   const slideAnim = useRef(new Animated.Value(-200)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  
+
   // Animation values for Naxçıvan elanları
   const naxcivanSlideAnim = useRef(new Animated.Value(-200)).current;
   const naxcivanFadeAnim = useRef(new Animated.Value(0)).current;
@@ -40,17 +40,17 @@ export default function HomeScreen() {
   const featuredListings = React.useMemo(() => listings.slice(0, 6), [listings]);
   const activeStores = React.useMemo(
     () => stores.filter(store => store.isActive).slice(0, 4),
-    [stores]
+    [stores],
   );
 
   const handleResetFilters = useCallback(() => {
     resetFilters();
   }, [resetFilters]);
-  
+
   useEffect(() => {
     handleResetFilters();
   }, [handleResetFilters]);
-  
+
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
@@ -62,20 +62,20 @@ export default function HomeScreen() {
         // - Show refresh indicator
         // - Handle errors gracefully
       }, 30000);
-      
+
       return () => clearInterval(interval);
     }
   }, [autoRefresh]);
-  
+
   useEffect(() => {
     // ✅ Track component mount status to prevent memory leaks
     let isMounted = true;
-    
+
     // Start the logo animation
     const animateLoop = () => {
       // ✅ Check if component is still mounted before starting animation
       if (!isMounted) return;
-      
+
       // Naxtap animation
       Animated.sequence([
         Animated.parallel([
@@ -160,15 +160,15 @@ export default function HomeScreen() {
       ]).start(() => {
         // ✅ Check mount status before looping
         if (!isMounted) return;
-        
+
         slideAnim.setValue(-200);
         naxcivanSlideAnim.setValue(-200);
         animateLoop();
       });
     };
-    
+
     animateLoop();
-    
+
     // Cleanup function to stop animation when component unmounts
     return () => {
       isMounted = false; // ✅ Mark as unmounted to stop future iterations
@@ -185,27 +185,27 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Animated.View 
+          <Animated.View
             style={[
               styles.animatedLogoContainer,
               {
                 transform: [
                   { translateX: slideAnim },
-                  { scale: scaleAnim }
+                  { scale: scaleAnim },
                 ],
                 opacity: fadeAnim,
-              }
+              },
             ]}
           >
             <View style={styles.logoImageContainer}>
-              <Animated.Image 
-                source={{ uri: 'https://r2-pub.rork.com/attachments/0m8bxdm8jpnwhv8znvvka' }} 
+              <Animated.Image
+                source={{ uri: 'https://r2-pub.rork.com/attachments/0m8bxdm8jpnwhv8znvvka' }}
                 style={[
                   styles.logoImage,
                   {
-                    transform: [{ rotate: '360deg' }]
-                  }
-                ]} 
+                    transform: [{ rotate: '360deg' }],
+                  },
+                ]}
               />
             </View>
             <View style={styles.logoTextContainer}>
@@ -217,17 +217,17 @@ export default function HomeScreen() {
               <Text style={styles.logoTextP}>p</Text>
             </View>
           </Animated.View>
-          
-          <Animated.View 
+
+          <Animated.View
             style={[
               styles.animatedNaxcivanContainer,
               {
                 transform: [
                   { translateX: naxcivanSlideAnim },
-                  { scale: naxcivanScaleAnim }
+                  { scale: naxcivanScaleAnim },
                 ],
                 opacity: naxcivanFadeAnim,
-              }
+              },
             ]}
           >
             <Text style={styles.naxcivanText}>
@@ -238,14 +238,14 @@ export default function HomeScreen() {
         <LanguageSwitcher />
       </View>
       <SearchBar />
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         removeClippedSubviews
       >
         <CategoryList />
         <FeaturedListings />
-        
+
         {activeStores.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -290,7 +290,7 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
         )}
-        
+
         <View style={styles.recentListings}>
           <ListingGrid />
         </View>

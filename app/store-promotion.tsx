@@ -21,7 +21,7 @@ export default function StorePromotionScreen() {
   const { getStoreDiscounts, getStoreCampaigns, toggleDiscountStatus, toggleCampaignStatus, deleteDiscount, deleteCampaign } = useDiscountStore();
   const { getActiveStoreForUser } = useStoreStore();
   const { currentUser } = useUserStore();
-  
+
   const currentStore = currentUser ? getActiveStoreForUser(currentUser.id) : null;
   const [activeTab, setActiveTab] = useState<'discounts' | 'campaigns'>('discounts');
 
@@ -46,7 +46,7 @@ export default function StorePromotionScreen() {
       [
         { text: 'Ləğv et', style: 'cancel' },
         { text: 'Sil', style: 'destructive', onPress: () => deleteDiscount(id) },
-      ]
+      ],
     );
   };
 
@@ -57,7 +57,7 @@ export default function StorePromotionScreen() {
       [
         { text: 'Ləğv et', style: 'cancel' },
         { text: 'Sil', style: 'destructive', onPress: () => deleteCampaign(id) },
-      ]
+      ],
     );
   };
 
@@ -81,23 +81,23 @@ export default function StorePromotionScreen() {
           />
         </View>
       </View>
-      
+
       <Text style={styles.cardDescription}>{discount.description}</Text>
-      
+
       <View style={styles.discountInfo}>
         <Text style={styles.discountValue}>
-          {discount.type === 'percentage' 
+          {discount.type === 'percentage'
             ? `${discount.value}% endirim`
             : discount.type === 'fixed_amount'
-            ? `${discount.value} AZN endirim`
-            : `${discount.value} al, 1 pulsuz`
+              ? `${discount.value} AZN endirim`
+              : `${discount.value} al, 1 pulsuz`
           }
         </Text>
         <Text style={styles.discountDates}>
           {new Date(discount.startDate).toLocaleDateString()} - {new Date(discount.endDate).toLocaleDateString()}
         </Text>
       </View>
-      
+
       <View style={styles.cardFooter}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -106,7 +106,7 @@ export default function StorePromotionScreen() {
           <Edit3 size={16} color="#6B7280" />
           <Text style={styles.actionButtonText}>Redaktə et</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
           onPress={() => handleDeleteDiscount(discount.id)}
@@ -138,21 +138,21 @@ export default function StorePromotionScreen() {
           />
         </View>
       </View>
-      
+
       <Text style={styles.cardDescription}>{campaign.description}</Text>
-      
+
       <View style={styles.campaignInfo}>
         <Text style={styles.campaignType}>
           {campaign.type === 'flash_sale' ? 'Sürətli Satış' :
-           campaign.type === 'seasonal' ? 'Mövsümi' :
-           campaign.type === 'clearance' ? 'Təmizlik' :
-           campaign.type === 'bundle' ? 'Paket' : 'Sadiqlik'}
+            campaign.type === 'seasonal' ? 'Mövsümi' :
+              campaign.type === 'clearance' ? 'Təmizlik' :
+                campaign.type === 'bundle' ? 'Paket' : 'Sadiqlik'}
         </Text>
         <Text style={styles.campaignDates}>
           {new Date(campaign.startDate).toLocaleDateString()} - {new Date(campaign.endDate).toLocaleDateString()}
         </Text>
       </View>
-      
+
       <View style={styles.analyticsRow}>
         <View style={styles.analyticsItem}>
           <Text style={styles.analyticsValue}>{campaign.analytics.views}</Text>
@@ -171,7 +171,7 @@ export default function StorePromotionScreen() {
           <Text style={styles.analyticsLabel}>Gəlir</Text>
         </View>
       </View>
-      
+
       <View style={styles.cardFooter}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -180,7 +180,7 @@ export default function StorePromotionScreen() {
           <Edit3 size={16} color="#6B7280" />
           <Text style={styles.actionButtonText}>Redaktə et</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
           onPress={() => handleDeleteCampaign(campaign.id)}
@@ -194,8 +194,8 @@ export default function StorePromotionScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Mağaza Təşviqi',
           headerRight: () => (
             <TouchableOpacity
@@ -205,9 +205,9 @@ export default function StorePromotionScreen() {
               <Plus size={24} color="#007AFF" />
             </TouchableOpacity>
           ),
-        }} 
+        }}
       />
-      
+
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'discounts' && styles.activeTab]}
@@ -217,7 +217,7 @@ export default function StorePromotionScreen() {
             Endirimlər ({discounts.length})
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'campaigns' && styles.activeTab]}
           onPress={() => setActiveTab('campaigns')}

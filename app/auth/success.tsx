@@ -31,7 +31,7 @@ export default function AuthSuccessScreen() {
         router.replace('/auth/login');
         return;
       }
-      
+
       // Store only via unified auth_tokens object
       await AsyncStorage.setItem('auth_tokens', JSON.stringify({
         accessToken: token,

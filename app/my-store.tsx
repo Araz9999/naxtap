@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Modal
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -30,21 +30,21 @@ import {
   Trash2,
   Edit3,
   Eye,
-  Users
+  Users,
 } from 'lucide-react-native';
 
 export default function MyStoreScreen() {
   const router = useRouter();
   const { language } = useLanguageStore();
-  const { 
-    getUserStore, 
-    deleteStore, 
-    getStoreUsage, 
-    checkStoreStatus, 
-    renewStore, 
-    canStoreBeReactivated, 
+  const {
+    getUserStore,
+    deleteStore,
+    getStoreUsage,
+    checkStoreStatus,
+    renewStore,
+    canStoreBeReactivated,
     reactivateStore,
-    getStorePlans 
+    getStorePlans,
   } = useStoreStore();
   const { currentUser } = useUserStore();
   const { listings, deleteListingEarly, promoteListingInStore } = useListingStore();
@@ -57,107 +57,107 @@ export default function MyStoreScreen() {
   const [selectedPlanId, setSelectedPlanId] = useState<string>('basic');
   const [showExpiredStoreInfo, setShowExpiredStoreInfo] = useState<boolean>(false);
   const [isDeletingStore, setIsDeletingStore] = useState<boolean>(false);
-  
+
   const userStore = currentUser ? getUserStore(currentUser.id) : null;
   const storeUsage = userStore ? getStoreUsage(userStore.id) : null;
   const currentStoreStatus = userStore ? checkStoreStatus(userStore.id) : null;
   const canReactivate = userStore ? canStoreBeReactivated(userStore.id) : false;
   const storePlans = getStorePlans();
-  
+
   // ✅ Log screen access
   useEffect(() => {
-    logger.info('[MyStore] Screen opened:', { 
+    logger.info('[MyStore] Screen opened:', {
       hasStore: !!userStore,
       storeId: userStore?.id,
       storeName: userStore?.name,
       storeStatus: currentStoreStatus,
       adsUsed: storeUsage?.used,
-      adsMax: storeUsage?.max
+      adsMax: storeUsage?.max,
     });
   }, []);
-  
+
   // Get store listings
-  const storeListings = userStore 
-    ? listings.filter(listing => 
-        listing.userId === currentUser?.id && 
+  const storeListings = userStore
+    ? listings.filter(listing =>
+      listing.userId === currentUser?.id &&
         listing.storeId === userStore.id &&
-        !userStore.deletedListings.includes(listing.id)
-      )
+        !userStore.deletedListings.includes(listing.id),
+    )
     : [];
-  
+
   const handleDeleteStore = () => {
     // ✅ VALIDATION START
-    
+
     // 1. Check authentication
     if (!currentUser || !currentUser.id) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Daxil olmamısınız' : 'Вы не вошли в систему'
+        language === 'az' ? 'Daxil olmamısınız' : 'Вы не вошли в систему',
       );
       return;
     }
-    
+
     // 2. Check if userStore exists
     if (!userStore) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден'
+        language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден',
       );
       return;
     }
-    
+
     // 3. Check ownership
     if (userStore.userId !== currentUser.id) {
       Alert.alert(
         language === 'az' ? 'İcazə yoxdur' : 'Нет разрешения',
-        language === 'az' 
-          ? 'Siz bu mağazanı silə bilməzsiniz. Yalnız öz mağazanızı silə bilərsiniz.' 
-          : 'Вы не можете удалить этот магазин. Вы можете удалить только свой собственный магазин.'
+        language === 'az'
+          ? 'Siz bu mağazanı silə bilməzsiniz. Yalnız öz mağazanızı silə bilərsiniz.'
+          : 'Вы не можете удалить этот магазин. Вы можете удалить только свой собственный магазин.',
       );
       return;
     }
-    
+
     // 4. Check if already being deleted
     if (isDeletingStore) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza artıq silinir' : 'Магазин уже удаляется'
+        language === 'az' ? 'Mağaza artıq silinir' : 'Магазин уже удаляется',
       );
       return;
     }
-    
+
     // 5. Check if store is already deleted
     if (userStore.status === 'archived' || userStore.archivedAt) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza artıq silinib' : 'Магазин уже удален'
+        language === 'az' ? 'Mağaza artıq silinib' : 'Магазин уже удален',
       );
       return;
     }
-    
+
     // ✅ VALIDATION END
-    
+
     // Get store data for detailed confirmation
     const activeListingsCount = storeListings.length;
-    const deletedListingsCount = Array.isArray(userStore.deletedListings) 
-      ? userStore.deletedListings.length 
+    const deletedListingsCount = Array.isArray(userStore.deletedListings)
+      ? userStore.deletedListings.length
       : 0;
-    const followersCount = Array.isArray(userStore.followers) 
-      ? userStore.followers.length 
+    const followersCount = Array.isArray(userStore.followers)
+      ? userStore.followers.length
       : 0;
     const totalListingsCount = activeListingsCount + deletedListingsCount;
-    
+
     // First confirmation with detailed info
     Alert.alert(
       language === 'az' ? '⚠️ Mağazanı sil' : '⚠️ Удалить магазин',
-      language === 'az' 
+      language === 'az'
         ? `Mağazanızı silmək istədiyinizə əminsiniz?\n\n📊 Mağaza məlumatları:\n• Ad: ${userStore.name}\n• Aktiv elanlar: ${activeListingsCount}\n• Silinmiş elanlar: ${deletedListingsCount}\n• Ümumi elanlar: ${totalListingsCount}\n• İzləyicilər: ${followersCount}\n• Status: ${userStore.status}\n\n${activeListingsCount > 0 ? '⚠️ DİQQƏT: Mağazada aktiv elanlar var! Əvvəlcə bütün elanları silməlisiniz.\n\n' : ''}⚠️ Bu əməliyyat geri qaytarıla bilməz!\n• Bütün mağaza məlumatları silinəcək\n• İzləyicilərə bildiriş göndəriləcək\n• Mağazaya giriş mümkün olmayacaq`
         : `Вы уверены, что хотите удалить свой магазин?\n\n📊 Данные магазина:\n• Название: ${userStore.name}\n• Активные объявления: ${activeListingsCount}\n• Удаленные объявления: ${deletedListingsCount}\n• Всего объявлений: ${totalListingsCount}\n• Подписчики: ${followersCount}\n• Статус: ${userStore.status}\n\n${activeListingsCount > 0 ? '⚠️ ВНИМАНИЕ: В магазине есть активные объявления! Сначала нужно удалить все объявления.\n\n' : ''}⚠️ Это действие нельзя отменить!\n• Все данные магазина будут удалены\n• Подписчики будут уведомлены\n• Доступ к магазину будет закрыт`,
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отmena',
           style: 'cancel',
-          onPress: () => logger.info('[MyStore] Delete store cancelled')
+          onPress: () => logger.info('[MyStore] Delete store cancelled'),
         },
         {
           text: language === 'az' ? 'Davam et' : 'Продолжить',
@@ -174,35 +174,35 @@ export default function MyStoreScreen() {
                 [
                   {
                     text: language === 'az' ? 'Ləğv et' : 'Отмена',
-                    style: 'cancel'
+                    style: 'cancel',
                   },
                   {
                     text: language === 'az' ? 'MƏN ƏMİNƏM' : 'Я УВЕРЕН',
                     style: 'destructive',
                     onPress: async () => {
                       setIsDeletingStore(true);
-                      
+
                       try {
                         await deleteStore(userStore.id);
-                        
+
                         Alert.alert(
                           language === 'az' ? '✅ Uğurlu!' : '✅ Успешно!',
-                          language === 'az' 
+                          language === 'az'
                             ? `"${userStore.name}" mağazası silindi.\n\n${followersCount > 0 ? `${followersCount} izləyiciyə bildiriş göndərildi.\n\n` : ''}Siz indi yeni mağaza yarada bilərsiniz.`
                             : `Магазин "${userStore.name}" удален.\n\n${followersCount > 0 ? `${followersCount} подписчикам отправлено уведомление.\n\n` : ''}Теперь вы можете создать новый магазин.`,
                           [
                             {
                               text: 'OK',
-                              onPress: () => router.back()
-                            }
+                              onPress: () => router.back(),
+                            },
                           ],
-                          { cancelable: false }
+                          { cancelable: false },
                         );
                       } catch (error) {
-                        let errorMessage = language === 'az' 
-                          ? 'Mağaza silinərkən xəta baş verdi' 
+                        let errorMessage = language === 'az'
+                          ? 'Mağaza silinərkən xəta baş verdi'
                           : 'Ошибка при удалении магазина';
-                        
+
                         if (error instanceof Error) {
                           if (error.message.includes('tapılmadı') || error.message.includes('not found')) {
                             errorMessage = language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден';
@@ -211,59 +211,59 @@ export default function MyStoreScreen() {
                           } else if (error.message.includes('active listings') || error.message.includes('aktiv elan')) {
                             const match = error.message.match(/(\d+)/);
                             const count = match ? match[1] : '?';
-                            errorMessage = language === 'az' 
+                            errorMessage = language === 'az'
                               ? `Mağazada ${count} aktiv elan var. Əvvəlcə bütün elanları silməlisiniz.`
                               : `В магазине ${count} активных объявлений. Сначала удалите все объявления.`;
                           } else if (error.message.includes('network') || error.message.includes('timeout')) {
-                            errorMessage = language === 'az' 
-                              ? 'Şəbəkə xətası. Yenidən cəhd edin.' 
+                            errorMessage = language === 'az'
+                              ? 'Şəbəkə xətası. Yenidən cəhd edin.'
                               : 'Ошибка сети. Попробуйте снова.';
                           } else if (error.message.includes('Invalid')) {
                             errorMessage = language === 'az' ? 'Düzgün olmayan məlumat' : 'Некорректные данные';
                           }
                         }
-                        
+
                         Alert.alert(
                           language === 'az' ? 'Xəta' : 'Ошибка',
-                          errorMessage
+                          errorMessage,
                         );
                       } finally {
                         setIsDeletingStore(false);
                       }
-                    }
-                  }
-                ]
+                    },
+                  },
+                ],
               );
             }, 300); // Delay for emphasis
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
-  
+
   const handleDeleteListing = (listingId: string) => {
     if (!userStore) {
       logger.warn('[MyStore] Delete listing attempt without store');
       return;
     }
-    
+
     const listing = storeListings.find(l => l.id === listingId);
-    logger.info('[MyStore] Delete listing initiated:', { 
+    logger.info('[MyStore] Delete listing initiated:', {
       storeId: userStore.id,
       listingId,
-      listingTitle: listing?.title?.az || listing?.title?.ru
+      listingTitle: listing?.title?.az || listing?.title?.ru,
     });
-    
+
     Alert.alert(
       language === 'az' ? 'Elanı sil' : 'Удалить объявление',
-      language === 'az' 
+      language === 'az'
         ? 'Bu elanı müddətindən əvvəl silmək istəyirsiniz?'
         : 'Хотите удалить это объявление до истечения срока?',
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
           style: 'cancel',
-          onPress: () => logger.info('[MyStore] Delete listing cancelled')
+          onPress: () => logger.info('[MyStore] Delete listing cancelled'),
         },
         {
           text: language === 'az' ? 'Sil' : 'Удалить',
@@ -275,65 +275,65 @@ export default function MyStoreScreen() {
               logger.info('[MyStore] Listing deleted successfully:', { listingId });
               Alert.alert(
                 language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                language === 'az' ? 'Elan silindi' : 'Объявление удалено'
+                language === 'az' ? 'Elan silindi' : 'Объявление удалено',
               );
             } catch (error) {
               logger.error('[MyStore] Listing deletion failed:', error);
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
-                language === 'az' ? 'Elan silinərkən xəta baş verdi' : 'Ошибка при удалении объявления'
+                language === 'az' ? 'Elan silinərkən xəta baş verdi' : 'Ошибка при удалении объявления',
               );
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
-  
+
   const handlePromoteListing = async () => {
     if (!selectedListingId || !userStore) return;
-    
+
     // Validation: Check if listing exists
     const listing = storeListings.find(l => l.id === selectedListingId);
     if (!listing) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено'
+        language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено',
       );
       return;
     }
-    
+
     const prices = {
       vip: 20,
       premium: 15,
-      featured: 10
+      featured: 10,
     };
-    
+
     const price = prices[promotionType];
-    
+
     // ✅ Get wallet functions
     const { walletBalance, spendFromWallet } = useUserStore.getState();
-    
+
     // ✅ Check balance first
     if (walletBalance < price) {
       Alert.alert(
         language === 'az' ? '💰 Kifayət qədər balans yoxdur' : '💰 Недостаточно средств',
-        language === 'az' 
+        language === 'az'
           ? `İrəli çəkmək üçün ${price} AZN lazımdır.\nCari balansınız: ${walletBalance.toFixed(2)} AZN\n\nZəhmət olmasa balansınızı artırın.`
-          : `Для продвижения требуется ${price} AZN.\nВаш текущий баланс: ${walletBalance.toFixed(2)} AZN\n\nПожалуйста, пополните баланс.`
+          : `Для продвижения требуется ${price} AZN.\nВаш текущий баланс: ${walletBalance.toFixed(2)} AZN\n\nПожалуйста, пополните баланс.`,
       );
       return;
     }
-    
+
     Alert.alert(
       language === 'az' ? 'Elanı irəli çək' : 'Продвинуть объявление',
-      language === 'az' 
+      language === 'az'
         ? `${promotionType.toUpperCase()} statusu üçün ${price} AZN ödəyəcəksiniz. Davam etmək istəyirsiniz?`
         : `Вы заплатите ${price} AZN за статус ${promotionType.toUpperCase()}. Продолжить?`,
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: language === 'az' ? 'Ödə' : 'Оплатить',
@@ -344,82 +344,82 @@ export default function MyStoreScreen() {
               if (!paymentSuccess) {
                 Alert.alert(
                   language === 'az' ? 'Ödəniş Xətası' : 'Ошибка оплаты',
-                  language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Произошла ошибка при оплате'
+                  language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Произошла ошибка при оплате',
                 );
                 return;
               }
-              
+
               // ✅ Then promote
               await promoteListingInStore(selectedListingId, promotionType, price);
               setShowPromoteModal(false);
               setSelectedListingId(null);
               Alert.alert(
                 language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                language === 'az' ? 'Elan irəli çəkildi' : 'Объявление продвинуто'
+                language === 'az' ? 'Elan irəli çəkildi' : 'Объявление продвинуто',
               );
             } catch (error) {
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
-                language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Ошибка при оплате'
+                language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Ошибка при оплате',
               );
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
-  
+
   const handleRenewStore = async () => {
     if (!userStore) return;
-    
+
     const selectedPlan = storePlans.find(p => p.id === selectedPlanId);
     if (!selectedPlan) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Paket seçilməyib' : 'Пакет не выбран'
+        language === 'az' ? 'Paket seçilməyib' : 'Пакет не выбран',
       );
       return;
     }
-    
+
     // ✅ Get wallet functions
     const { walletBalance, spendFromWallet } = useUserStore.getState();
-    
-    logger.info('[MyStore] Store renewal initiated:', { 
+
+    logger.info('[MyStore] Store renewal initiated:', {
       storeId: userStore.id,
       storeName: userStore.name,
       planId: selectedPlanId,
       planName: selectedPlan.name.az,
       price: selectedPlan.price,
-      canReactivate
+      canReactivate,
     });
-    
+
     // ✅ Check balance first
     if (walletBalance < selectedPlan.price) {
-      logger.warn('[MyStore] Insufficient balance for renewal:', { 
+      logger.warn('[MyStore] Insufficient balance for renewal:', {
         required: selectedPlan.price,
-        available: walletBalance
+        available: walletBalance,
       });
       Alert.alert(
         language === 'az' ? '💰 Kifayət qədər balans yoxdur' : '💰 Недостаточно средств',
-        language === 'az' 
+        language === 'az'
           ? `Mağazanı yeniləmək üçün ${selectedPlan.price} AZN lazımdır.\nCari balansınız: ${walletBalance.toFixed(2)} AZN\n\nZəhmət olmasa balansınızı artırın.`
-          : `Для обновления магазина требуется ${selectedPlan.price} AZN.\nВаш текущий баланс: ${walletBalance.toFixed(2)} AZN\n\nПожалуйста, пополните баланс.`
+          : `Для обновления магазина требуется ${selectedPlan.price} AZN.\nВаш текущий баланс: ${walletBalance.toFixed(2)} AZN\n\nПожалуйста, пополните баланс.`,
       );
       return;
     }
-    
+
     logger.info('[MyStore] Showing renewal confirmation');
-    
+
     Alert.alert(
       language === 'az' ? 'Mağazanı yenilə' : 'Обновить магазин',
-      language === 'az' 
+      language === 'az'
         ? `${selectedPlan.name[language]} paketi üçün ${selectedPlan.price} AZN ödəyəcəksiniz. Davam etmək istəyirsiniz?`
         : `Вы заплатите ${selectedPlan.price} AZN за пакет ${selectedPlan.name[language]}. Продолжить?`,
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
           style: 'cancel',
-          onPress: () => logger.info('[MyStore] Renewal cancelled by user')
+          onPress: () => logger.info('[MyStore] Renewal cancelled by user'),
         },
         {
           text: language === 'az' ? 'Ödə' : 'Оплатить',
@@ -432,13 +432,13 @@ export default function MyStoreScreen() {
                 logger.error('[MyStore] Renewal payment failed');
                 Alert.alert(
                   language === 'az' ? 'Ödəniş Xətası' : 'Ошибка оплаты',
-                  language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Произошла ошибка при оплате'
+                  language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Произошла ошибка при оплате',
                 );
                 return;
               }
-              
+
               logger.info('[MyStore] Payment successful, proceeding with renewal');
-              
+
               // ✅ Then renew/reactivate
               if (canReactivate) {
                 logger.info('[MyStore] Reactivating store:', { storeId: userStore.id });
@@ -452,21 +452,21 @@ export default function MyStoreScreen() {
               setShowRenewModal(false);
               Alert.alert(
                 language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                language === 'az' ? 'Mağaza yeniləndi' : 'Магазин обновлен'
+                language === 'az' ? 'Mağaza yeniləndi' : 'Магазин обновлен',
               );
             } catch (error) {
               logger.error('[MyStore] Store renewal/reactivation failed:', error);
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
-                language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Ошибка при оплате'
+                language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Ошибка при оплате',
               );
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
-  
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return Colors.success;
@@ -476,7 +476,7 @@ export default function MyStoreScreen() {
       default: return Colors.textSecondary;
     }
   };
-  
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'active': return language === 'az' ? 'Aktiv' : 'Активен';
@@ -486,7 +486,7 @@ export default function MyStoreScreen() {
       default: return language === 'az' ? 'Naməlum' : 'Неизвестно';
     }
   };
-  
+
   if (!currentUser) {
     return (
       <View style={styles.container}>
@@ -511,7 +511,7 @@ export default function MyStoreScreen() {
       </View>
     );
   }
-  
+
   if (!userStore) {
     return (
       <View style={styles.container}>
@@ -524,7 +524,7 @@ export default function MyStoreScreen() {
           </Text>
           <View style={styles.placeholder} />
         </View>
-        
+
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.noStoreContainer}>
             <View style={styles.noStoreIcon}>
@@ -534,13 +534,13 @@ export default function MyStoreScreen() {
               {language === 'az' ? 'Mağaza yaradın' : 'Создайте магазин'}
             </Text>
             <Text style={styles.noStoreDescription}>
-              {language === 'az' 
+              {language === 'az'
                 ? 'Öz mağazanızı yaradın və daha çox müştəriyə çatın. Əlavə mağaza yaratmaq üçün ödəniş edin.'
                 : 'Создайте свой магазин и достигните большего количества клиентов. Оплатите для создания дополнительного магазина.'}
             </Text>
-            
+
             <View style={styles.storeActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.createStoreButton}
                 onPress={() => router.push('/store/create')}
               >
@@ -549,13 +549,13 @@ export default function MyStoreScreen() {
                   {language === 'az' ? 'Mağaza yarat' : 'Создать магазин'}
                 </Text>
               </TouchableOpacity>
-              
+
               <Text style={styles.sectionDivider}>
                 {language === 'az' ? 'Mənim Mağazam' : 'Мой магазин'}
               </Text>
-              
+
               <View style={styles.myStoreOptions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.myStoreOption}
                   onPress={() => router.push('/store/create')}
                 >
@@ -571,7 +571,7 @@ export default function MyStoreScreen() {
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -582,16 +582,16 @@ export default function MyStoreScreen() {
           {language === 'az' ? 'Mənim Mağazam' : 'Мой магазин'}
         </Text>
         <View style={styles.settingsContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setShowSettingsMenu(!showSettingsMenu)}
             style={styles.settingsButton}
           >
             <Settings size={24} color={Colors.text} />
           </TouchableOpacity>
-          
+
           {showSettingsMenu && (
             <View style={styles.settingsMenu}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.settingsMenuItem}
                 onPress={() => {
                   setShowSettingsMenu(false);
@@ -603,8 +603,8 @@ export default function MyStoreScreen() {
                   {language === 'az' ? 'Yeni Mağaza Yarat' : 'Создать новый магазин'}
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.settingsMenuItem, styles.dangerMenuItem]}
                 onPress={() => {
                   setShowSettingsMenu(false);
@@ -620,19 +620,19 @@ export default function MyStoreScreen() {
           )}
         </View>
       </View>
-      
+
       {showSettingsMenu && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.overlay}
           activeOpacity={1}
           onPress={() => setShowSettingsMenu(false)}
         />
       )}
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Store Expiration Manager */}
         <StoreExpirationManager storeId={userStore.id} />
-        
+
         {/* Store Info Card */}
         <View style={styles.storeCard}>
           <View style={styles.storeHeader}>
@@ -652,7 +652,7 @@ export default function MyStoreScreen() {
               <StoreExpirationManager storeId={userStore.id} showCompact={true} />
             </View>
           </View>
-          
+
           <View style={styles.storeStats}>
             <View style={styles.statItem}>
               <Package size={16} color={Colors.primary} />
@@ -678,34 +678,33 @@ export default function MyStoreScreen() {
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.usageBar}>
             <View style={styles.usageBarBackground}>
-              <View 
+              <View
                 style={[
                   styles.usageBarFill,
-                  { width: `${((storeUsage?.used || 0) / (storeUsage?.max || 1)) * 100}%` }
+                  { width: `${((storeUsage?.used || 0) / (storeUsage?.max || 1)) * 100}%` },
                 ]}
               />
             </View>
             <Text style={styles.usageText}>
-              {language === 'az' 
+              {language === 'az'
                 ? `${storeUsage?.remaining || 0} elan qalıb`
                 : `Осталось ${storeUsage?.remaining || 0} объявлений`}
             </Text>
           </View>
         </View>
-        
 
-        
+
         {/* Quick Actions */}
         <View style={styles.actionsCard}>
           <Text style={styles.sectionTitle}>
             {language === 'az' ? 'Tez əməliyyatlar' : 'Быстрые действия'}
           </Text>
-          
+
           <View style={styles.actionButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={() => router.push(`/store/add-listing/${userStore.id}`)}
             >
@@ -714,8 +713,8 @@ export default function MyStoreScreen() {
                 {language === 'az' ? 'Elan əlavə et' : 'Добавить объявление'}
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={() => router.push(`/store/promote/${userStore.id}`)}
             >
@@ -727,7 +726,7 @@ export default function MyStoreScreen() {
 
           </View>
         </View>
-        
+
         {/* Store Listings */}
         <View style={styles.listingsCard}>
           <View style={styles.listingsHeader}>
@@ -738,7 +737,7 @@ export default function MyStoreScreen() {
               {storeListings.length} {language === 'az' ? 'elan' : 'объявлений'}
             </Text>
           </View>
-          
+
           {storeListings.length > 0 ? (
             <View style={styles.listingsList}>
               {storeListings.slice(0, 5).map((listing) => (
@@ -749,7 +748,7 @@ export default function MyStoreScreen() {
                     </Text>
                     <View style={styles.listingMeta}>
                       <Text style={styles.listingPrice}>
-                        {listing.priceByAgreement 
+                        {listing.priceByAgreement
                           ? (language === 'az' ? 'Razılaşma ilə' : 'По договоренности')
                           : `${listing.price} ${listing.currency}`
                         }
@@ -759,7 +758,7 @@ export default function MyStoreScreen() {
                         <Text style={styles.listingViews}>{listing.views}</Text>
                       </View>
                     </View>
-                    
+
                     {(listing.isPremium || listing.isFeatured || listing.isVip) && (
                       <View style={styles.promotionBadges}>
                         {listing.isVip && (
@@ -783,9 +782,9 @@ export default function MyStoreScreen() {
                       </View>
                     )}
                   </View>
-                  
+
                   <View style={styles.listingActions}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.listingActionButton}
                       onPress={() => {
                         setSelectedListingId(listing.id);
@@ -794,13 +793,13 @@ export default function MyStoreScreen() {
                     >
                       <TrendingUp size={16} color={Colors.primary} />
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.listingActionButton}
                       onPress={() => router.push(`/listing/edit/${listing.id}`)}
                     >
                       <Edit3 size={16} color={Colors.textSecondary} />
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.listingActionButton}
                       onPress={() => handleDeleteListing(listing.id)}
                     >
@@ -809,9 +808,9 @@ export default function MyStoreScreen() {
                   </View>
                 </View>
               ))}
-              
+
               {storeListings.length > 5 && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.viewAllButton}
                   onPress={() => router.push(`/store/${userStore.id}/listings`)}
                 >
@@ -827,7 +826,7 @@ export default function MyStoreScreen() {
               <Text style={styles.emptyListingsText}>
                 {language === 'az' ? 'Hələ elan yoxdur' : 'Пока нет объявлений'}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.addFirstListingButton}
                 onPress={() => router.push(`/store/add-listing/${userStore.id}`)}
               >
@@ -838,10 +837,10 @@ export default function MyStoreScreen() {
             </View>
           )}
         </View>
-        
+
 
       </ScrollView>
-      
+
       {/* Promotion Modal */}
       <Modal
         visible={showPromoteModal}
@@ -854,12 +853,12 @@ export default function MyStoreScreen() {
             <Text style={styles.modalTitle}>
               {language === 'az' ? 'Elanı irəli çək' : 'Продвинуть объявление'}
             </Text>
-            
+
             <View style={styles.promotionOptions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.promotionOption,
-                  promotionType === 'vip' && styles.selectedPromotionOption
+                  promotionType === 'vip' && styles.selectedPromotionOption,
                 ]}
                 onPress={() => setPromotionType('vip')}
               >
@@ -867,19 +866,19 @@ export default function MyStoreScreen() {
                 <View style={styles.promotionOptionInfo}>
                   <Text style={[
                     styles.promotionOptionTitle,
-                    promotionType === 'vip' && styles.selectedPromotionOptionText
+                    promotionType === 'vip' && styles.selectedPromotionOptionText,
                   ]}>VIP</Text>
                   <Text style={[
                     styles.promotionOptionPrice,
-                    promotionType === 'vip' && styles.selectedPromotionOptionText
+                    promotionType === 'vip' && styles.selectedPromotionOptionText,
                   ]}>20 AZN</Text>
                 </View>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[
                   styles.promotionOption,
-                  promotionType === 'premium' && styles.selectedPromotionOption
+                  promotionType === 'premium' && styles.selectedPromotionOption,
                 ]}
                 onPress={() => setPromotionType('premium')}
               >
@@ -887,19 +886,19 @@ export default function MyStoreScreen() {
                 <View style={styles.promotionOptionInfo}>
                   <Text style={[
                     styles.promotionOptionTitle,
-                    promotionType === 'premium' && styles.selectedPromotionOptionText
+                    promotionType === 'premium' && styles.selectedPromotionOptionText,
                   ]}>PREMIUM</Text>
                   <Text style={[
                     styles.promotionOptionPrice,
-                    promotionType === 'premium' && styles.selectedPromotionOptionText
+                    promotionType === 'premium' && styles.selectedPromotionOptionText,
                   ]}>15 AZN</Text>
                 </View>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[
                   styles.promotionOption,
-                  promotionType === 'featured' && styles.selectedPromotionOption
+                  promotionType === 'featured' && styles.selectedPromotionOption,
                 ]}
                 onPress={() => setPromotionType('featured')}
               >
@@ -907,18 +906,18 @@ export default function MyStoreScreen() {
                 <View style={styles.promotionOptionInfo}>
                   <Text style={[
                     styles.promotionOptionTitle,
-                    promotionType === 'featured' && styles.selectedPromotionOptionText
+                    promotionType === 'featured' && styles.selectedPromotionOptionText,
                   ]}>FEATURED</Text>
                   <Text style={[
                     styles.promotionOptionPrice,
-                    promotionType === 'featured' && styles.selectedPromotionOptionText
+                    promotionType === 'featured' && styles.selectedPromotionOptionText,
                   ]}>10 AZN</Text>
                 </View>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => setShowPromoteModal(false)}
               >
@@ -926,7 +925,7 @@ export default function MyStoreScreen() {
                   {language === 'az' ? 'Ləğv et' : 'Отмена'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalConfirmButton}
                 onPress={handlePromoteListing}
               >
@@ -938,7 +937,7 @@ export default function MyStoreScreen() {
           </View>
         </View>
       </Modal>
-      
+
       {/* Renew Store Modal */}
       <Modal
         visible={showRenewModal}
@@ -949,62 +948,62 @@ export default function MyStoreScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {canReactivate 
+              {canReactivate
                 ? (language === 'az' ? 'Mağazanı reaktiv et' : 'Реактивировать магазин')
                 : (language === 'az' ? 'Mağazanı yenilə' : 'Обновить магазин')
               }
             </Text>
-            
+
             {currentStoreStatus === 'grace_period' && (
               <View style={styles.warningBox}>
                 <Text style={styles.warningText}>
-                  {language === 'az' 
+                  {language === 'az'
                     ? 'Mağazanızın müddəti bitib. 7 günlük güzəşt müddətindəsiniz.'
                     : 'Срок действия вашего магазина истек. У вас льготный период 7 дней.'}
                 </Text>
               </View>
             )}
-            
+
             {currentStoreStatus === 'deactivated' && (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>
-                  {language === 'az' 
+                  {language === 'az'
                     ? 'Mağazanız deaktiv edilib. Reaktiv etmək üçün ödəniş edin.'
                     : 'Ваш магазин деактивирован. Оплатите для реактивации.'}
                 </Text>
               </View>
             )}
-            
+
             <View style={styles.planOptions}>
               {storePlans.map((plan) => (
-                <TouchableOpacity 
+                <TouchableOpacity
                   key={plan.id}
                   style={[
                     styles.planOption,
-                    selectedPlanId === plan.id && styles.selectedPlanOption
+                    selectedPlanId === plan.id && styles.selectedPlanOption,
                   ]}
                   onPress={() => setSelectedPlanId(plan.id)}
                 >
                   <View style={styles.planOptionInfo}>
                     <Text style={[
                       styles.planOptionTitle,
-                      selectedPlanId === plan.id && styles.selectedPlanOptionText
+                      selectedPlanId === plan.id && styles.selectedPlanOptionText,
                     ]}>{plan.name[language]}</Text>
                     <Text style={[
                       styles.planOptionPrice,
-                      selectedPlanId === plan.id && styles.selectedPlanOptionText
+                      selectedPlanId === plan.id && styles.selectedPlanOptionText,
                     ]}>{plan.price} AZN</Text>
                     <Text style={[
                       styles.planOptionFeatures,
-                      selectedPlanId === plan.id && styles.selectedPlanOptionText
+                      selectedPlanId === plan.id && styles.selectedPlanOptionText,
                     ]}>{plan.maxAds} elan, {plan.duration} gün</Text>
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
-            
+
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => setShowRenewModal(false)}
               >
@@ -1012,7 +1011,7 @@ export default function MyStoreScreen() {
                   {language === 'az' ? 'Ləğv et' : 'Отмена'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalConfirmButton}
                 onPress={handleRenewStore}
               >
@@ -1024,7 +1023,7 @@ export default function MyStoreScreen() {
           </View>
         </View>
       </Modal>
-      
+
       {/* Expired Store Info Modal */}
       <Modal
         visible={showExpiredStoreInfo}
@@ -1037,12 +1036,12 @@ export default function MyStoreScreen() {
             <Text style={styles.modalTitle}>
               {language === 'az' ? 'Mağaza müddəti haqqında' : 'О сроке действия магазина'}
             </Text>
-            
+
             <View style={styles.infoSection}>
               <Text style={styles.infoSectionTitle}>
                 {language === 'az' ? 'Mağaza müddəti bitdikdə nə baş verir?' : 'Что происходит при истечении срока магазина?'}
               </Text>
-              
+
               <View style={styles.infoSteps}>
                 <View style={styles.infoStep}>
                   <View style={[styles.stepNumber, { backgroundColor: Colors.secondary }]}>
@@ -1053,13 +1052,13 @@ export default function MyStoreScreen() {
                       {language === 'az' ? 'Güzəşt müddəti (7 gün)' : 'Льготный период (7 дней)'}
                     </Text>
                     <Text style={styles.stepDescription}>
-                      {language === 'az' 
+                      {language === 'az'
                         ? 'Mağaza aktiv qalır, lakin yeniləmə xəbərdarlığı göstərilir'
                         : 'Магазин остается активным, но показывается предупреждение об обновлении'}
                     </Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.infoStep}>
                   <View style={[styles.stepNumber, { backgroundColor: Colors.error }]}>
                     <Text style={styles.stepNumberText}>2</Text>
@@ -1069,13 +1068,13 @@ export default function MyStoreScreen() {
                       {language === 'az' ? 'Deaktivasiya' : 'Деактивация'}
                     </Text>
                     <Text style={styles.stepDescription}>
-                      {language === 'az' 
+                      {language === 'az'
                         ? 'Mağaza və elanlar gizlədilir, müştərilər görə bilməz'
                         : 'Магазин и объявления скрываются, клиенты не могут их видеть'}
                     </Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.infoStep}>
                   <View style={[styles.stepNumber, { backgroundColor: Colors.textSecondary }]}>
                     <Text style={styles.stepNumberText}>3</Text>
@@ -1085,7 +1084,7 @@ export default function MyStoreScreen() {
                       {language === 'az' ? 'Arxivləmə (30 gün sonra)' : 'Архивирование (через 30 дней)'}
                     </Text>
                     <Text style={styles.stepDescription}>
-                      {language === 'az' 
+                      {language === 'az'
                         ? 'Mağaza arxivə köçürülür, məlumatlar qorunur'
                         : 'Магазин перемещается в архив, данные сохраняются'}
                     </Text>
@@ -1093,20 +1092,20 @@ export default function MyStoreScreen() {
                 </View>
               </View>
             </View>
-            
+
             <View style={styles.infoSection}>
               <Text style={styles.infoSectionTitle}>
                 {language === 'az' ? 'Mağazanı necə bərpa etmək olar?' : 'Как восстановить магазин?'}
               </Text>
               <Text style={styles.infoText}>
-                {language === 'az' 
+                {language === 'az'
                   ? 'İstənilən vaxt yeni paket seçərək mağazanızı reaktiv edə bilərsiniz. Bütün məlumatlar və elanlar bərpa olunacaq.'
                   : 'Вы можете реактивировать магазин в любое время, выбрав новый пакет. Все данные и объявления будут восстановлены.'}
               </Text>
             </View>
-            
+
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => setShowExpiredStoreInfo(false)}
               >
@@ -1115,7 +1114,7 @@ export default function MyStoreScreen() {
                 </Text>
               </TouchableOpacity>
               {(currentStoreStatus === 'deactivated' || currentStoreStatus === 'archived') && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.modalConfirmButton}
                   onPress={() => {
                     setShowExpiredStoreInfo(false);

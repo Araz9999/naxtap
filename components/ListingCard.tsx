@@ -57,82 +57,82 @@ const MessageModal = React.memo(function MessageModal({
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.messageModal, { backgroundColor: colors.card }]}>
-          <View style={styles.messageModalHeader}>
-            <View style={styles.sellerInfo}>
-              {seller && (
-                <>
-                  <Image source={{ uri: seller.avatar }} style={styles.sellerAvatar} />
-                  <View>
-                    <Text style={[styles.sellerName, { color: colors.text }]}>{seller.name}</Text>
-                    <Text style={[styles.listingTitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {listing.title[language]}
-                    </Text>
-                  </View>
-                </>
-              )}
+            <View style={styles.messageModalHeader}>
+              <View style={styles.sellerInfo}>
+                {seller && (
+                  <>
+                    <Image source={{ uri: seller.avatar }} style={styles.sellerAvatar} />
+                    <View>
+                      <Text style={[styles.sellerName, { color: colors.text }]}>{seller.name}</Text>
+                      <Text style={[styles.listingTitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {listing.title[language]}
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </View>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={onClose}
+              >
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-            >
-              <X size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.messageInputContainer}>
-            <TextInput
-              style={[
-                styles.messageInput,
-                {
-                  backgroundColor: colors.background,
-                  color: colors.text,
-                  borderColor: colors.border,
-                },
-              ]}
-              value={messageText}
-              onChangeText={onChangeMessageText}
-              placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите ваше сообщение...'}
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              scrollEnabled
-              maxLength={500}
-              textAlignVertical="top"
-              autoFocus
-            />
-            <Text style={[styles.characterCount, { color: colors.textSecondary }]}>
-              {messageText.length}/500
-            </Text>
-          </View>
-
-          <View style={styles.messageModalFooter}>
-            <TouchableOpacity
-              style={[styles.cancelButton, { borderColor: colors.border }]}
-              onPress={onClose}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
-                {language === 'az' ? 'Ləğv et' : 'Отмена'}
+            <View style={styles.messageInputContainer}>
+              <TextInput
+                style={[
+                  styles.messageInput,
+                  {
+                    backgroundColor: colors.background,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
+                value={messageText}
+                onChangeText={onChangeMessageText}
+                placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите ваше сообщение...'}
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                scrollEnabled
+                maxLength={500}
+                textAlignVertical="top"
+                autoFocus
+              />
+              <Text style={[styles.characterCount, { color: colors.textSecondary }]}>
+                {messageText.length}/500
               </Text>
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                {
-                  backgroundColor:
+            <View style={styles.messageModalFooter}>
+              <TouchableOpacity
+                style={[styles.cancelButton, { borderColor: colors.border }]}
+                onPress={onClose}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
+                  {language === 'az' ? 'Ləğv et' : 'Отмена'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  {
+                    backgroundColor:
                     messageText.trim() && !isSending ? colors.primary : colors.textSecondary,
-                },
-              ]}
-              onPress={onSend}
-              disabled={!messageText.trim() || isSending}
-            >
-              <Send size={16} color="white" />
-              <Text style={styles.sendButtonText}>
-                {isSending
-                  ? (language === 'az' ? 'Göndərilir...' : 'Отправка...')
-                  : (language === 'az' ? 'Göndər' : 'Отправить')}
-              </Text>
-            </TouchableOpacity>
-          </View>
+                  },
+                ]}
+                onPress={onSend}
+                disabled={!messageText.trim() || isSending}
+              >
+                <Send size={16} color="white" />
+                <Text style={styles.sendButtonText}>
+                  {isSending
+                    ? (language === 'az' ? 'Göndərilir...' : 'Отправка...')
+                    : (language === 'az' ? 'Göndər' : 'Отправить')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -149,12 +149,12 @@ interface ListingCardProps {
 }
 
 
-const ListingCard = React.memo(function ListingCard({ 
-  listing, 
-  showDeleteButton = false, 
+const ListingCard = React.memo(function ListingCard({
+  listing,
+  showDeleteButton = false,
   showPromoteButton = false,
   onDelete,
-  onPromote 
+  onPromote,
 }: ListingCardProps) {
   const router = useRouter();
   const { language } = useLanguageStore();
@@ -163,14 +163,14 @@ const ListingCard = React.memo(function ListingCard({
   const { themeMode, colorTheme, fontSize, showPriceInTitle, compactMode } = useThemeStore();
   const { getOrCreateConversation, addMessage } = useMessageStore();
   const { getActiveDiscountsForListing, getActiveCampaignsForListing } = useDiscountStore();
-  
+
   // Memoize expensive calculations
   const colors = useMemo(() => getColors(themeMode, colorTheme), [themeMode, colorTheme]);
   const isFavorite = useMemo(() => favorites.includes(listing.id), [favorites, listing.id]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  
+
   // Animation refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -179,23 +179,23 @@ const ListingCard = React.memo(function ListingCard({
   const fireAnim = useRef(new Animated.Value(0)).current;
   const frameBlinkAnim = useRef(new Animated.Value(1)).current;
   const frameGlowAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Get active discounts and campaigns - memoized to prevent infinite re-renders
   const activeDiscounts = useMemo(() => getActiveDiscountsForListing(listing.id), [listing.id, getActiveDiscountsForListing]);
   const activeCampaigns = useMemo(() => getActiveCampaignsForListing(listing.id), [listing.id, getActiveCampaignsForListing]);
-  const hasActivePromotion = useMemo(() => 
+  const hasActivePromotion = useMemo(() =>
     activeDiscounts.length > 0 ||
     activeCampaigns.length > 0 ||
     listing.hasDiscount ||
     (listing.promotionEndDate ? new Date(listing.promotionEndDate).getTime() > Date.now() : false),
-    [activeDiscounts.length, activeCampaigns.length, listing.hasDiscount, listing.promotionEndDate]
+  [activeDiscounts.length, activeCampaigns.length, listing.hasDiscount, listing.promotionEndDate],
   );
-  
+
   // Memoize the earliest end date calculation to prevent infinite re-renders
   const promotionEndDate = useMemo(() => {
     const candidates: number[] = [];
     const nowTs = Date.now();
-    
+
     // Check active discounts
     if (activeDiscounts.length > 0) {
       for (const discount of activeDiscounts) {
@@ -206,7 +206,7 @@ const ListingCard = React.memo(function ListingCard({
         }
       }
     }
-    
+
     // Check active campaigns
     if (activeCampaigns.length > 0) {
       for (const campaign of activeCampaigns) {
@@ -217,7 +217,7 @@ const ListingCard = React.memo(function ListingCard({
         }
       }
     }
-    
+
     // Check listing discount
     if (listing.hasDiscount && listing.discountEndDate) {
       const d = new Date(listing.discountEndDate);
@@ -226,7 +226,7 @@ const ListingCard = React.memo(function ListingCard({
         candidates.push(t);
       }
     }
-    
+
     // Check listing promotion
     if (listing.promotionEndDate) {
       const d = new Date(listing.promotionEndDate);
@@ -235,12 +235,12 @@ const ListingCard = React.memo(function ListingCard({
         candidates.push(t);
       }
     }
-    
+
     if (candidates.length === 0) return null;
     const minTs = Math.min(...candidates);
     return new Date(minTs);
   }, [activeDiscounts, activeCampaigns, listing.hasDiscount, listing.discountEndDate, listing.promotionEndDate]);
-  
+
   // Get active creative effects
   const activeCreativeEffects = useMemo(() => {
     return listing.creativeEffects?.filter(effect => {
@@ -249,9 +249,9 @@ const ListingCard = React.memo(function ListingCard({
       return effect.isActive && now < endDate;
     }) || [];
   }, [listing.creativeEffects]);
-  
+
   const hasCreativeEffects = useMemo(() => activeCreativeEffects.length > 0, [activeCreativeEffects.length]);
-  
+
   // Calculate discounted price - memoized to prevent recalculation on every render
   const priceInfo = useMemo(() => {
     let originalPrice = listing.originalPrice ?? listing.price;
@@ -328,7 +328,7 @@ const ListingCard = React.memo(function ListingCard({
 
     return result;
   }, [activeDiscounts, listing.hasDiscount, listing.price, listing.originalPrice, listing.discountPercentage, listing.id]);
-  
+
   // Start animations for promotions and creative effects
   useEffect(() => {
     let pulseAnimation: Animated.CompositeAnimation | null = null;
@@ -353,10 +353,10 @@ const ListingCard = React.memo(function ListingCard({
             duration: 1000,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
       pulseAnimation.start();
-      
+
       // Rotation animation for campaign badges
       if (activeCampaigns.length > 0) {
         rotateAnimation = Animated.loop(
@@ -364,11 +364,11 @@ const ListingCard = React.memo(function ListingCard({
             toValue: 1,
             duration: 3000,
             useNativeDriver: true,
-          })
+          }),
         );
         rotateAnimation.start();
       }
-      
+
       // Glow animation
       glowAnimation = Animated.loop(
         Animated.sequence([
@@ -382,10 +382,10 @@ const ListingCard = React.memo(function ListingCard({
             duration: 1500,
             useNativeDriver: false,
           }),
-        ])
+        ]),
       );
       glowAnimation.start();
-      
+
       // Creative effects animations
       if (hasCreativeEffects) {
         // Sparkle animation
@@ -402,11 +402,11 @@ const ListingCard = React.memo(function ListingCard({
                 duration: 800,
                 useNativeDriver: true,
               }),
-            ])
+            ]),
           );
           sparkleAnimation.start();
         }
-        
+
         // Fire animation
         if (activeCreativeEffects.some(e => e.type === 'fire')) {
           fireAnimation = Animated.loop(
@@ -421,15 +421,15 @@ const ListingCard = React.memo(function ListingCard({
                 duration: 600,
                 useNativeDriver: true,
               }),
-            ])
+            ]),
           );
           fireAnimation.start();
         }
-        
+
         // Frame effects animations
         if (activeCreativeEffects.some(e => e.type === 'frame')) {
           const frameEffect = activeCreativeEffects.find(e => e.type === 'frame');
-          
+
           if (frameEffect?.id === 'frame-blinking') {
             // Blinking frame animation
             frameBlinkAnimation = Animated.loop(
@@ -444,11 +444,11 @@ const ListingCard = React.memo(function ListingCard({
                   duration: 500,
                   useNativeDriver: false,
                 }),
-              ])
+              ]),
             );
             frameBlinkAnimation.start();
           }
-          
+
           if (frameEffect?.id === 'frame-glowing' || frameEffect?.id === 'frame-neon') {
             // Glowing frame animation
             frameGlowAnimation = Animated.loop(
@@ -463,7 +463,7 @@ const ListingCard = React.memo(function ListingCard({
                   duration: 1200,
                   useNativeDriver: false,
                 }),
-              ])
+              ]),
             );
             frameGlowAnimation.start();
           }
@@ -480,7 +480,7 @@ const ListingCard = React.memo(function ListingCard({
       fireAnimation?.stop();
       frameBlinkAnimation?.stop();
       frameGlowAnimation?.stop();
-      
+
       // Reset animation values
       pulseAnim.setValue(1);
       rotateAnim.setValue(0);
@@ -497,7 +497,7 @@ const ListingCard = React.memo(function ListingCard({
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return language === 'az' ? 'Bu gün' : 'Сегодня';
     } else if (diffDays === 1) {
@@ -523,8 +523,8 @@ const ListingCard = React.memo(function ListingCard({
     e.stopPropagation();
     Alert.alert(
       language === 'az' ? 'Elanı sil' : 'Удалить объявление',
-      language === 'az' 
-        ? 'Bu elanı silmək istədiyinizə əminsiniz?' 
+      language === 'az'
+        ? 'Bu elanı silmək istədiyinizə əminsiniz?'
         : 'Вы уверены, что хотите удалить это объявление?',
       [
         {
@@ -542,7 +542,7 @@ const ListingCard = React.memo(function ListingCard({
             }
           },
         },
-      ]
+      ],
     );
   }, [language, onDelete, deleteListing, listing.id]);
 
@@ -559,7 +559,7 @@ const ListingCard = React.memo(function ListingCard({
     const expiresAt = new Date(listing.expiresAt);
     const diffTime = Math.abs(expiresAt.getTime() - now.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return diffDays;
   };
 
@@ -567,12 +567,12 @@ const ListingCard = React.memo(function ListingCard({
 
   const handleMessagePress = useCallback((e: any) => {
     e.stopPropagation();
-    
+
     if (!isAuthenticated) {
       Alert.alert(
         language === 'az' ? 'Giriş tələb olunur' : 'Требуется вход',
-        language === 'az' 
-          ? 'Mesaj göndərmək üçün hesabınıza daxil olmalısınız' 
+        language === 'az'
+          ? 'Mesaj göndərmək üçün hesabınıza daxil olmalısınız'
           : 'Для отправки сообщения необходимо войти в аккаунт',
         [
           {
@@ -583,7 +583,7 @@ const ListingCard = React.memo(function ListingCard({
             text: language === 'az' ? 'Daxil ol' : 'Войти',
             onPress: () => router.push('/auth/login'),
           },
-        ]
+        ],
       );
       return;
     }
@@ -591,27 +591,27 @@ const ListingCard = React.memo(function ListingCard({
     if (currentUser?.id === listing.userId) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Öz elanınıza mesaj göndərə bilməzsiniz' : 'Вы не можете отправить сообщение на свое объявление'
+        language === 'az' ? 'Öz elanınıza mesaj göndərə bilməzsiniz' : 'Вы не можете отправить сообщение на свое объявление',
       );
       return;
     }
 
     setShowMessageModal(true);
     setMessageText(
-      language === 'az' 
+      language === 'az'
         ? `Salam! "${listing.title[language]}" elanınızla maraqlanıram.`
-        : `Здравствуйте! Меня интересует ваше объявление "${listing.title[language]}".`
+        : `Здравствуйте! Меня интересует ваше объявление "${listing.title[language]}".`,
     );
   }, [isAuthenticated, currentUser, listing.userId, listing.title, language, router]);
 
   const handleSendMessage = async () => {
     if (!messageText.trim() || !currentUser) return;
-    
+
     setIsSending(true);
-    
+
     try {
       const conversationId = getOrCreateConversation([currentUser.id, listing.userId], listing.id);
-      
+
       const newMessage = {
         id: Date.now().toString(),
         senderId: currentUser.id,
@@ -623,12 +623,12 @@ const ListingCard = React.memo(function ListingCard({
         isRead: false,
         isDelivered: true,
       };
-      
+
       addMessage(conversationId, newMessage);
-      
+
       setShowMessageModal(false);
       setMessageText('');
-      
+
       Alert.alert(
         language === 'az' ? 'Uğurlu!' : 'Успешно!',
         language === 'az' ? 'Mesajınız göndərildi' : 'Ваше сообщение отправлено',
@@ -641,13 +641,13 @@ const ListingCard = React.memo(function ListingCard({
             text: 'OK',
             style: 'cancel',
           },
-        ]
+        ],
       );
     } catch (error) {
       logger.error('Failed to send message:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mesaj göndərilmədi' : 'Сообщение не отправлено'
+        language === 'az' ? 'Mesaj göndərilmədi' : 'Сообщение не отправлено',
       );
     } finally {
       setIsSending(false);
@@ -659,10 +659,10 @@ const ListingCard = React.memo(function ListingCard({
   // Get creative effect styling
   const getCreativeEffectStyle = () => {
     if (!hasCreativeEffects) return {};
-    
+
     const primaryEffect = activeCreativeEffects[0];
     const effectColor = primaryEffect.color;
-    
+
     switch (primaryEffect.type) {
       case 'glow':
         return {
@@ -708,13 +708,13 @@ const ListingCard = React.memo(function ListingCard({
         };
     }
   };
-  
+
   const getFrameOverlayStyle = () => {
     if (!hasCreativeEffects) return null;
-    
+
     const frameEffect = activeCreativeEffects.find(e => e.type === 'frame');
     if (!frameEffect) return null;
-    
+
     const baseStyle = {
       position: 'absolute' as const,
       top: 0,
@@ -724,29 +724,29 @@ const ListingCard = React.memo(function ListingCard({
       borderRadius: 12,
       pointerEvents: 'none' as const,
     };
-    
+
     if (frameEffect.id === 'frame-az-flag') {
       return baseStyle;
     }
-    
+
     return {
       ...baseStyle,
       borderWidth: 4,
       borderColor: frameEffect.color,
     };
   };
-  
+
   const renderFrameEffect = () => {
     if (!hasCreativeEffects) return null;
-    
+
     const frameEffect = activeCreativeEffects.find(e => e.type === 'frame');
     if (!frameEffect) return null;
-    
+
     if (frameEffect.id === 'frame-az-flag') {
       return (
         <View style={getFrameOverlayStyle()}>
           <LinearGradient
-            colors={["#00A3E0", "#ED2939", "#3F9C35"]}
+            colors={['#00A3E0', '#ED2939', '#3F9C35']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
@@ -770,13 +770,13 @@ const ListingCard = React.memo(function ListingCard({
         </View>
       );
     }
-    
+
     return <Animated.View style={getFrameOverlayStyle()} />;
   };
-  
+
   const cardStyle = hasActivePromotion || hasCreativeEffects ? [
-    styles.card, 
-    { 
+    styles.card,
+    {
       backgroundColor: colors.card,
       borderWidth: hasActivePromotion ? 2 : (hasCreativeEffects ? 1 : 0),
       borderColor: hasActivePromotion ? '#FF4444' : (hasCreativeEffects ? activeCreativeEffects[0]?.color : 'transparent'),
@@ -785,7 +785,7 @@ const ListingCard = React.memo(function ListingCard({
       shadowRadius: hasActivePromotion ? 12 : (hasCreativeEffects ? 10 : 8),
       elevation: hasActivePromotion ? 8 : (hasCreativeEffects ? 6 : 2),
       ...getCreativeEffectStyle(),
-    }
+    },
   ] : [styles.card, { backgroundColor: colors.card }];
 
   return (
@@ -793,382 +793,382 @@ const ListingCard = React.memo(function ListingCard({
       {/* Frame effect overlay */}
       {hasCreativeEffects && activeCreativeEffects.some(e => e.type === 'frame') && renderFrameEffect()}
       <TouchableOpacity style={styles.cardTouchable} onPress={handlePress}>
-      <View style={[styles.imageContainer, { aspectRatio: compactMode ? 1 : 4/3 }]}>
-        <Image
-          source={{ uri: listing.images[0] }}
-          style={styles.image}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="memory-disk"
-          priority="high"
-          testID="listing-image"
-        />
-        <View style={styles.actionButtons}>
-          {showDeleteButton && currentUser?.id === listing.userId && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.deleteButton]} 
-              onPress={handleDeletePress}
-            >
-              <Trash2 size={16} color="white" />
-            </TouchableOpacity>
-          )}
-          {showPromoteButton && currentUser?.id === listing.userId && !listing.isFeatured && !listing.isPremium && !listing.isVip && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.promoteButton]} 
-              onPress={handlePromotePress}
-            >
-              <TrendingUp size={16} color="white" />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity 
-            style={styles.favoriteButton} 
-            onPress={handleFavoritePress}
-          >
-            <Heart 
-              size={20} 
-              color={isFavorite ? colors.error : 'white'} 
-              fill={isFavorite ? colors.error : 'transparent'} 
-            />
-          </TouchableOpacity>
-        </View>
-        {listing.isVip && (
-          <View style={[styles.featuredBadge, { backgroundColor: '#FFD700' }]}>
-            <Text style={styles.featuredText}>VIP</Text>
-          </View>
-        )}
-        {listing.isFeatured && !listing.isVip && (
-          <View style={[styles.featuredBadge, { backgroundColor: colors.warning || '#F59E0B' }]}>
-            <Text style={styles.featuredText}>
-              {language === 'az' ? 'Önə çəkilmiş' : 'Выделено'}
-            </Text>
-          </View>
-        )}
-        {listing.isPremium && !listing.isFeatured && !listing.isVip && (
-          <View style={[styles.featuredBadge, { backgroundColor: colors.primary }]}>
-            <Text style={styles.featuredText}>
-              {language === 'az' ? 'Premium' : 'Премиум'}
-            </Text>
-          </View>
-        )}
-        
-        {/* Discount Badge */}
-        {(listing.hasDiscount || activeDiscounts.length > 0) && priceInfo.absoluteSavings >= 1 && (
-          <Animated.View 
-            style={[
-              styles.discountBadge, 
-              {
-                backgroundColor: '#FF4444',
-                transform: [{ scale: pulseAnim }],
-                shadowColor: '#FF4444',
-                shadowOpacity: 0.3,
-                shadowRadius: 10,
-                elevation: 8,
-              }
-            ]}
-          >
-            {priceInfo.discountType === 'fixed_amount' && priceInfo.absoluteSavings >= 1 ? (
-              <Text style={styles.discountText}>
-                -{priceInfo.absoluteSavings} {listing.currency}
-              </Text>
-            ) : (
-              <>
-                <Percent size={12} color="white" />
-                <Text style={styles.discountText}>
-                  {Math.round(priceInfo.discountPercentage)}%
-                </Text>
-              </>
+        <View style={[styles.imageContainer, { aspectRatio: compactMode ? 1 : 4/3 }]}>
+          <Image
+            source={{ uri: listing.images[0] }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+            priority="high"
+            testID="listing-image"
+          />
+          <View style={styles.actionButtons}>
+            {showDeleteButton && currentUser?.id === listing.userId && (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deleteButton]}
+                onPress={handleDeletePress}
+              >
+                <Trash2 size={16} color="white" />
+              </TouchableOpacity>
             )}
-          </Animated.View>
-        )}
-        
-        {/* Campaign Badge */}
-        {activeCampaigns.length > 0 && (
-          <Animated.View 
-            style={[
-              styles.campaignBadge,
-              {
-                backgroundColor: activeCampaigns[0].type === 'flash_sale' ? '#FF6B35' : 
-                                activeCampaigns[0].type === 'seasonal' ? '#4ECDC4' :
-                                activeCampaigns[0].type === 'clearance' ? '#45B7D1' :
-                                activeCampaigns[0].type === 'bundle' ? '#96CEB4' : '#FFEAA7',
-                transform: [
-                  {
-                    rotate: rotateAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '360deg'],
-                    }),
-                  },
-                ],
-              }
-            ]}
-          >
-            {activeCampaigns[0].type === 'flash_sale' && <Zap size={10} color="white" />}
-            {activeCampaigns[0].type === 'seasonal' && <Star size={10} color="white" />}
-            {activeCampaigns[0].type === 'clearance' && <Tag size={10} color="white" />}
-            {activeCampaigns[0].type === 'bundle' && <Gift size={10} color="white" />}
-            {activeCampaigns[0].type === 'loyalty' && <Flame size={10} color="white" />}
-          </Animated.View>
-        )}
-        
-        {/* Special Promotion Ribbon */}
-        {hasActivePromotion && (
-          <View style={styles.promotionRibbon}>
-            <View style={[styles.ribbonContent, { backgroundColor: '#FF4444' }]}>
-              <Text style={styles.ribbonText}>
-                {activeCampaigns.length > 0 
-                  ? (language === 'az' ? 'Kampaniya' : 'Акция')
-                  : (language === 'az' ? 'Endirim' : 'Скидка')
-                }
+            {showPromoteButton && currentUser?.id === listing.userId && !listing.isFeatured && !listing.isPremium && !listing.isVip && (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.promoteButton]}
+                onPress={handlePromotePress}
+              >
+                <TrendingUp size={16} color="white" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={handleFavoritePress}
+            >
+              <Heart
+                size={20}
+                color={isFavorite ? colors.error : 'white'}
+                fill={isFavorite ? colors.error : 'transparent'}
+              />
+            </TouchableOpacity>
+          </View>
+          {listing.isVip && (
+            <View style={[styles.featuredBadge, { backgroundColor: '#FFD700' }]}>
+              <Text style={styles.featuredText}>VIP</Text>
+            </View>
+          )}
+          {listing.isFeatured && !listing.isVip && (
+            <View style={[styles.featuredBadge, { backgroundColor: colors.warning || '#F59E0B' }]}>
+              <Text style={styles.featuredText}>
+                {language === 'az' ? 'Önə çəkilmiş' : 'Выделено'}
               </Text>
             </View>
-            <View style={[styles.ribbonTail, { borderTopColor: '#CC3333' }]} />
-          </View>
-        )}
-        
-        {/* Timer Bar for Promotions */}
-        {hasActivePromotion && promotionEndDate && (
-          <View style={styles.timerBarContainer}>
-            <CountdownTimer 
-              endDate={promotionEndDate.toISOString()}
-              compact={true}
-              style={styles.timerBar}
-              key={`timer-${listing.id}-${promotionEndDate.getTime()}`}
-            />
-          </View>
-        )}
-        
-        {/* Custom Timer Bar for Discounts */}
-        {listing.timerBarEnabled && listing.timerBarEndDate && listing.timerBarTitle && (
-          <View style={[
-            styles.customTimerBarContainer,
-            { borderColor: listing.timerBarColor || '#FF6B6B' }
-          ]}>
-            <View style={styles.customTimerBarHeader}>
-              <Clock size={14} color={listing.timerBarColor || '#FF6B6B'} />
-              <Text style={[
-                styles.customTimerBarTitle,
-                { color: listing.timerBarColor || '#FF6B6B' }
-              ]}>
-                {listing.timerBarTitle}
+          )}
+          {listing.isPremium && !listing.isFeatured && !listing.isVip && (
+            <View style={[styles.featuredBadge, { backgroundColor: colors.primary }]}>
+              <Text style={styles.featuredText}>
+                {language === 'az' ? 'Premium' : 'Премиум'}
               </Text>
             </View>
-            <CountdownTimer 
-              endDate={listing.timerBarEndDate}
-              compact={false}
+          )}
+
+          {/* Discount Badge */}
+          {(listing.hasDiscount || activeDiscounts.length > 0) && priceInfo.absoluteSavings >= 1 && (
+            <Animated.View
               style={[
-                styles.customTimerBarContent,
-                { backgroundColor: `${listing.timerBarColor || '#FF6B6B'}15` }
-              ]}
-              key={`discount-timer-${listing.id}-${listing.timerBarEndDate}`}
-            />
-          </View>
-        )}
-        
-        {/* Creative Effects Badges */}
-        {hasCreativeEffects && (
-          <View style={styles.creativeEffectsContainer}>
-            {activeCreativeEffects.slice(0, 3).map((effect, index) => {
-              const getEffectIcon = () => {
-                switch (effect.type) {
-                  case 'glow':
-                    return <Star size={12} color="white" />;
-                  case 'sparkle':
-                    return <Zap size={12} color="white" />;
-                  case 'pulse':
-                    return <Heart size={12} color="white" />;
-                  case 'rainbow':
-                    return <Star size={12} color="white" />;
-                  case 'fire':
-                    return <Flame size={12} color="white" />;
-                  case 'star':
-                    return <Star size={12} color="white" />;
-                  case 'frame':
-                    // Different icons for different frame types
-                    if (effect.id === 'frame-floral') return <Heart size={12} color="white" />;
-                    if (effect.id === 'frame-glowing') return <Zap size={12} color="white" />;
-                    if (effect.id === 'frame-blinking') return <Star size={12} color="white" />;
-                    if (effect.id === 'frame-diamond') return <Star size={12} color="white" />;
-                    if (effect.id === 'frame-golden') return <Star size={12} color="white" />;
-                    if (effect.id === 'frame-neon') return <Zap size={12} color="white" />;
-                    return <Star size={12} color="white" />;
-                  default:
-                    return <Star size={12} color="white" />;
-                }
-              };
-              
-              const getAnimationStyle = () => {
-                switch (effect.type) {
-                  case 'sparkle':
-                    return {
-                      transform: [{
-                        scale: sparkleAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.8, 1.2],
-                        }),
-                      }],
-                    };
-                  case 'pulse':
-                    return {
-                      transform: [{ scale: pulseAnim }],
-                    };
-                  case 'fire':
-                    return {
-                      transform: [{
-                        translateY: fireAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0, -3],
-                        }),
-                      }],
-                    };
-                  case 'glow':
-                    return {
-                      opacity: glowAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.7, 1],
-                      }),
-                    };
-                  case 'frame':
-                    // Frame-specific animations
-                    if (effect.id === 'frame-blinking') {
-                      return {
-                        opacity: frameBlinkAnim,
-                      };
-                    }
-                    if (effect.id === 'frame-glowing' || effect.id === 'frame-neon') {
-                      return {
-                        opacity: frameGlowAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.6, 1],
-                        }),
-                        transform: [{
-                          scale: frameGlowAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [1, 1.1],
-                          }),
-                        }],
-                      };
-                    }
-                    return {
-                      transform: [{ scale: pulseAnim }],
-                    };
-                  default:
-                    return {};
-                }
-              };
-              
-              return (
-                <Animated.View
-                  key={effect.id}
-                  style={[
-                    styles.creativeEffectBadge,
-                    {
-                      backgroundColor: effect.color,
-                      left: 8 + (index * 28),
-                      top: 70 + (index * 8),
-                    },
-                    getAnimationStyle(),
-                  ]}
-                >
-                  {getEffectIcon()}
-                </Animated.View>
-              );
-            })}
-            
-            {/* Effect count indicator if more than 3 */}
-            {activeCreativeEffects.length > 3 && (
-              <View style={[
-                styles.effectCountBadge,
+                styles.discountBadge,
                 {
-                  left: 8 + (3 * 28),
-                  top: 70 + (3 * 8),
-                }
-              ]}>
-                <Text style={styles.effectCountText}>
-                  +{activeCreativeEffects.length - 3}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-      </View>
-      <View style={styles.content}>
-        {/* Price with discount styling */}
-        <View style={styles.priceContainer}>
-          {(listing.hasDiscount || activeDiscounts.length > 0) && (priceInfo.absoluteSavings >= 1 || priceInfo.discountPercentage > 0) ? (
-            <>
-              <Text style={[styles.originalPrice, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14 }]}>
-                {priceInfo.originalPrice} {listing.currency}
-              </Text>
-              <Animated.Text style={[
-                styles.discountedPrice, 
-                { 
-                  color: '#FF4444', 
-                  fontSize: fontSize === 'small' ? 14 : fontSize === 'large' ? 18 : 16,
+                  backgroundColor: '#FF4444',
                   transform: [{ scale: pulseAnim }],
-                }
-              ]}>
-                {priceInfo.discountedPrice} {listing.currency}
-              </Animated.Text>
-              <View style={styles.savingsContainer}>
-                <Text style={[styles.savingsText, { color: '#22C55E', fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>
-                  {priceInfo.discountType === 'fixed_amount' && priceInfo.absoluteSavings >= 1
-                    ? `${language === 'az' ? 'Qənaət: -' : 'Экономия: -'}${priceInfo.absoluteSavings} ${listing.currency}`
-                    : `${language === 'az' ? 'Qənaət: ' : 'Экономия: '}${Math.round(priceInfo.discountPercentage)}%`
+                  shadowColor: '#FF4444',
+                  shadowOpacity: 0.3,
+                  shadowRadius: 10,
+                  elevation: 8,
+                },
+              ]}
+            >
+              {priceInfo.discountType === 'fixed_amount' && priceInfo.absoluteSavings >= 1 ? (
+                <Text style={styles.discountText}>
+                -{priceInfo.absoluteSavings} {listing.currency}
+                </Text>
+              ) : (
+                <>
+                  <Percent size={12} color="white" />
+                  <Text style={styles.discountText}>
+                    {Math.round(priceInfo.discountPercentage)}%
+                  </Text>
+                </>
+              )}
+            </Animated.View>
+          )}
+
+          {/* Campaign Badge */}
+          {activeCampaigns.length > 0 && (
+            <Animated.View
+              style={[
+                styles.campaignBadge,
+                {
+                  backgroundColor: activeCampaigns[0].type === 'flash_sale' ? '#FF6B35' :
+                    activeCampaigns[0].type === 'seasonal' ? '#4ECDC4' :
+                      activeCampaigns[0].type === 'clearance' ? '#45B7D1' :
+                        activeCampaigns[0].type === 'bundle' ? '#96CEB4' : '#FFEAA7',
+                  transform: [
+                    {
+                      rotate: rotateAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '360deg'],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              {activeCampaigns[0].type === 'flash_sale' && <Zap size={10} color="white" />}
+              {activeCampaigns[0].type === 'seasonal' && <Star size={10} color="white" />}
+              {activeCampaigns[0].type === 'clearance' && <Tag size={10} color="white" />}
+              {activeCampaigns[0].type === 'bundle' && <Gift size={10} color="white" />}
+              {activeCampaigns[0].type === 'loyalty' && <Flame size={10} color="white" />}
+            </Animated.View>
+          )}
+
+          {/* Special Promotion Ribbon */}
+          {hasActivePromotion && (
+            <View style={styles.promotionRibbon}>
+              <View style={[styles.ribbonContent, { backgroundColor: '#FF4444' }]}>
+                <Text style={styles.ribbonText}>
+                  {activeCampaigns.length > 0
+                    ? (language === 'az' ? 'Kampaniya' : 'Акция')
+                    : (language === 'az' ? 'Endirim' : 'Скидка')
                   }
                 </Text>
               </View>
-            </>
-          ) : (
-            <Text style={[styles.price, { color: colors.text, fontSize: fontSize === 'small' ? 14 : fontSize === 'large' ? 18 : 16 }]}>
-              {listing.price} {listing.currency}
-            </Text>
+              <View style={[styles.ribbonTail, { borderTopColor: '#CC3333' }]} />
+            </View>
+          )}
+
+          {/* Timer Bar for Promotions */}
+          {hasActivePromotion && promotionEndDate && (
+            <View style={styles.timerBarContainer}>
+              <CountdownTimer
+                endDate={promotionEndDate.toISOString()}
+                compact={true}
+                style={styles.timerBar}
+                key={`timer-${listing.id}-${promotionEndDate.getTime()}`}
+              />
+            </View>
+          )}
+
+          {/* Custom Timer Bar for Discounts */}
+          {listing.timerBarEnabled && listing.timerBarEndDate && listing.timerBarTitle && (
+            <View style={[
+              styles.customTimerBarContainer,
+              { borderColor: listing.timerBarColor || '#FF6B6B' },
+            ]}>
+              <View style={styles.customTimerBarHeader}>
+                <Clock size={14} color={listing.timerBarColor || '#FF6B6B'} />
+                <Text style={[
+                  styles.customTimerBarTitle,
+                  { color: listing.timerBarColor || '#FF6B6B' },
+                ]}>
+                  {listing.timerBarTitle}
+                </Text>
+              </View>
+              <CountdownTimer
+                endDate={listing.timerBarEndDate}
+                compact={false}
+                style={[
+                  styles.customTimerBarContent,
+                  { backgroundColor: `${listing.timerBarColor || '#FF6B6B'}15` },
+                ]}
+                key={`discount-timer-${listing.id}-${listing.timerBarEndDate}`}
+              />
+            </View>
+          )}
+
+          {/* Creative Effects Badges */}
+          {hasCreativeEffects && (
+            <View style={styles.creativeEffectsContainer}>
+              {activeCreativeEffects.slice(0, 3).map((effect, index) => {
+                const getEffectIcon = () => {
+                  switch (effect.type) {
+                    case 'glow':
+                      return <Star size={12} color="white" />;
+                    case 'sparkle':
+                      return <Zap size={12} color="white" />;
+                    case 'pulse':
+                      return <Heart size={12} color="white" />;
+                    case 'rainbow':
+                      return <Star size={12} color="white" />;
+                    case 'fire':
+                      return <Flame size={12} color="white" />;
+                    case 'star':
+                      return <Star size={12} color="white" />;
+                    case 'frame':
+                    // Different icons for different frame types
+                      if (effect.id === 'frame-floral') return <Heart size={12} color="white" />;
+                      if (effect.id === 'frame-glowing') return <Zap size={12} color="white" />;
+                      if (effect.id === 'frame-blinking') return <Star size={12} color="white" />;
+                      if (effect.id === 'frame-diamond') return <Star size={12} color="white" />;
+                      if (effect.id === 'frame-golden') return <Star size={12} color="white" />;
+                      if (effect.id === 'frame-neon') return <Zap size={12} color="white" />;
+                      return <Star size={12} color="white" />;
+                    default:
+                      return <Star size={12} color="white" />;
+                  }
+                };
+
+                const getAnimationStyle = () => {
+                  switch (effect.type) {
+                    case 'sparkle':
+                      return {
+                        transform: [{
+                          scale: sparkleAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.8, 1.2],
+                          }),
+                        }],
+                      };
+                    case 'pulse':
+                      return {
+                        transform: [{ scale: pulseAnim }],
+                      };
+                    case 'fire':
+                      return {
+                        transform: [{
+                          translateY: fireAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, -3],
+                          }),
+                        }],
+                      };
+                    case 'glow':
+                      return {
+                        opacity: glowAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.7, 1],
+                        }),
+                      };
+                    case 'frame':
+                    // Frame-specific animations
+                      if (effect.id === 'frame-blinking') {
+                        return {
+                          opacity: frameBlinkAnim,
+                        };
+                      }
+                      if (effect.id === 'frame-glowing' || effect.id === 'frame-neon') {
+                        return {
+                          opacity: frameGlowAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.6, 1],
+                          }),
+                          transform: [{
+                            scale: frameGlowAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.1],
+                            }),
+                          }],
+                        };
+                      }
+                      return {
+                        transform: [{ scale: pulseAnim }],
+                      };
+                    default:
+                      return {};
+                  }
+                };
+
+                return (
+                  <Animated.View
+                    key={effect.id}
+                    style={[
+                      styles.creativeEffectBadge,
+                      {
+                        backgroundColor: effect.color,
+                        left: 8 + (index * 28),
+                        top: 70 + (index * 8),
+                      },
+                      getAnimationStyle(),
+                    ]}
+                  >
+                    {getEffectIcon()}
+                  </Animated.View>
+                );
+              })}
+
+              {/* Effect count indicator if more than 3 */}
+              {activeCreativeEffects.length > 3 && (
+                <View style={[
+                  styles.effectCountBadge,
+                  {
+                    left: 8 + (3 * 28),
+                    top: 70 + (3 * 8),
+                  },
+                ]}>
+                  <Text style={styles.effectCountText}>
+                  +{activeCreativeEffects.length - 3}
+                  </Text>
+                </View>
+              )}
+            </View>
           )}
         </View>
-        <Text style={[styles.title, { color: colors.text, fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14 }]} numberOfLines={compactMode ? 1 : 2}>
-          {showPriceInTitle ? `${listing.price} ${listing.currency} - ${listing.title[language]}` : listing.title[language]}
-        </Text>
-        <Text style={[styles.location, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]} numberOfLines={1}>
-          {listing.location[language]}
-        </Text>
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Eye size={fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>{listing.views}</Text>
+        <View style={styles.content}>
+          {/* Price with discount styling */}
+          <View style={styles.priceContainer}>
+            {(listing.hasDiscount || activeDiscounts.length > 0) && (priceInfo.absoluteSavings >= 1 || priceInfo.discountPercentage > 0) ? (
+              <>
+                <Text style={[styles.originalPrice, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14 }]}>
+                  {priceInfo.originalPrice} {listing.currency}
+                </Text>
+                <Animated.Text style={[
+                  styles.discountedPrice,
+                  {
+                    color: '#FF4444',
+                    fontSize: fontSize === 'small' ? 14 : fontSize === 'large' ? 18 : 16,
+                    transform: [{ scale: pulseAnim }],
+                  },
+                ]}>
+                  {priceInfo.discountedPrice} {listing.currency}
+                </Animated.Text>
+                <View style={styles.savingsContainer}>
+                  <Text style={[styles.savingsText, { color: '#22C55E', fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>
+                    {priceInfo.discountType === 'fixed_amount' && priceInfo.absoluteSavings >= 1
+                      ? `${language === 'az' ? 'Qənaət: -' : 'Экономия: -'}${priceInfo.absoluteSavings} ${listing.currency}`
+                      : `${language === 'az' ? 'Qənaət: ' : 'Экономия: '}${Math.round(priceInfo.discountPercentage)}%`
+                    }
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text style={[styles.price, { color: colors.text, fontSize: fontSize === 'small' ? 14 : fontSize === 'large' ? 18 : 16 }]}>
+                {listing.price} {listing.currency}
+              </Text>
+            )}
           </View>
-          <View style={styles.statItem}>
-            <Calendar size={fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>{formatDate(listing.createdAt)}</Text>
+          <Text style={[styles.title, { color: colors.text, fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14 }]} numberOfLines={compactMode ? 1 : 2}>
+            {showPriceInTitle ? `${listing.price} ${listing.currency} - ${listing.title[language]}` : listing.title[language]}
+          </Text>
+          <Text style={[styles.location, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]} numberOfLines={1}>
+            {listing.location[language]}
+          </Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Eye size={fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>{listing.views}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Calendar size={fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>{formatDate(listing.createdAt)}</Text>
+            </View>
           </View>
+          {daysRemaining <= 3 && (
+            <View style={styles.expirationContainer}>
+              <Clock size={fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12} color={colors.error} />
+              <Text style={[styles.expirationText, { color: colors.error, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>
+                {daysRemaining} {language === 'az' ? 'gün' : 'дн.'}
+              </Text>
+            </View>
+          )}
+
+          {/* Message Button */}
+          {currentUser?.id !== listing.userId && (
+            <TouchableOpacity
+              style={[
+                styles.messageButton,
+                {
+                  backgroundColor: colors.primary,
+                  width: compactMode ? 28 : 32,
+                  height: compactMode ? 28 : 32,
+                  borderRadius: compactMode ? 14 : 16,
+                },
+              ]}
+              onPress={handleMessagePress}
+              testID="message-button"
+            >
+              <MessageCircle size={compactMode ? 14 : 16} color="white" />
+            </TouchableOpacity>
+          )}
         </View>
-        {daysRemaining <= 3 && (
-          <View style={styles.expirationContainer}>
-            <Clock size={fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12} color={colors.error} />
-            <Text style={[styles.expirationText, { color: colors.error, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>
-              {daysRemaining} {language === 'az' ? 'gün' : 'дн.'}
-            </Text>
-          </View>
-        )}
-        
-        {/* Message Button */}
-        {currentUser?.id !== listing.userId && (
-          <TouchableOpacity 
-            style={[
-              styles.messageButton, 
-              { 
-                backgroundColor: colors.primary,
-                width: compactMode ? 28 : 32,
-                height: compactMode ? 28 : 32,
-                borderRadius: compactMode ? 14 : 16,
-              }
-            ]} 
-            onPress={handleMessagePress}
-            testID="message-button"
-          >
-            <MessageCircle size={compactMode ? 14 : 16} color="white" />
-          </TouchableOpacity>
-        )}
-      </View>
-      
+
       </TouchableOpacity>
 
       <MessageModal

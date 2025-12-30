@@ -8,7 +8,7 @@ export const verifyEmailProcedure = publicProcedure
   .input(
     z.object({
       token: z.string(),
-    })
+    }),
   )
   .mutation(async ({ input }) => {
     logger.debug('[Auth] Email verification attempt');

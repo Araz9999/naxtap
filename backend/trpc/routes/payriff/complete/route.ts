@@ -9,7 +9,7 @@ export const completeProcedure = publicProcedure
     z.object({
       amount: z.number().positive(),
       orderId: z.string(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const secretKey = config.PAYRIFF_SECRET_KEY;

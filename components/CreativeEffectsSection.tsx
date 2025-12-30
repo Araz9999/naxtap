@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import {
   Check,
   Circle,
-  Star
+  Star,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
@@ -44,7 +44,7 @@ const creativeEffects: CreativeEffect[] = [
     price: 0.5,
     duration: 7,
     type: 'frame',
-    frameType: 'frame-green-bold'
+    frameType: 'frame-green-bold',
   },
   {
     id: 'frame-black-bold',
@@ -55,7 +55,7 @@ const creativeEffects: CreativeEffect[] = [
     price: 0.5,
     duration: 7,
     type: 'frame',
-    frameType: 'frame-black-bold'
+    frameType: 'frame-black-bold',
   },
   {
     id: 'frame-blue-bold',
@@ -66,7 +66,7 @@ const creativeEffects: CreativeEffect[] = [
     price: 0.5,
     duration: 7,
     type: 'frame',
-    frameType: 'frame-blue-bold'
+    frameType: 'frame-blue-bold',
   },
   {
     id: 'frame-red-bold',
@@ -77,7 +77,7 @@ const creativeEffects: CreativeEffect[] = [
     price: 0.5,
     duration: 7,
     type: 'frame',
-    frameType: 'frame-red-bold'
+    frameType: 'frame-red-bold',
   },
   {
     id: 'frame-az-flag',
@@ -88,8 +88,8 @@ const creativeEffects: CreativeEffect[] = [
     price: 0.9,
     duration: 14,
     type: 'frame',
-    frameType: 'frame-az-flag'
-  }
+    frameType: 'frame-az-flag',
+  },
 ];
 
 interface CreativeEffectsSectionProps {
@@ -102,7 +102,7 @@ const EffectPreview = ({ effect }: { effect: CreativeEffect }) => {
   const azFlagRing = useMemo(() => (
     <View pointerEvents="none" style={styles.flagRing}>
       <LinearGradient
-        colors={["#00A3E0", "#ED2939", "#3F9C35"]}
+        colors={['#00A3E0', '#ED2939', '#3F9C35']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.flagGradient}
@@ -129,7 +129,7 @@ const EffectPreview = ({ effect }: { effect: CreativeEffect }) => {
 
   return (
     <View style={styles.effectPreviewContainer}>
-      <View testID={`effect-icon-${effect.id}`} style={[styles.effectIcon, { backgroundColor: effect.color + '20' }, getStyle()]}> 
+      <View testID={`effect-icon-${effect.id}`} style={[styles.effectIcon, { backgroundColor: effect.color + '20' }, getStyle()]}>
         {effect.icon}
       </View>
       {effect.frameType === 'frame-az-flag' && azFlagRing}
@@ -143,37 +143,37 @@ export default function CreativeEffectsSection({ onSelectEffect, selectedEffects
   const isEffectSelected = (effect: CreativeEffect) => {
     return selectedEffects.some(selected => selected.id === effect.id);
   };
-  
+
   // Validate effect before selection
   const handleEffectPress = (effect: CreativeEffect) => {
     // ===== VALIDATION START =====
-    
+
     // 1. Check if effect is valid
     if (!effect || !effect.id) {
       logger.error('[CreativeEffects] Invalid effect:', effect);
       return;
     }
-    
+
     // 2. Check price
     if (!effect.price || typeof effect.price !== 'number' || effect.price <= 0) {
       logger.error('[CreativeEffects] Invalid effect price:', effect.price);
       return;
     }
-    
+
     // 3. Check duration
     if (!effect.duration || typeof effect.duration !== 'number' || effect.duration <= 0) {
       logger.error('[CreativeEffects] Invalid effect duration:', effect.duration);
       return;
     }
-    
+
     // ===== VALIDATION END =====
-    
+
     logger.debug('[CreativeEffects] Effect card pressed:', effect.id);
     logger.debug('[CreativeEffects] Effect name:', effect.name);
     logger.debug('[CreativeEffects] Effect price:', effect.price);
     logger.debug('[CreativeEffects] Is currently selected:', isEffectSelected(effect));
     logger.debug('[CreativeEffects] Calling onSelectEffect...');
-    
+
     try {
       onSelectEffect(effect);
       logger.debug('[CreativeEffects] onSelectEffect called successfully');
@@ -191,18 +191,18 @@ export default function CreativeEffectsSection({ onSelectEffect, selectedEffects
           : 'Добавьте креативные эффекты, чтобы сделать ваше объявление более привлекательным'
         }
       </Text>
-      
+
       <View style={styles.effectsGrid}>
         {creativeEffects.map((effect) => {
           const isSelected = isEffectSelected(effect);
-          
+
           return (
             <TouchableOpacity
               testID={`effect-card-${effect.id}`}
               key={effect.id}
               style={[
                 styles.effectCard,
-                isSelected && { borderColor: effect.color, borderWidth: 2 }
+                isSelected && { borderColor: effect.color, borderWidth: 2 },
               ]}
               onPress={() => handleEffectPress(effect)}
               activeOpacity={0.7}
@@ -215,15 +215,15 @@ export default function CreativeEffectsSection({ onSelectEffect, selectedEffects
                   </View>
                 )}
               </View>
-              
+
               <Text style={styles.effectName}>
                 {effect.name[language as keyof typeof effect.name]}
               </Text>
-              
+
               <Text style={styles.effectDescription}>
                 {effect.description[language as keyof typeof effect.description]}
               </Text>
-              
+
               <View style={styles.effectDetails}>
                 <Text style={styles.effectPrice}>
                   {effect.price} AZN
@@ -236,7 +236,7 @@ export default function CreativeEffectsSection({ onSelectEffect, selectedEffects
           );
         })}
       </View>
-      
+
       {selectedEffects.length > 0 && (
         <View style={styles.selectedEffectsContainer}>
           <Text style={styles.selectedTitle}>

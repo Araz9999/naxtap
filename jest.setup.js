@@ -5,7 +5,7 @@
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
 // Mock Expo modules
@@ -36,8 +36,8 @@ jest.mock('expo-av', () => ({
   },
 }));
 
-// Mock React Native components
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+// Mock React Native Animated helper (path differs across RN versions)
+jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}), { virtual: true });
 
 // Set up global test utilities
 global.console = {

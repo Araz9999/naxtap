@@ -10,7 +10,7 @@ import {
   Modal,
   TextInput,
   Platform,
-  FlatList
+  FlatList,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -41,7 +41,7 @@ import {
   Gift,
   Store,
   Plus,
-  ArrowUpDown
+  ArrowUpDown,
 } from 'lucide-react-native';
 import { useStoreStore } from '@/store/storeStore';
 import { useUserStore } from '@/store/userStore';
@@ -87,7 +87,7 @@ const renewalPackages: RenewalPackage[] = [
     discount: 20,
     duration: 30,
     features: ['20% endirim', 'Bonus 5 gün', 'Prioritet dəstək', 'Reklam krediti'],
-    popular: true
+    popular: true,
   },
   {
     id: 'last_minute',
@@ -98,7 +98,7 @@ const renewalPackages: RenewalPackage[] = [
     discount: 10,
     duration: 30,
     features: ['10% endirim', 'Dərhal aktivləşmə', 'Məlumat itkisi yoxdur'],
-    urgent: true
+    urgent: true,
   },
   {
     id: 'grace_period',
@@ -108,7 +108,7 @@ const renewalPackages: RenewalPackage[] = [
     discountedPrice: 93,
     discount: 7,
     duration: 30,
-    features: ['7% endirim', 'Məlumatlar qorunur', 'Reytinq saxlanılır', 'İzləyicilər qalır']
+    features: ['7% endirim', 'Məlumatlar qorunur', 'Reytinq saxlanılır', 'İzləyicilər qalır'],
   },
   {
     id: 'reactivation',
@@ -118,7 +118,7 @@ const renewalPackages: RenewalPackage[] = [
     discountedPrice: 100,
     discount: 0,
     duration: 30,
-    features: ['Bütün məlumatlar bərpa olunur', 'Əvvəlki reytinq qorunur', 'İzləyici bazası bərpa olunur', 'Elan tarixçəsi saxlanılır']
+    features: ['Bütün məlumatlar bərpa olunur', 'Əvvəlki reytinq qorunur', 'İzləyici bazası bərpa olunur', 'Elan tarixçəsi saxlanılır'],
   },
   {
     id: 'premium_renewal',
@@ -128,8 +128,8 @@ const renewalPackages: RenewalPackage[] = [
     discountedPrice: 135,
     discount: 10,
     duration: 30,
-    features: ['Premium xüsusiyyətlər', 'Prioritet dəstək', 'Analitika plus', 'Reklam krediti 2x']
-  }
+    features: ['Premium xüsusiyyətlər', 'Prioritet dəstək', 'Analitika plus', 'Reklam krediti 2x'],
+  },
 ];
 
 export default function StoreSettingsScreen() {
@@ -152,7 +152,7 @@ export default function StoreSettingsScreen() {
     deleteStore,
     reactivateStore,
     canUserCreateNewStore,
-    getUserStoreLimit
+    getUserStoreLimit,
   } = useStoreStore();
 
   const [showRenewalModal, setShowRenewalModal] = useState(false);
@@ -165,7 +165,7 @@ export default function StoreSettingsScreen() {
     phone: '',
     email: '',
     website: '',
-    whatsapp: ''
+    whatsapp: '',
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -189,7 +189,7 @@ export default function StoreSettingsScreen() {
     smsNotifications: false,
     weeklyReports: true,
     listingExpirationNotifications: true,
-    autoArchiveExpired: true
+    autoArchiveExpired: true,
   });
 
   // Load settings for current store
@@ -197,13 +197,13 @@ export default function StoreSettingsScreen() {
     if (currentUser?.id && currentStore?.id) {
       logger.info('[StoreSettings] Loading settings for store:', {
         userId: currentUser.id,
-        storeId: currentStore.id
+        storeId: currentStore.id,
       });
 
       const storeSettings = getUserStoreSettings(currentUser.id, currentStore.id);
       setSettings(storeSettings as typeof settings);
 
-      logger.info('[StoreSettings] Settings loaded successfully'); 
+      logger.info('[StoreSettings] Settings loaded successfully');
     } else {logger.warn('[StoreSettings] Cannot load settings - missing user or store:', { hasUser: !!currentUser?.id, hasStore: !!currentStore?.id});}
   }, [currentUser?.id, currentStore?.id, getUserStoreSettings]);
 
@@ -247,7 +247,7 @@ export default function StoreSettingsScreen() {
     if (store.userId !== currentUser.id) {
       Alert.alert(
         'İcazə yoxdur',
-        'Siz bu mağazanın tənzimləmələrini dəyişdirə bilməzsiniz'
+        'Siz bu mağazanın tənzimləmələrini dəyişdirə bilməzsiniz',
       );
       return;
     }
@@ -301,7 +301,7 @@ export default function StoreSettingsScreen() {
     logger.info('[StoreSettings] Switching active store:', {
       userId: currentUser.id,
       newStoreId: selectedStoreId,
-      currentStoreId: store?.id
+      currentStoreId: store?.id,
     });
 
     try {
@@ -319,7 +319,7 @@ export default function StoreSettingsScreen() {
       logger.error('[StoreSettings] Failed to switch store:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza dəyişdirilə bilmədi' : 'Не удалось переключить магазин'
+        language === 'az' ? 'Mağaza dəyişdirilə bilmədi' : 'Не удалось переключить магазин',
       );
     }
   };
@@ -365,7 +365,7 @@ export default function StoreSettingsScreen() {
       phone: store.contactInfo.phone || '',
       email: store.contactInfo.email || '',
       website: store.contactInfo.website || '',
-      whatsapp: store.contactInfo.whatsapp || ''
+      whatsapp: store.contactInfo.whatsapp || '',
     });
     setShowEditModal(true);
   };
@@ -395,7 +395,7 @@ export default function StoreSettingsScreen() {
     if (store.userId !== currentUser.id) {
       Alert.alert(
         'İcazə yoxdur',
-        'Siz bu mağazanı redaktə edə bilməzsiniz'
+        'Siz bu mağazanı redaktə edə bilməzsiniz',
       );
       return;
     }
@@ -500,7 +500,7 @@ export default function StoreSettingsScreen() {
         storeId: store.id,
         name: editForm.name.trim(),
         hasEmail: !!editForm.email.trim(),
-        hasPhone: !!editForm.phone.trim()
+        hasPhone: !!editForm.phone.trim(),
       });
 
       await editStore(store.id, {
@@ -511,8 +511,8 @@ export default function StoreSettingsScreen() {
           phone: editForm.phone?.trim() || undefined,
           email: editForm.email?.trim() || undefined,
           website: editForm.website?.trim() || undefined,
-          whatsapp: editForm.whatsapp?.trim() || undefined
-        }
+          whatsapp: editForm.whatsapp?.trim() || undefined,
+        },
       });
 
       setShowEditModal(false);
@@ -520,7 +520,7 @@ export default function StoreSettingsScreen() {
         'Uğurlu',
         `"${trimmedName}" mağazasının məlumatları yeniləndi`,
         [{ text: 'OK' }],
-        { cancelable: false }
+        { cancelable: false },
       );
     } catch (error) {
       let errorMessage = 'Məlumatlar yenilənə bilmədi';
@@ -560,7 +560,7 @@ export default function StoreSettingsScreen() {
     if (store.userId !== currentUser.id) {
       Alert.alert(
         'İcazə yoxdur',
-        'Siz bu mağazanı silə bilməzsiniz. Yalnız öz mağazanızı silə bilərsiniz.'
+        'Siz bu mağazanı silə bilməzsiniz. Yalnız öz mağazanızı silə bilərsiniz.',
       );
       return;
     }
@@ -590,7 +590,7 @@ export default function StoreSettingsScreen() {
         {
           text: 'Ləğv et',
           style: 'cancel',
-          onPress: () => logger.info('[StoreSettings] Delete cancelled')
+          onPress: () => logger.info('[StoreSettings] Delete cancelled'),
         },
         {
           text: 'Davam et',
@@ -616,7 +616,7 @@ export default function StoreSettingsScreen() {
                           '✅ Uğurlu!',
                           `"${store.name}" mağazası silindi.\n\n${followersCount > 0 ? `${followersCount} izləyiciyə bildiriş göndərildi.\n\n` : ''}Siz indi yeni mağaza yarada bilərsiniz.`,
                           [{ text: 'OK', onPress: () => router.back() }],
-                          { cancelable: false }
+                          { cancelable: false },
                         );
                       } catch (error) {
                         let errorMessage = 'Mağaza silinə bilmədi';
@@ -641,14 +641,14 @@ export default function StoreSettingsScreen() {
                       } finally {
                         setIsLoading(false);
                       }
-                    }
-                  }
-                ]
+                    },
+                  },
+                ],
               );
             }, 300);
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -673,7 +673,7 @@ export default function StoreSettingsScreen() {
       storeId: store.id,
       packageId,
       packageName: renewalPackage.name,
-      price: renewalPackage.discountedPrice
+      price: renewalPackage.discountedPrice,
     });
 
     try {
@@ -700,7 +700,7 @@ export default function StoreSettingsScreen() {
           subtitle: 'Ad, təsvir və əlaqə məlumatları',
           icon: Edit3,
           type: 'navigation' as const,
-          onPress: handleEditStore
+          onPress: handleEditStore,
         },
         {
           id: 'store_theme',
@@ -708,7 +708,7 @@ export default function StoreSettingsScreen() {
           subtitle: 'Rənglər və dizayn',
           icon: Palette,
           type: 'navigation' as const,
-          onPress: () => router.push('/store-theme')
+          onPress: () => router.push('/store-theme'),
         },
         {
           id: 'public_profile',
@@ -717,9 +717,9 @@ export default function StoreSettingsScreen() {
           icon: Globe,
           type: 'toggle' as const,
           value: settings.publicProfile,
-          onToggle: (value: boolean) => handleSettingToggle('publicProfile', value)
-        }
-      ]
+          onToggle: (value: boolean) => handleSettingToggle('publicProfile', value),
+        },
+      ],
     },
     {
       title: 'Əlaqə və Mesajlaşma',
@@ -731,7 +731,7 @@ export default function StoreSettingsScreen() {
           icon: MessageSquare,
           type: 'toggle' as const,
           value: settings.showContact,
-          onToggle: (value: boolean) => handleSettingToggle('showContact', value)
+          onToggle: (value: boolean) => handleSettingToggle('showContact', value),
         },
         {
           id: 'allow_messages',
@@ -740,9 +740,9 @@ export default function StoreSettingsScreen() {
           icon: MessageSquare,
           type: 'toggle' as const,
           value: settings.allowMessages,
-          onToggle: (value: boolean) => handleSettingToggle('allowMessages', value)
-        }
-      ]
+          onToggle: (value: boolean) => handleSettingToggle('allowMessages', value),
+        },
+      ],
     },
     {
       title: 'Bildirişlər',
@@ -754,7 +754,7 @@ export default function StoreSettingsScreen() {
           icon: Bell,
           type: 'toggle' as const,
           value: settings.notifications,
-          onToggle: (value: boolean) => handleSettingToggle('notifications', value)
+          onToggle: (value: boolean) => handleSettingToggle('notifications', value),
         },
         {
           id: 'sms_notifications',
@@ -763,7 +763,7 @@ export default function StoreSettingsScreen() {
           icon: MessageSquare,
           type: 'toggle' as const,
           value: settings.smsNotifications,
-          onToggle: (value: boolean) => handleSettingToggle('smsNotifications', value)
+          onToggle: (value: boolean) => handleSettingToggle('smsNotifications', value),
         },
         {
           id: 'promotional_emails',
@@ -772,9 +772,9 @@ export default function StoreSettingsScreen() {
           icon: Gift,
           type: 'toggle' as const,
           value: settings.promotionalEmails,
-          onToggle: (value: boolean) => handleSettingToggle('promotionalEmails', value)
-        }
-      ]
+          onToggle: (value: boolean) => handleSettingToggle('promotionalEmails', value),
+        },
+      ],
     },
     {
       title: 'Analitika və Hesabatlar',
@@ -785,7 +785,7 @@ export default function StoreSettingsScreen() {
           subtitle: 'Satış və ziyarətçi statistikaları',
           icon: BarChart3,
           type: 'navigation' as const,
-          onPress: () => router.push('/store-analytics')
+          onPress: () => router.push('/store-analytics'),
         },
         {
           id: 'weekly_reports',
@@ -794,7 +794,7 @@ export default function StoreSettingsScreen() {
           icon: Calendar,
           type: 'toggle' as const,
           value: settings.weeklyReports,
-          onToggle: (value: boolean) => handleSettingToggle('weeklyReports', value)
+          onToggle: (value: boolean) => handleSettingToggle('weeklyReports', value),
         },
         {
           id: 'analytics_sharing',
@@ -803,9 +803,9 @@ export default function StoreSettingsScreen() {
           icon: TrendingUp,
           type: 'toggle' as const,
           value: settings.analyticsSharing,
-          onToggle: (value: boolean) => handleSettingToggle('analyticsSharing', value)
-        }
-      ]
+          onToggle: (value: boolean) => handleSettingToggle('analyticsSharing', value),
+        },
+      ],
     },
     {
       title: 'Reytinq və Rəylər',
@@ -817,7 +817,7 @@ export default function StoreSettingsScreen() {
           icon: Star,
           type: 'toggle' as const,
           value: settings.showRating,
-          onToggle: (value: boolean) => handleSettingToggle('showRating', value)
+          onToggle: (value: boolean) => handleSettingToggle('showRating', value),
         },
         {
           id: 'manage_reviews',
@@ -825,9 +825,9 @@ export default function StoreSettingsScreen() {
           subtitle: 'Müştəri rəylərini cavabla',
           icon: MessageSquare,
           type: 'navigation' as const,
-          onPress: () => router.push('/store-reviews')
-        }
-      ]
+          onPress: () => router.push('/store-reviews'),
+        },
+      ],
     },
     {
       title: 'Mağaza Müddəti və Yeniləmə',
@@ -839,7 +839,7 @@ export default function StoreSettingsScreen() {
           icon: Clock,
           type: 'navigation' as const,
           onPress: () => setShowRenewalModal(true),
-          badge: expirationInfo?.daysUntilExpiration && expirationInfo.daysUntilExpiration <= 7 ? 'Diqqət!' : undefined
+          badge: expirationInfo?.daysUntilExpiration && expirationInfo.daysUntilExpiration <= 7 ? 'Diqqət!' : undefined,
         },
         {
           id: 'renewal_packages',
@@ -848,7 +848,7 @@ export default function StoreSettingsScreen() {
           icon: Package,
           type: 'navigation' as const,
           onPress: () => setShowRenewalModal(true),
-          badge: expirationInfo?.daysUntilExpiration && expirationInfo.daysUntilExpiration <= 7 ? 'Tezliklə bitir' : undefined
+          badge: expirationInfo?.daysUntilExpiration && expirationInfo.daysUntilExpiration <= 7 ? 'Tezliklə bitir' : undefined,
         },
         {
           id: 'auto_renewal',
@@ -857,7 +857,7 @@ export default function StoreSettingsScreen() {
           icon: RefreshCw,
           type: 'toggle' as const,
           value: settings.autoRenewal,
-          onToggle: (value: boolean) => handleSettingToggle('autoRenewal', value)
+          onToggle: (value: boolean) => handleSettingToggle('autoRenewal', value),
         },
         {
           id: 'grace_period_settings',
@@ -869,11 +869,11 @@ export default function StoreSettingsScreen() {
             Alert.alert(
               'Güzəşt Müddəti',
               'Mağaza müddəti bitdikdən sonra 7 gün ərzində məlumatlarınız qorunur və güzəştli qiymətə yeniləyə bilərsiniz.',
-              [{ text: 'Anladım', style: 'default' }]
+              [{ text: 'Anladım', style: 'default' }],
             );
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       title: 'Elan Müddəti İdarəetməsi',
@@ -885,7 +885,7 @@ export default function StoreSettingsScreen() {
           icon: Bell,
           type: 'toggle' as const,
           value: settings.listingExpirationNotifications,
-          onToggle: (value: boolean) => handleSettingToggle('listingExpirationNotifications', value)
+          onToggle: (value: boolean) => handleSettingToggle('listingExpirationNotifications', value),
         },
         {
           id: 'auto_archive_expired',
@@ -894,7 +894,7 @@ export default function StoreSettingsScreen() {
           icon: Package,
           type: 'toggle' as const,
           value: settings.autoArchiveExpired,
-          onToggle: (value: boolean) => handleSettingToggle('autoArchiveExpired', value)
+          onToggle: (value: boolean) => handleSettingToggle('autoArchiveExpired', value),
         },
         {
           id: 'listing_renewal_offers',
@@ -906,9 +906,9 @@ export default function StoreSettingsScreen() {
             Alert.alert(
               'Elan Yeniləmə Təklifləri',
               'Elanlarınızın müddəti bitdikdə:\n\n• 7 gün əvvəl: 15% endirim\n• 3 gün əvvəl: 10% endirim\n• Müddət bitdikdən sonra 7 gün: 5% endirim\n• Toplu yeniləmə: 20% endirim',
-              [{ text: 'Anladım', style: 'default' }]
+              [{ text: 'Anladım', style: 'default' }],
             );
-          }
+          },
         },
         {
           id: 'expired_listing_management',
@@ -922,12 +922,12 @@ export default function StoreSettingsScreen() {
               'Müddəti bitmiş elanlarınız:\n\n• 30 gün arxivdə qalır\n• Bu müddətdə yenidən aktivləşdirə bilərsiniz\n• Bütün məlumatlar və şəkillər qorunur\n• Baxış sayı və favoritlər saxlanılır',
               [
                 { text: 'Arxivi Gör', onPress: () => router.push('/my-listings?filter=expired') },
-                { text: 'Anladım', style: 'cancel' }
-              ]
+                { text: 'Anladım', style: 'cancel' },
+              ],
             );
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       title: 'Abunəlik və Ödəniş',
@@ -938,9 +938,9 @@ export default function StoreSettingsScreen() {
           subtitle: 'Keçmiş ödənişləri görün',
           icon: CreditCard,
           type: 'navigation' as const,
-          onPress: () => router.push('/payment-history')
-        }
-      ]
+          onPress: () => router.push('/payment-history'),
+        },
+      ],
     },
     {
       title: 'Təhlükəsizlik',
@@ -951,7 +951,7 @@ export default function StoreSettingsScreen() {
           subtitle: 'Məlumat təhlükəsizliyi',
           icon: Shield,
           type: 'navigation' as const,
-          onPress: () => router.push('/settings')
+          onPress: () => router.push('/settings'),
         },
         {
           id: 'blocked_users',
@@ -959,9 +959,9 @@ export default function StoreSettingsScreen() {
           subtitle: 'Bloklanmış istifadəçiləri idarə et',
           icon: Users,
           type: 'navigation' as const,
-          onPress: () => router.push('/blocked-users')
-        }
-      ]
+          onPress: () => router.push('/blocked-users'),
+        },
+      ],
     },
     {
       title: 'Təhlükəli Əməliyyatlar',
@@ -973,10 +973,10 @@ export default function StoreSettingsScreen() {
           icon: Trash2,
           type: 'action' as const,
           onPress: handleDeleteStore,
-          color: colors.error
-        }
-      ]
-    }
+          color: colors.error,
+        },
+      ],
+    },
   ];
 
   const renderSettingItem = (item: SettingItem) => {
@@ -1030,7 +1030,7 @@ export default function StoreSettingsScreen() {
           styles.renewalPackage,
           { backgroundColor: colors.card, borderColor: colors.border },
           pkg.popular && [styles.popularPackage, { borderColor: colors.primary }],
-          pkg.urgent && [styles.urgentPackage, { borderColor: colors.warning }]
+          pkg.urgent && [styles.urgentPackage, { borderColor: colors.warning }],
         ]}
         onPress={() => handleRenewal(pkg.id)}
       >
@@ -1079,7 +1079,7 @@ export default function StoreSettingsScreen() {
         options={{
           title: 'Mağaza Tənzimləmələri',
           headerStyle: { backgroundColor: colors.card },
-          headerTintColor: colors.text
+          headerTintColor: colors.text,
         }}
       />
 
@@ -1102,7 +1102,7 @@ export default function StoreSettingsScreen() {
                 <Text style={[styles.currentStoreName, { color: colors.text }]}>{store.name}</Text>
                 <Text style={[styles.currentStoreStatus, {
                   color: store.status === 'active' ? colors.success :
-                    store.status === 'grace_period' ? colors.warning : colors.error
+                    store.status === 'grace_period' ? colors.warning : colors.error,
                 }]}>
                   {store.status === 'active' ? 'Aktiv' :
                     store.status === 'grace_period' ? 'Güzəşt müddəti' : 'Qeyri-aktiv'}
@@ -1129,7 +1129,7 @@ export default function StoreSettingsScreen() {
             <Text style={[styles.storeName, { color: colors.text }]}>{store.name}</Text>
             <View style={[
               styles.statusBadge,
-              { backgroundColor: store.status === 'active' ? colors.success : colors.warning }
+              { backgroundColor: store.status === 'active' ? colors.success : colors.warning },
             ]}>
               <Text style={[styles.statusText, { color: '#FFFFFF' }]}>
                 {store.status === 'active' ? 'Aktiv' : 'Qeyri-aktiv'}
@@ -1141,7 +1141,7 @@ export default function StoreSettingsScreen() {
             <View style={styles.expirationInfo}>
               <Clock size={16} color={expirationInfo.daysUntilExpiration && expirationInfo.daysUntilExpiration <= 7 ? colors.warning : colors.textSecondary} />
               <Text style={[styles.expirationText, {
-                color: expirationInfo.daysUntilExpiration && expirationInfo.daysUntilExpiration <= 7 ? colors.warning : colors.textSecondary
+                color: expirationInfo.daysUntilExpiration && expirationInfo.daysUntilExpiration <= 7 ? colors.warning : colors.textSecondary,
               }]}>
                 {expirationInfo.nextAction}
               </Text>
@@ -1334,7 +1334,7 @@ export default function StoreSettingsScreen() {
                 style={[
                   styles.storeListItem,
                   { backgroundColor: colors.card, borderBottomColor: colors.border },
-                  item.id === store.id && { backgroundColor: `${colors.primary}10` }
+                  item.id === store.id && { backgroundColor: `${colors.primary}10` },
                 ]}
                 onPress={() => handleStoreSwitch(item.id)}
               >
@@ -1351,8 +1351,8 @@ export default function StoreSettingsScreen() {
                       {
                         backgroundColor:
                           item.status === 'active' ? colors.success :
-                            item.status === 'grace_period' ? colors.warning : colors.error
-                      }
+                            item.status === 'grace_period' ? colors.warning : colors.error,
+                      },
                     ]}>
                       <Text style={[styles.storeListItemStatusText, { color: '#FFFFFF' }]}>
                         {item.status === 'active' ? 'Aktiv' :

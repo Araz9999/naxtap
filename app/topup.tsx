@@ -36,7 +36,7 @@ export default function TopupScreen() {
               setDescription('');
             },
           },
-        ]
+        ],
       );
     },
     onError: (error) => {
@@ -71,12 +71,12 @@ export default function TopupScreen() {
     }
 
     const parsedAmount = parseFloat(amount);
-    
+
     // BUG FIX: Consolidated duplicate validation checks
     if (isNaN(parsedAmount) || parsedAmount < 1) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Error',
-        language === 'az' ? 'Minimum məbləğ 1 AZN olmalıdır' : 'Please enter a valid amount (minimum 1 AZN)'
+        language === 'az' ? 'Minimum məbləğ 1 AZN olmalıdır' : 'Please enter a valid amount (minimum 1 AZN)',
       );
       return;
     }
@@ -84,7 +84,7 @@ export default function TopupScreen() {
     if (parsedAmount > 5000) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Error',
-        language === 'az' ? 'Maksimum məbləğ 5,000 AZN-dir' : 'Maximum topup amount is 5,000 AZN'
+        language === 'az' ? 'Maksimum məbləğ 5,000 AZN-dir' : 'Maximum topup amount is 5,000 AZN',
       );
       return;
     }
@@ -92,7 +92,7 @@ export default function TopupScreen() {
     if (!description.trim()) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Error',
-        language === 'az' ? 'Təsvir daxil edin' : 'Please enter a description'
+        language === 'az' ? 'Təsvir daxil edin' : 'Please enter a description',
       );
       return;
     }
@@ -112,7 +112,7 @@ export default function TopupScreen() {
             });
           },
         },
-      ]
+      ],
     );
   };
 

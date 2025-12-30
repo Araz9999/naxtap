@@ -11,7 +11,7 @@ interface LiveChatBubbleProps {
 const LiveChatBubble = memo(function LiveChatBubble({ message, isCurrentUser }: LiveChatBubbleProps) {
   const getStatusIcon = () => {
     if (!isCurrentUser) return null;
-    
+
     if (message.isRead) {
       return <CheckCheck size={14} color="#4CAF50" />;
     }

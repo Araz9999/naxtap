@@ -4,6 +4,9 @@
  * Fixes bugs #1160-#1309 (missing input validation)
  */
 
+// Zod schemas for tRPC
+import { z } from 'zod';
+
 export class ValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -18,15 +21,15 @@ export function validateEmail(email: string): boolean {
   if (!email || typeof email !== 'string') {
     return false;
   }
-  
+
   // Stricter email validation with length limits
   const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-  
+
   // Length validation
   if (email.length > 254) {
     return false;
   }
-  
+
   return emailRegex.test(email.trim());
 }
 
@@ -43,26 +46,26 @@ export function validatePhone(phone: string): boolean {
  * Password strength validation
  */
 export function validatePassword(
-  password: string
+  password: string,
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  
+
   if (password.length < 8) {
     errors.push('Şifrə ən azı 8 simvol olmalıdır');
   }
-  
+
   if (!/[A-Z]/.test(password)) {
     errors.push('Şifrə ən azı 1 böyük hərf olmalıdır');
   }
-  
+
   if (!/[a-z]/.test(password)) {
     errors.push('Şifrə ən azı 1 kiçik hərf olmalıdır');
   }
-  
+
   if (!/[0-9]/.test(password)) {
     errors.push('Şifrə ən azı 1 rəqəm olmalıdır');
   }
-  
+
   return {
     valid: errors.length === 0,
     errors,
@@ -78,28 +81,28 @@ export function validateAmount(
     min?: number;
     max?: number;
     required?: boolean;
-  } = {}
+  } = {},
 ): { valid: boolean; error?: string } {
   const { min = 0, max = Number.MAX_SAFE_INTEGER, required = true } = options;
-  
+
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   if (required && (amount === '' || amount === null || amount === undefined)) {
     return { valid: false, error: 'Məbləğ daxil edilməlidir' };
   }
-  
+
   if (isNaN(numAmount)) {
     return { valid: false, error: 'Etibarlı məbləğ daxil edin' };
   }
-  
+
   if (numAmount < min) {
     return { valid: false, error: `Minimum məbləğ ${min} olmalıdır` };
   }
-  
+
   if (numAmount > max) {
     return { valid: false, error: `Maksimum məbləğ ${max} olmalıdır` };
   }
-  
+
   return { valid: true };
 }
 
@@ -111,11 +114,11 @@ export function validateDate(date: Date | string): {
   error?: string;
 } {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
     return { valid: false, error: 'Etibarlı tarix daxil edin' };
   }
-  
+
   return { valid: true };
 }
 
@@ -130,14 +133,14 @@ export function validateFutureDate(date: Date | string): {
   if (!dateValidation.valid) {
     return dateValidation;
   }
-  
+
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
-  
+
   if (dateObj <= now) {
     return { valid: false, error: 'Tarix gələcəkdə olmalıdır' };
   }
-  
+
   return { valid: true };
 }
 
@@ -158,7 +161,7 @@ export function validateURL(url: string): boolean {
  */
 export function safeParseInt(
   value: string | number,
-  fallback: number = 0
+  fallback: number = 0,
 ): number {
   const parsed = typeof value === 'string' ? parseInt(value, 10) : value;
   return isNaN(parsed) ? fallback : parsed;
@@ -169,7 +172,7 @@ export function safeParseInt(
  */
 export function safeParseFloat(
   value: string | number,
-  fallback: number = 0
+  fallback: number = 0,
 ): number {
   const parsed = typeof value === 'string' ? parseFloat(value) : value;
   return isNaN(parsed) ? fallback : parsed;
@@ -183,7 +186,7 @@ export function sanitizeString(input: string, maxLength: number = 1000): string 
   if (!input || typeof input !== 'string') {
     return '';
   }
-  
+
   return input
     .trim()
     // Remove HTML tags and dangerous characters
@@ -202,7 +205,7 @@ export function sanitizeHTML(input: string): string {
   if (!input || typeof input !== 'string') {
     return '';
   }
-  
+
   return input
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -217,7 +220,7 @@ export function sanitizeHTML(input: string): string {
  */
 export function safeJSONParse<T = any>(
   jsonString: string,
-  fallback: T
+  fallback: T,
 ): T {
   try {
     // Prevent prototype pollution
@@ -239,24 +242,24 @@ export function validateFile(
   options: {
     maxSize?: number; // in bytes
     allowedTypes?: string[];
-  } = {}
+  } = {},
 ): { valid: boolean; error?: string } {
   const { maxSize = 10 * 1024 * 1024, allowedTypes = [] } = options;
-  
+
   if (file.size > maxSize) {
     return {
       valid: false,
       error: `Fayl ölçüsü maksimum ${Math.round(maxSize / 1024 / 1024)}MB olmalıdır`,
     };
   }
-  
+
   if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
     return {
       valid: false,
       error: `Yalnız ${allowedTypes.join(', ')} formatları qəbul edilir`,
     };
   }
-  
+
   return { valid: true };
 }
 
@@ -265,16 +268,16 @@ export function validateFile(
  */
 export function validateArrayIndex<T>(
   array: T[],
-  index: number
+  index: number,
 ): { valid: boolean; error?: string } {
   if (!Array.isArray(array)) {
     return { valid: false, error: 'Array deyil' };
   }
-  
+
   if (index < 0 || index >= array.length) {
     return { valid: false, error: 'İndeks sərhədlərdən kənardır' };
   }
-  
+
   return { valid: true };
 }
 
@@ -285,33 +288,33 @@ export function validateCreditCard(cardNumber: string): boolean {
   if (!cardNumber || typeof cardNumber !== 'string') {
     return false;
   }
-  
+
   // Remove spaces and dashes
   const cleaned = cardNumber.replace(/[\s-]/g, '');
-  
+
   // Check if it's all digits and proper length
   if (!/^\d{13,19}$/.test(cleaned)) {
     return false;
   }
-  
+
   // Luhn algorithm
   let sum = 0;
   let isEven = false;
-  
+
   for (let i = cleaned.length - 1; i >= 0; i--) {
     let digit = parseInt(cleaned.charAt(i), 10);
-    
+
     if (isEven) {
       digit *= 2;
       if (digit > 9) {
         digit -= 9;
       }
     }
-    
+
     sum += digit;
     isEven = !isEven;
   }
-  
+
   return sum % 10 === 0;
 }
 
@@ -322,20 +325,20 @@ export function validateIBAN(iban: string): boolean {
   if (!iban || typeof iban !== 'string') {
     return false;
   }
-  
+
   // Remove spaces and convert to uppercase
   const cleaned = iban.replace(/\s/g, '').toUpperCase();
-  
+
   // Basic format check
   if (!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(cleaned)) {
     return false;
   }
-  
+
   // Length check (varies by country, 15-34 characters)
   if (cleaned.length < 15 || cleaned.length > 34) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -344,33 +347,33 @@ export function validateIBAN(iban: string): boolean {
  */
 export class RateLimiter {
   private attempts: Map<string, { count: number; resetAt: number }> = new Map();
-  
+
   constructor(
     private maxAttempts: number = 5,
-    private windowMs: number = 15 * 60 * 1000 // 15 minutes
+    private windowMs: number = 15 * 60 * 1000, // 15 minutes
   ) {}
-  
+
   isAllowed(key: string): boolean {
     const now = Date.now();
     const record = this.attempts.get(key);
-    
+
     if (!record || now > record.resetAt) {
       this.attempts.set(key, { count: 1, resetAt: now + this.windowMs });
       return true;
     }
-    
+
     if (record.count >= this.maxAttempts) {
       return false;
     }
-    
+
     record.count++;
     return true;
   }
-  
+
   reset(key: string): void {
     this.attempts.delete(key);
   }
-  
+
   getRemainingAttempts(key: string): number {
     const record = this.attempts.get(key);
     if (!record || Date.now() > record.resetAt) {
@@ -385,15 +388,12 @@ export class RateLimiter {
  */
 export function validateRequired<T>(
   value: T,
-  fieldName: string
+  fieldName: string,
 ): asserts value is NonNullable<T> {
   if (value === null || value === undefined || value === '') {
     throw new ValidationError(`${fieldName} tələb olunur`);
   }
 }
-
-// Zod schemas for tRPC
-import { z } from 'zod';
 
 export const emailSchema = z
   .string({ message: 'Email tələb olunur' })

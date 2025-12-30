@@ -13,7 +13,7 @@ export const updateTicketStatusProcedure = moderatorProcedure
       status: statusSchema,
       moderatorNotes: z.string().optional(),
       resolution: z.string().optional(),
-    })
+    }),
   )
   .mutation(async ({ input, ctx }) => {
     try {

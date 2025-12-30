@@ -11,22 +11,22 @@ export const getUsersProcedure = adminProcedure
       role: z.enum(['USER', 'MODERATOR', 'ADMIN']).optional(),
       search: z.string().optional(),
       verified: z.boolean().optional(),
-    })
+    }),
   )
   .query(async ({ input }) => {
     try {
       const skip = (input.page - 1) * input.limit;
-      
+
       const where: any = {};
-      
+
       if (input.role) {
         where.role = input.role;
       }
-      
+
       if (input.verified !== undefined) {
         where.verified = input.verified;
       }
-      
+
       if (input.search) {
         where.OR = [
           { email: { contains: input.search, mode: 'insensitive' } },
@@ -34,7 +34,7 @@ export const getUsersProcedure = adminProcedure
           { phone: { contains: input.search, mode: 'insensitive' } },
         ];
       }
-      
+
       const [users, total] = await Promise.all([
         prisma.user.findMany({
           where,
@@ -61,7 +61,7 @@ export const getUsersProcedure = adminProcedure
         }),
         prisma.user.count({ where }),
       ]);
-      
+
       return {
         users,
         pagination: {

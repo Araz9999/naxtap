@@ -10,7 +10,7 @@ export const topupProcedure = publicProcedure
       phoneNumber: z.string(),
       amount: z.number().positive(),
       description: z.string(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const merchantId = config.PAYRIFF_MERCHANT_ID;

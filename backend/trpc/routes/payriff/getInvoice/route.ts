@@ -8,7 +8,7 @@ export const getInvoiceProcedure = publicProcedure
   .input(
     z.object({
       uuid: z.string(),
-    })
+    }),
   )
   .query(async ({ ctx, input }) => {
     const merchantId = config.PAYRIFF_MERCHANT_ID;

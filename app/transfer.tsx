@@ -34,7 +34,7 @@ export default function TransferScreen() {
               setDescription('');
             },
           },
-        ]
+        ],
       );
     },
     onError: (error) => {
@@ -84,7 +84,7 @@ export default function TransferScreen() {
             });
           },
         },
-      ]
+      ],
     );
   };
 

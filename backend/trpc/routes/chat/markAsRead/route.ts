@@ -7,7 +7,7 @@ export default protectedProcedure
   .input(
     z.object({
       conversationId: z.string().min(1),
-    })
+    }),
   )
   .mutation(({ ctx, input }) => {
     const userId = ctx.user.userId;

@@ -52,18 +52,18 @@ console.log('\n🔐 Checking Environment Variables...\n');
 const envPath = path.join(process.cwd(), '.env');
 if (fs.existsSync(envPath)) {
   console.log('✅ .env file exists');
-  
+
   require('dotenv').config();
-  
+
   checkEnvVariable('FRONTEND_URL', true);
   checkEnvVariable('JWT_SECRET', true);
-  
+
   console.log('\n🔌 Checking OAuth Providers...\n');
-  
+
   const googleConfigured = checkEnvVariable('GOOGLE_CLIENT_ID') && checkEnvVariable('GOOGLE_CLIENT_SECRET');
   const facebookConfigured = checkEnvVariable('FACEBOOK_APP_ID') && checkEnvVariable('FACEBOOK_APP_SECRET');
   const vkConfigured = checkEnvVariable('VK_CLIENT_ID') && checkEnvVariable('VK_CLIENT_SECRET');
-  
+
   if (!googleConfigured && !facebookConfigured && !vkConfigured) {
     console.log('\n⚠️  No OAuth providers configured. Social login will not work.');
     console.log('   Configure at least one provider in .env file.');

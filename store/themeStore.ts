@@ -101,13 +101,13 @@ export const useThemeStore = create<ThemeState>()(
           logger.error('[ThemeStore] Invalid notification: title and body are required');
           return;
         }
-        
+
         const state = get();
         if (!state.notificationsEnabled) {
           logger.debug('[ThemeStore] Notifications disabled, skipping');
           return;
         }
-        
+
         if (Platform.OS !== 'web') {
           try {
             const Notifications = await import('expo-notifications');
@@ -120,7 +120,7 @@ export const useThemeStore = create<ThemeState>()(
               trigger: null,
             });
             logger.info('[ThemeStore] Notification sent:', title);
-            
+
             if (state.vibrationEnabled) {
               try {
                 const Haptics = await import('expo-haptics');
@@ -136,10 +136,9 @@ export const useThemeStore = create<ThemeState>()(
         } else {
           // Web fallback
           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-            new Notification(title, { 
+            new Notification(title, {
               body,
               icon: window.location ? `${window.location.origin}/icon.png` : undefined,
-              timestamp: Date.now(),
             });
             logger.info('[ThemeStore] Web notification sent:', title);
           } else {
@@ -150,7 +149,7 @@ export const useThemeStore = create<ThemeState>()(
       playNotificationSound: async () => {
         const state = get();
         if (!state.soundEnabled) return;
-        
+
         if (Platform.OS !== 'web') {
           try {
             // ✅ Check vibration setting before haptic
@@ -170,19 +169,19 @@ export const useThemeStore = create<ThemeState>()(
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.frequency.value = 800;
             oscillator.type = 'sine';
-            
+
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-            
+
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.5);
-            
+
             logger.debug('Playing web notification sound');
           } catch (error) {
             logger.debug('Web audio not available:', error);
@@ -192,7 +191,7 @@ export const useThemeStore = create<ThemeState>()(
       triggerVibration: async () => {
         const state = get();
         if (!state.vibrationEnabled) return;
-        
+
         if (Platform.OS !== 'web') {
           try {
             const Haptics = await import('expo-haptics');
@@ -206,8 +205,8 @@ export const useThemeStore = create<ThemeState>()(
     {
       name: 'theme-storage',
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 
 // Configure notifications

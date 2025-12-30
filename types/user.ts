@@ -49,7 +49,7 @@ export interface User {
   };
 }
 
-export type ModeratorPermission = 
+export type ModeratorPermission =
   | 'manage_reports'
   | 'manage_users'
   | 'manage_listings'

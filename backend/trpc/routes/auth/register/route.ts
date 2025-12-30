@@ -16,7 +16,7 @@ export const registerProcedure = publicProcedure
       if (existingUser) {
         throw new AuthenticationError(
           'Bu email artıq qeydiyyatdan keçib',
-          'email_exists'
+          'email_exists',
         );
       }
 
@@ -52,13 +52,13 @@ export const registerProcedure = publicProcedure
 
       const verificationToken = generateRandomToken();
       const tokenSet = await setVerificationToken(user.id, verificationToken, 24);
-      
+
       if (!tokenSet) {
         logger.warn('Failed to set verification token', { userId: user.id });
       }
 
-      const frontendUrl = process.env.FRONTEND_URL || 
-        process.env.EXPO_PUBLIC_FRONTEND_URL || 
+      const frontendUrl = process.env.FRONTEND_URL ||
+        process.env.EXPO_PUBLIC_FRONTEND_URL ||
         'https://1r36dhx42va8pxqbqz5ja.rork.app';
       const verificationUrl = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
 
@@ -69,9 +69,9 @@ export const registerProcedure = publicProcedure
           verificationUrl,
         });
       } catch (emailError) {
-        logger.error('Failed to send verification email', { 
+        logger.error('Failed to send verification email', {
           userId: user.id,
-          error: emailError 
+          error: emailError,
         });
       }
 

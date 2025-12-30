@@ -9,7 +9,7 @@
  */
 export function safeGet<T, K extends keyof T>(
   obj: T | null | undefined,
-  key: K
+  key: K,
 ): T[K] | undefined {
   if (obj === null || obj === undefined) {
     return undefined;
@@ -26,14 +26,14 @@ export function safeGetNested<T>(
   ...keys: string[]
 ): T | undefined {
   let result: any = obj;
-  
+
   for (const key of keys) {
     if (result === null || result === undefined) {
       return undefined;
     }
     result = result[key];
   }
-  
+
   return result as T | undefined;
 }
 
@@ -43,7 +43,7 @@ export function safeGetNested<T>(
  */
 export function safeArrayGet<T>(
   arr: T[] | null | undefined,
-  index: number
+  index: number,
 ): T | undefined {
   if (!Array.isArray(arr) || index < 0 || index >= arr.length) {
     return undefined;
@@ -57,7 +57,7 @@ export function safeArrayGet<T>(
  */
 export function safeMap<T, U>(
   arr: T[] | null | undefined,
-  fn: (item: T, index: number) => U
+  fn: (item: T, index: number) => U,
 ): U[] {
   if (!Array.isArray(arr)) {
     return [];
@@ -70,7 +70,7 @@ export function safeMap<T, U>(
  */
 export function safeFilter<T>(
   arr: T[] | null | undefined,
-  predicate: (item: T, index: number) => boolean
+  predicate: (item: T, index: number) => boolean,
 ): T[] {
   if (!Array.isArray(arr)) {
     return [];
@@ -83,7 +83,7 @@ export function safeFilter<T>(
  */
 export function safeFind<T>(
   arr: T[] | null | undefined,
-  predicate: (item: T, index: number) => boolean
+  predicate: (item: T, index: number) => boolean,
 ): T | undefined {
   if (!Array.isArray(arr)) {
     return undefined;
@@ -97,7 +97,7 @@ export function safeFind<T>(
 export function safeReduce<T, U>(
   arr: T[] | null | undefined,
   fn: (acc: U, item: T, index: number) => U,
-  initial: U
+  initial: U,
 ): U {
   if (!Array.isArray(arr)) {
     return initial;
@@ -110,19 +110,19 @@ export function safeReduce<T, U>(
  */
 export function safeParseNumber(
   value: unknown,
-  fallback: number = 0
+  fallback: number = 0,
 ): number {
   if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
     return value;
   }
-  
+
   if (typeof value === 'string') {
     const parsed = parseFloat(value);
     if (!isNaN(parsed) && isFinite(parsed)) {
       return parsed;
     }
   }
-  
+
   return fallback;
 }
 
@@ -131,19 +131,19 @@ export function safeParseNumber(
  */
 export function safeParseInt(
   value: unknown,
-  fallback: number = 0
+  fallback: number = 0,
 ): number {
   if (typeof value === 'number' && Number.isInteger(value)) {
     return value;
   }
-  
+
   if (typeof value === 'string') {
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed) && isFinite(parsed)) {
       return parsed;
     }
   }
-  
+
   return fallback;
 }
 
@@ -153,7 +153,7 @@ export function safeParseInt(
  */
 export function safeAsync<T extends (...args: any[]) => Promise<any>>(
   fn: T,
-  errorHandler?: (error: unknown) => void
+  errorHandler?: (error: unknown) => void,
 ): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>> | undefined> {
   return async (...args: Parameters<T>) => {
     try {
@@ -175,7 +175,7 @@ export function safeAsync<T extends (...args: any[]) => Promise<any>>(
  */
 export function safeTry<T>(
   fn: () => T,
-  fallback: T
+  fallback: T,
 ): T {
   try {
     return fn();
@@ -190,7 +190,7 @@ export function safeTry<T>(
  */
 export function safeJsonParse<T = unknown>(
   json: string,
-  fallback: T
+  fallback: T,
 ): T {
   try {
     const parsed = JSON.parse(json);
@@ -205,7 +205,7 @@ export function safeJsonParse<T = unknown>(
  */
 export function safeJsonStringify(
   value: unknown,
-  fallback: string = '{}'
+  fallback: string = '{}',
 ): string {
   try {
     return JSON.stringify(value);
@@ -240,21 +240,21 @@ export function isNonEmptyArray<T>(value: unknown): value is T[] {
  * Handles null/undefined gracefully
  */
 export function safeMerge<T extends object>(
-  ...objects: (T | null | undefined)[]
+  ...objects: (Partial<T> | null | undefined)[]
 ): T {
-  return objects.reduce((acc, obj) => {
-    if (obj === null || obj === undefined) {
-      return acc;
-    }
-    return { ...acc, ...obj };
-  }, {} as T);
+  const result: Partial<T> = {};
+  for (const obj of objects) {
+    if (!obj) continue;
+    Object.assign(result, obj);
+  }
+  return result as T;
 }
 
 /**
  * Safe object keys
  */
 export function safeKeys<T extends object>(
-  obj: T | null | undefined
+  obj: T | null | undefined,
 ): (keyof T)[] {
   if (obj === null || obj === undefined) {
     return [];
@@ -266,7 +266,7 @@ export function safeKeys<T extends object>(
  * Safe object values
  */
 export function safeValues<T extends object>(
-  obj: T | null | undefined
+  obj: T | null | undefined,
 ): T[keyof T][] {
   if (obj === null || obj === undefined) {
     return [];
@@ -278,7 +278,7 @@ export function safeValues<T extends object>(
  * Safe object entries
  */
 export function safeEntries<T extends object>(
-  obj: T | null | undefined
+  obj: T | null | undefined,
 ): [keyof T, T[keyof T]][] {
   if (obj === null || obj === undefined) {
     return [];
@@ -290,12 +290,12 @@ export function safeEntries<T extends object>(
  * Safe date creation
  */
 export function safeDate(
-  value: string | number | Date | null | undefined
+  value: string | number | Date | null | undefined,
 ): Date | null {
   if (value === null || value === undefined) {
     return null;
   }
-  
+
   try {
     const date = new Date(value);
     if (isNaN(date.getTime())) {
@@ -312,13 +312,13 @@ export function safeDate(
  */
 export function safeFormatDate(
   date: Date | string | number | null | undefined,
-  locale: string = 'en-US'
+  locale: string = 'en-US',
 ): string {
   const safeD = safeDate(date);
   if (safeD === null) {
     return '';
   }
-  
+
   try {
     return safeD.toLocaleDateString(locale);
   } catch {
@@ -332,15 +332,15 @@ export function safeFormatDate(
  */
 export function debounce<T extends (...args: any[]) => any>(
   fn: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout | null = null;
-  
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
   return (...args: Parameters<T>) => {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    
+
     timeoutId = setTimeout(() => {
       fn(...args);
       timeoutId = null;
@@ -354,10 +354,10 @@ export function debounce<T extends (...args: any[]) => any>(
  */
 export function throttle<T extends (...args: any[]) => any>(
   fn: T,
-  limit: number
+  limit: number,
 ): (...args: Parameters<T>) => void {
   let inThrottle = false;
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       fn(...args);
@@ -378,22 +378,22 @@ export async function retry<T>(
     maxAttempts?: number;
     delay?: number;
     onRetry?: (attempt: number, error: unknown) => void;
-  } = {}
+  } = {},
 ): Promise<T> {
   const {
     maxAttempts = 3,
     delay = 1000,
-    onRetry
+    onRetry,
   } = options;
-  
+
   let lastError: unknown;
-  
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      
+
       if (attempt < maxAttempts) {
         if (onRetry) {
           onRetry(attempt, error);
@@ -402,7 +402,7 @@ export async function retry<T>(
       }
     }
   }
-  
+
   throw lastError;
 }
 
@@ -412,12 +412,12 @@ export async function retry<T>(
 export function timeout<T>(
   promise: Promise<T>,
   ms: number,
-  errorMessage: string = 'Operation timed out'
+  errorMessage: string = 'Operation timed out',
 ): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(errorMessage)), ms)
+      setTimeout(() => reject(new Error(errorMessage)), ms),
     ),
   ]);
 }
@@ -429,18 +429,18 @@ export function timeout<T>(
 export async function batchProcess<T, U>(
   items: T[],
   processor: (item: T, index: number) => Promise<U>,
-  batchSize: number = 10
+  batchSize: number = 10,
 ): Promise<U[]> {
   const results: U[] = [];
-  
+
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
     const batchResults = await Promise.all(
-      batch.map((item, index) => processor(item, i + index))
+      batch.map((item, index) => processor(item, i + index)),
     );
     results.push(...batchResults);
   }
-  
+
   return results;
 }
 
@@ -450,19 +450,19 @@ export async function batchProcess<T, U>(
  */
 export function memoize<T extends (...args: any[]) => any>(
   fn: T,
-  getCacheKey?: (...args: Parameters<T>) => string
+  getCacheKey?: (...args: Parameters<T>) => string,
 ): T {
   const cache = new Map<string, ReturnType<T>>();
-  
+
   return ((...args: Parameters<T>): ReturnType<T> => {
-    const key = getCacheKey 
+    const key = getCacheKey
       ? getCacheKey(...args)
       : JSON.stringify(args);
-    
+
     if (cache.has(key)) {
       return cache.get(key)!;
     }
-    
+
     const result = fn(...args);
     cache.set(key, result);
     return result;
@@ -476,11 +476,11 @@ export function safeClone<T>(value: T): T {
   if (value === null || value === undefined) {
     return value;
   }
-  
+
   if (typeof value !== 'object') {
     return value;
   }
-  
+
   try {
     return JSON.parse(JSON.stringify(value));
   } catch {
@@ -495,15 +495,15 @@ export function safeEquals(a: unknown, b: unknown): boolean {
   if (a === b) {
     return true;
   }
-  
+
   if (a === null || a === undefined || b === null || b === undefined) {
     return a === b;
   }
-  
+
   if (typeof a !== typeof b) {
     return false;
   }
-  
+
   if (typeof a === 'object' && typeof b === 'object') {
     try {
       return JSON.stringify(a) === JSON.stringify(b);
@@ -511,7 +511,7 @@ export function safeEquals(a: unknown, b: unknown): boolean {
       return false;
     }
   }
-  
+
   return false;
 }
 
@@ -521,7 +521,7 @@ export function safeEquals(a: unknown, b: unknown): boolean {
 export function safeSlice<T>(
   arr: T[] | null | undefined,
   start?: number,
-  end?: number
+  end?: number,
 ): T[] {
   if (!Array.isArray(arr)) {
     return [];
@@ -534,7 +534,7 @@ export function safeSlice<T>(
  */
 export function safeJoin(
   arr: unknown[] | null | undefined,
-  separator: string = ','
+  separator: string = ',',
 ): string {
   if (!Array.isArray(arr)) {
     return '';
@@ -547,12 +547,12 @@ export function safeJoin(
  */
 export function chunk<T>(
   arr: T[] | null | undefined,
-  size: number
+  size: number,
 ): T[][] {
   if (!Array.isArray(arr) || size <= 0) {
     return [];
   }
-  
+
   const chunks: T[][] = [];
   for (let i = 0; i < arr.length; i += size) {
     chunks.push(arr.slice(i, i + size));
@@ -564,12 +564,12 @@ export function chunk<T>(
  * Flatten nested arrays
  */
 export function flatten<T>(
-  arr: (T | T[])[] | null | undefined
+  arr: (T | T[])[] | null | undefined,
 ): T[] {
   if (!Array.isArray(arr)) {
     return [];
   }
-  
+
   return arr.reduce<T[]>((acc, val) => {
     if (Array.isArray(val)) {
       return acc.concat(flatten(val));
@@ -582,7 +582,7 @@ export function flatten<T>(
  * Unique array values
  */
 export function unique<T>(
-  arr: T[] | null | undefined
+  arr: T[] | null | undefined,
 ): T[] {
   if (!Array.isArray(arr)) {
     return [];
@@ -594,7 +594,7 @@ export function unique<T>(
  * Compact array (remove falsy values)
  */
 export function compact<T>(
-  arr: (T | null | undefined | false | 0 | '')[] | null | undefined
+  arr: (T | null | undefined | false | 0 | '')[] | null | undefined,
 ): T[] {
   if (!Array.isArray(arr)) {
     return [];
@@ -606,7 +606,7 @@ export function compact<T>(
  * Safe first element
  */
 export function first<T>(
-  arr: T[] | null | undefined
+  arr: T[] | null | undefined,
 ): T | undefined {
   return safeArrayGet(arr, 0);
 }
@@ -615,7 +615,7 @@ export function first<T>(
  * Safe last element
  */
 export function last<T>(
-  arr: T[] | null | undefined
+  arr: T[] | null | undefined,
 ): T | undefined {
   if (!Array.isArray(arr) || arr.length === 0) {
     return undefined;
@@ -629,14 +629,14 @@ export function last<T>(
 export function range(
   start: number,
   end: number,
-  step: number = 1
+  step: number = 1,
 ): number[] {
   const result: number[] = [];
-  
+
   if (step === 0 || (start < end && step < 0) || (start > end && step > 0)) {
     return result;
   }
-  
+
   if (start < end) {
     for (let i = start; i < end; i += step) {
       result.push(i);
@@ -646,6 +646,6 @@ export function range(
       result.push(i);
     }
   }
-  
+
   return result;
 }

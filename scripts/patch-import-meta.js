@@ -5,12 +5,12 @@
 // // Find and patch files that use import.meta
 // function patchFile(filePath) {
 //   if (!fs.existsSync(filePath)) return;
-  
+
 //   let content = fs.readFileSync(filePath, 'utf8');
-  
+
 //   // Replace import.meta with a safe alternative
 //   content = content.replace(/import\.meta/g, '({})');
-  
+
 //   fs.writeFileSync(filePath, content);
 //   console.log(`Patched: ${filePath}`);
 // }

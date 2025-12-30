@@ -286,38 +286,38 @@ class PayriffService {
     // SECURITY: Client-side signature generation for Payriff API
     // NOTE: In React Native, crypto module is not available
     // Signature should be generated on backend for security
-    
+
     // For production, this should be done on backend
     logger.warn('[PayriffService] Client-side signature generation - consider moving to backend');
-    
+
     try {
       // Sort keys for consistent signature
       const sortedKeys = Object.keys(data).sort();
       const signatureString = sortedKeys
         .map(key => `${key}=${data[key]}`)
         .join('&');
-      
+
       // In React Native/Browser, use Web Crypto API or send to backend
       if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
         // Browser environment - use Web Crypto API
         const encoder = new TextEncoder();
         const keyData = encoder.encode(this.secretKey);
         const messageData = encoder.encode(signatureString);
-        
+
         const cryptoKey = await window.crypto.subtle.importKey(
           'raw',
           keyData,
           { name: 'HMAC', hash: 'SHA-256' },
           false,
-          ['sign']
+          ['sign'],
         );
-        
+
         const signature = await window.crypto.subtle.sign(
           'HMAC',
           cryptoKey,
-          messageData
+          messageData,
         );
-        
+
         // Convert to hex string
         return Array.from(new Uint8Array(signature))
           .map(b => b.toString(16).padStart(2, '0'))
@@ -337,68 +337,68 @@ class PayriffService {
   async createPayment(request: PayriffPaymentRequest): Promise<PayriffPaymentResponse> {
     try {
       // ===== VALIDATION START =====
-      
+
       // 1. Amount validation
       if (!request.amount || typeof request.amount !== 'number') {
         throw new Error('Amount must be a valid number');
       }
-      
+
       if (request.amount <= 0) {
         throw new Error('Amount must be greater than 0');
       }
-      
+
       if (request.amount > 100000) {
         throw new Error('Amount exceeds maximum limit (100,000 AZN)');
       }
-      
+
       if (isNaN(request.amount) || !isFinite(request.amount)) {
         throw new Error('Amount must be a finite number');
       }
-      
+
       // 2. OrderId validation
       if (!request.orderId || typeof request.orderId !== 'string') {
         throw new Error('OrderId is required');
       }
-      
+
       if (request.orderId.trim().length === 0) {
         throw new Error('OrderId cannot be empty');
       }
-      
+
       if (request.orderId.length > 255) {
         throw new Error('OrderId is too long (max 255 characters)');
       }
-      
+
       // 3. Description validation
       if (!request.description || typeof request.description !== 'string') {
         throw new Error('Description is required');
       }
-      
+
       if (request.description.trim().length === 0) {
         throw new Error('Description cannot be empty');
       }
-      
+
       if (request.description.length > 500) {
         throw new Error('Description is too long (max 500 characters)');
       }
-      
+
       // 4. Currency validation
       const validCurrencies = ['AZN', 'USD', 'EUR'];
       const currency = request.currency || 'AZN';
       if (!validCurrencies.includes(currency)) {
         throw new Error(`Invalid currency. Must be one of: ${validCurrencies.join(', ')}`);
       }
-      
+
       // 5. Language validation
       const validLanguages = ['az', 'en', 'ru'];
       const language = request.language || 'az';
       if (!validLanguages.includes(language)) {
         throw new Error(`Invalid language. Must be one of: ${validLanguages.join(', ')}`);
       }
-      
+
       // ===== VALIDATION END =====
-      
+
       const frontendUrl = config.FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
-      
+
       const paymentData = {
         merchant: this.merchantId,
         amount: Math.round(request.amount * 100), // Convert to qepik
@@ -414,19 +414,19 @@ class PayriffService {
       const signature = await this.generateSignature(paymentData);
 
       // ===== NETWORK REQUEST WITH RETRY =====
-      
+
       const maxRetries = 3;
       const timeout = 30000; // 30 seconds
       let lastError: Error | null = null;
-      
+
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           logger.debug(`[PayriffService] Payment creation attempt ${attempt}/${maxRetries}`);
-          
+
           // Create AbortController for timeout
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), timeout);
-          
+
           const response = await fetch(`${this.baseUrl}/api/v1/payment/create`, {
             method: 'POST',
             headers: {
@@ -439,23 +439,23 @@ class PayriffService {
             }),
             signal: controller.signal,
           });
-          
+
           clearTimeout(timeoutId);
 
           // Check HTTP status
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-            
+
             // Don't retry on client errors (4xx)
             if (response.status >= 400 && response.status < 500) {
               throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             // Retry on server errors (5xx)
             if (attempt === maxRetries) {
               throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             // Wait before retry (exponential backoff)
             const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
             logger.debug(`[PayriffService] Retrying after ${delay}ms...`);
@@ -465,7 +465,7 @@ class PayriffService {
 
           // Parse response
           const data = await response.json();
-          
+
           // Validate response data
           if (!data) {
             throw new Error('Empty response from payment gateway');
@@ -487,66 +487,66 @@ class PayriffService {
             transactionId: data.transaction_id || data.transactionId,
             orderId: request.orderId,
           };
-          
+
         } catch (error) {
           lastError = error instanceof Error ? error : new Error('Unknown error');
-          
+
           // Handle abort (timeout)
           if (error instanceof Error && error.name === 'AbortError') {
             logger.error(`[PayriffService] Request timeout on attempt ${attempt}`);
             lastError = new Error('Request timeout - please try again');
-            
+
             if (attempt === maxRetries) {
               break;
             }
-            
+
             // Retry on timeout
             const delay = 1000 * attempt;
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;
           }
-          
+
           // Handle network errors
           if (error instanceof TypeError && error.message.includes('fetch')) {
             logger.error(`[PayriffService] Network error on attempt ${attempt}`);
             lastError = new Error('Network error - please check your connection');
-            
+
             if (attempt === maxRetries) {
               break;
             }
-            
+
             const delay = 1000 * attempt;
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;
           }
-          
+
           // Don't retry on validation or auth errors
-          if (lastError.message.includes('validation') || 
+          if (lastError.message.includes('validation') ||
               lastError.message.includes('authentication') ||
               lastError.message.includes('Amount') ||
               lastError.message.includes('OrderId') ||
               lastError.message.includes('Description')) {
             break;
           }
-          
+
           // Last attempt failed
           if (attempt === maxRetries) {
             break;
           }
-          
+
           // Wait before retry
           const delay = 1000 * attempt;
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
-      
+
       // All retries failed
       logger.error('[PayriffService] Payment creation failed after all retries:', lastError);
       return {
         success: false,
         error: lastError?.message || 'Payment creation failed - please try again',
       };
-      
+
     } catch (error) {
       logger.error('[PayriffService] Unexpected payment creation error:', error);
       return {
@@ -559,7 +559,7 @@ class PayriffService {
   async cardSave(request: PayriffCardSaveRequest): Promise<PayriffCardSaveResponse> {
     try {
       const frontendUrl = config.FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
-      
+
       const requestBody = {
         body: {
           amount: request.amount,
@@ -604,7 +604,7 @@ class PayriffService {
   async autoPay(request: PayriffAutoPayRequest): Promise<PayriffCardSaveResult> {
     try {
       const frontendUrl = config.FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
-      
+
       const requestBody = {
         body: {
           amount: request.amount,
@@ -649,7 +649,7 @@ class PayriffService {
   async createInvoice(request: PayriffInvoiceRequest): Promise<PayriffInvoiceResponse> {
     try {
       const frontendUrl = config.FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
-      
+
       const requestBody = {
         body: {
           amount: request.amount,
@@ -838,7 +838,7 @@ class PayriffService {
   async createOrder(request: PayriffCreateOrderRequest): Promise<PayriffCreateOrderResponse> {
     try {
       const frontendUrl = config.FRONTEND_URL || 'https://1r36dhx42va8pxqbqz5ja.rork.app';
-      
+
       const requestBody = {
         amount: request.amount,
         language: request.language || 'EN',

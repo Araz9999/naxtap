@@ -33,7 +33,7 @@ export default function PayriffIntegrationTestScreen() {
       const existing = prev.find((r) => r.name === name);
       if (existing) {
         return prev.map((r) =>
-          r.name === name ? { ...r, status, message, duration } : r
+          r.name === name ? { ...r, status, message, duration } : r,
         );
       }
       return [...prev, { name, status, message, duration }];
@@ -42,11 +42,11 @@ export default function PayriffIntegrationTestScreen() {
 
   const runTest = async (
     name: string,
-    testFn: () => Promise<void>
+    testFn: () => Promise<void>,
   ): Promise<boolean> => {
     const startTime = Date.now();
     updateTestResult(name, 'running');
-    
+
     try {
       await testFn();
       const duration = Date.now() - startTime;
@@ -64,19 +64,19 @@ export default function PayriffIntegrationTestScreen() {
 
   const testGetWallet = async () => {
     const result = await trpcClient.payriff.getWallet.query();
-    
+
     if (!result) {
       throw new Error('No response from getWallet');
     }
-    
+
     if (!result.payload) {
       throw new Error('No payload in response');
     }
-    
+
     if (typeof result.payload.totalBalance !== 'number') {
       throw new Error('Invalid totalBalance in response');
     }
-    
+
     logger.debug('Wallet data:', JSON.stringify(result, null, 2));
   };
 
@@ -92,19 +92,19 @@ export default function PayriffIntegrationTestScreen() {
         timestamp: Date.now().toString(),
       },
     });
-    
+
     if (!result) {
       throw new Error('No response from createOrder');
     }
-    
+
     if (!result.payload?.orderId) {
       throw new Error('No orderId in response');
     }
-    
+
     if (!result.payload?.paymentUrl) {
       throw new Error('No paymentUrl in response');
     }
-    
+
     logger.debug('Order created:', JSON.stringify(result, null, 2));
   };
 
@@ -116,27 +116,27 @@ export default function PayriffIntegrationTestScreen() {
       description: 'Test order for getOrder test',
       operation: 'PURCHASE',
     });
-    
+
     if (!createResult.payload?.orderId) {
       throw new Error('Failed to create order for testing');
     }
-    
+
     const orderId = createResult.payload.orderId;
-    
+
     const result = await trpcClient.payriff.getOrder.query({ orderId });
-    
+
     if (!result) {
       throw new Error('No response from getOrder');
     }
-    
+
     if (!result.payload) {
       throw new Error('No payload in response');
     }
-    
+
     if (result.payload.orderId !== orderId) {
       throw new Error('OrderId mismatch');
     }
-    
+
     logger.debug('Order info:', JSON.stringify(result, null, 2));
   };
 
@@ -150,19 +150,19 @@ export default function PayriffIntegrationTestScreen() {
       email: 'test@example.com',
       phoneNumber: '994501234567',
     });
-    
+
     if (!result) {
       throw new Error('No response from createInvoice');
     }
-    
+
     if (!result.payload?.invoiceUuid) {
       throw new Error('No invoiceUuid in response');
     }
-    
+
     if (!result.payload?.paymentUrl) {
       throw new Error('No paymentUrl in response');
     }
-    
+
     logger.debug('Invoice created:', JSON.stringify(result, null, 2));
   };
 
@@ -176,36 +176,36 @@ export default function PayriffIntegrationTestScreen() {
       email: 'test@example.com',
       phoneNumber: '994501234567',
     });
-    
+
     if (!createResult.payload?.invoiceUuid) {
       throw new Error('Failed to create invoice for testing');
     }
-    
+
     const invoiceUuid = createResult.payload.invoiceUuid;
-    
+
     const result = await trpcClient.payriff.getInvoice.query({ uuid: invoiceUuid });
-    
+
     if (!result) {
       throw new Error('No response from getInvoice');
     }
-    
+
     if (!result.payload) {
       throw new Error('No payload in response');
     }
-    
+
     if (result.payload.invoiceUuid !== invoiceUuid) {
       throw new Error('InvoiceUuid mismatch');
     }
-    
+
     logger.debug('Invoice info:', JSON.stringify(result, null, 2));
   };
 
   const runAllTests = async () => {
     setIsRunning(true);
     setTestResults([]);
-    
+
     logger.debug('🚀 Starting Payriff Integration Tests...\n');
-    
+
     const tests = [
       { name: 'Get Wallet', fn: testGetWallet },
       { name: 'Create Order', fn: testCreateOrder },
@@ -213,10 +213,10 @@ export default function PayriffIntegrationTestScreen() {
       { name: 'Create Invoice', fn: testCreateInvoice },
       { name: 'Get Invoice', fn: testGetInvoice },
     ];
-    
+
     let passed = 0;
     let failed = 0;
-    
+
     for (const test of tests) {
       const success = await runTest(test.name, test.fn);
       if (success) {
@@ -226,18 +226,18 @@ export default function PayriffIntegrationTestScreen() {
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    
+
     setIsRunning(false);
-    
+
     logger.debug('\n📊 Test Results:');
     logger.debug(`✅ Passed: ${passed}`);
     logger.debug(`❌ Failed: ${failed}`);
     logger.debug(`📈 Total: ${tests.length}`);
-    
+
     Alert.alert(
       'Test Results',
       `Passed: ${passed}\nFailed: ${failed}\nTotal: ${tests.length}`,
-      [{ text: 'OK' }]
+      [{ text: 'OK' }],
     );
   };
 

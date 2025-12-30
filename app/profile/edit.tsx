@@ -115,13 +115,13 @@ export default function EditProfileScreen() {
       Alert.alert(
         t('success'),
         language === 'az' ? 'Profil yeniləndi' : 'Профиль обновлён',
-        [{ text: 'OK', onPress: () => router.back() }]
+        [{ text: 'OK', onPress: () => router.back() }],
       );
     } catch (error: any) {
       logger.error('[EditProfile] Save failed:', error);
       Alert.alert(
         t('error'),
-        error?.message || (language === 'az' ? 'Profil yenilənmədi' : 'Не удалось обновить профиль')
+        error?.message || (language === 'az' ? 'Profil yenilənmədi' : 'Не удалось обновить профиль'),
       );
     } finally {
       setIsSaving(false);

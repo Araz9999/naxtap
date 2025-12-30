@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Platform
+  Platform,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -20,7 +20,7 @@ import {
   Type,
   Brush,
   Crown,
-  Star
+  Star,
 } from 'lucide-react-native';
 import { useStoreStore } from '@/store/storeStore';
 import { useUserStore } from '@/store/userStore';
@@ -56,7 +56,7 @@ const themeColors: ThemeColor[] = [
     secondary: '#5AC8FA',
     accent: '#FF9500',
     background: '#F2F2F7',
-    text: '#000000'
+    text: '#000000',
   },
   {
     id: 'elegant_purple',
@@ -65,7 +65,7 @@ const themeColors: ThemeColor[] = [
     secondary: '#A78BFA',
     accent: '#F59E0B',
     background: '#F8FAFC',
-    text: '#1F2937'
+    text: '#1F2937',
   },
   {
     id: 'nature_green',
@@ -74,7 +74,7 @@ const themeColors: ThemeColor[] = [
     secondary: '#34D399',
     accent: '#F59E0B',
     background: '#F0FDF4',
-    text: '#065F46'
+    text: '#065F46',
   },
   {
     id: 'sunset_orange',
@@ -83,7 +83,7 @@ const themeColors: ThemeColor[] = [
     secondary: '#FB923C',
     accent: '#EF4444',
     background: '#FFF7ED',
-    text: '#9A3412'
+    text: '#9A3412',
   },
   {
     id: 'ocean_blue',
@@ -93,7 +93,7 @@ const themeColors: ThemeColor[] = [
     accent: '#06B6D4',
     background: '#F0F9FF',
     text: '#0C4A6E',
-    premium: true
+    premium: true,
   },
   {
     id: 'royal_gold',
@@ -103,7 +103,7 @@ const themeColors: ThemeColor[] = [
     accent: '#EF4444',
     background: '#FFFBEB',
     text: '#92400E',
-    premium: true
+    premium: true,
   },
   {
     id: 'midnight_dark',
@@ -113,8 +113,8 @@ const themeColors: ThemeColor[] = [
     accent: '#EC4899',
     background: '#111827',
     text: '#F9FAFB',
-    premium: true
-  }
+    premium: true,
+  },
 ];
 
 const themeLayouts: ThemeLayout[] = [
@@ -122,34 +122,34 @@ const themeLayouts: ThemeLayout[] = [
     id: 'classic',
     name: 'Klassik',
     description: 'Ənənəvi və sadə dizayn',
-    preview: '📋'
+    preview: '📋',
   },
   {
     id: 'modern',
     name: 'Modern',
     description: 'Müasir və minimalist',
-    preview: '🎨'
+    preview: '🎨',
   },
   {
     id: 'grid',
     name: 'Şəbəkə',
     description: 'Məhsullar şəbəkə şəklində',
-    preview: '⚏'
+    preview: '⚏',
   },
   {
     id: 'card',
     name: 'Kart',
     description: 'Böyük kart dizaynı',
     preview: '🃏',
-    premium: true
+    premium: true,
   },
   {
     id: 'magazine',
     name: 'Jurnal',
     description: 'Jurnal tərzi layout',
     preview: '📰',
-    premium: true
-  }
+    premium: true,
+  },
 ];
 
 export default function StoreThemeScreen() {
@@ -184,30 +184,30 @@ export default function StoreThemeScreen() {
       logger.error('[StoreTheme] No store for theme save');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден'
+        language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден',
       );
       return;
     }
-    
+
     if (!selectedColor || !selectedLayout) {
       logger.error('[StoreTheme] Missing theme selections:', { color: selectedColor, layout: selectedLayout });
       return;
     }
-    
-    logger.info('[StoreTheme] Saving theme:', { 
-      storeId: store.id, 
-      color: selectedColor, 
-      layout: selectedLayout 
+
+    logger.info('[StoreTheme] Saving theme:', {
+      storeId: store.id,
+      color: selectedColor,
+      layout: selectedLayout,
     });
-    
+
     try {
       await editStore(store.id, {
         theme: {
           colorScheme: selectedColor,
-          layout: selectedLayout
-        }
+          layout: selectedLayout,
+        },
       });
-      
+
       logger.info('[StoreTheme] Theme saved successfully:', store.id);
       Alert.alert('Uğurlu', 'Mağaza görünüşü yeniləndi');
     } catch (error) {
@@ -218,15 +218,15 @@ export default function StoreThemeScreen() {
 
   const handleResetTheme = () => {
     logger.info('[StoreTheme] Reset theme requested:', { currentColor: selectedColor, currentLayout: selectedLayout });
-    
+
     Alert.alert(
       'Sıfırla',
       'Bütün dəyişiklikləri sıfırlamaq istəyirsiniz?',
       [
-        { 
-          text: 'Xeyr', 
+        {
+          text: 'Xeyr',
           style: 'cancel',
-          onPress: () => logger.info('[StoreTheme] Reset cancelled')
+          onPress: () => logger.info('[StoreTheme] Reset cancelled'),
         },
         {
           text: 'Bəli',
@@ -235,21 +235,21 @@ export default function StoreThemeScreen() {
             setSelectedColor('default');
             setSelectedLayout('classic');
             logger.info('[StoreTheme] Theme reset to defaults');
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
   const renderColorOption = (color: ThemeColor) => {
     const isSelected = selectedColor === color.id;
-    
+
     return (
       <TouchableOpacity
         key={color.id}
         style={[
           styles.colorOption,
-          isSelected && [styles.selectedColorOption, { backgroundColor: colors.background }]
+          isSelected && [styles.selectedColorOption, { backgroundColor: colors.background }],
         ]}
         onPress={() => {
           // ✅ Check if premium color requires premium access
@@ -260,12 +260,12 @@ export default function StoreThemeScreen() {
               'Bu rəng mövzusu premium istifadəçilər üçündür. Premium plan almaq istəyirsinizmi?',
               [
                 { text: 'Xeyr', style: 'cancel' },
-                { text: 'Bəli', onPress: () => router.push('/pricing') }
-              ]
+                { text: 'Bəli', onPress: () => router.push('/pricing') },
+              ],
             );
             return;
           }
-          
+
           logger.info('[StoreTheme] Color selected:', color.id);
           setSelectedColor(color.id);
         }}
@@ -287,13 +287,13 @@ export default function StoreThemeScreen() {
 
   const renderLayoutOption = (layout: ThemeLayout) => {
     const isSelected = selectedLayout === layout.id;
-    
+
     return (
       <TouchableOpacity
         key={layout.id}
         style={[
           styles.layoutOption,
-          isSelected && [styles.selectedLayoutOption, { backgroundColor: colors.background }]
+          isSelected && [styles.selectedLayoutOption, { backgroundColor: colors.background }],
         ]}
         onPress={() => {
           // ✅ Check if premium layout requires premium access
@@ -304,12 +304,12 @@ export default function StoreThemeScreen() {
               'Bu dizayn layoutu premium istifadəçilər üçündür. Premium plan almaq istəyirsinizmi?',
               [
                 { text: 'Xeyr', style: 'cancel' },
-                { text: 'Bəli', onPress: () => router.push('/pricing') }
-              ]
+                { text: 'Bəli', onPress: () => router.push('/pricing') },
+              ],
             );
             return;
           }
-          
+
           logger.info('[StoreTheme] Layout selected:', layout.id);
           setSelectedLayout(layout.id);
         }}
@@ -332,14 +332,14 @@ export default function StoreThemeScreen() {
     return (
       <View style={[
         styles.previewContainer,
-        { backgroundColor: selectedThemeColor.background }
+        { backgroundColor: selectedThemeColor.background },
       ]}>
         <Text style={[styles.previewTitle, { color: colors.text }]}>Önizləmə</Text>
-        
+
         {/* Store Header Preview */}
         <View style={[
           styles.previewHeader,
-          { backgroundColor: selectedThemeColor.primary }
+          { backgroundColor: selectedThemeColor.primary },
         ]}>
           <Text style={[styles.previewStoreName, { color: selectedThemeColor.background }]}>
             {store.name}
@@ -363,16 +363,16 @@ export default function StoreThemeScreen() {
                   key={item}
                   style={[
                     styles.gridItem,
-                    { backgroundColor: selectedThemeColor.background }
+                    { backgroundColor: selectedThemeColor.background },
                   ]}
                 >
                   <View style={[
                     styles.gridItemImage,
-                    { backgroundColor: selectedThemeColor.secondary }
+                    { backgroundColor: selectedThemeColor.secondary },
                   ]} />
                   <Text style={[
                     styles.gridItemText,
-                    { color: selectedThemeColor.text }
+                    { color: selectedThemeColor.text },
                   ]}>
                     Məhsul {item}
                   </Text>
@@ -386,22 +386,22 @@ export default function StoreThemeScreen() {
                   key={item}
                   style={[
                     styles.cardItem,
-                    { backgroundColor: selectedThemeColor.background }
+                    { backgroundColor: selectedThemeColor.background },
                   ]}
                 >
                   <View style={[
                     styles.cardItemImage,
-                    { backgroundColor: selectedThemeColor.secondary }
+                    { backgroundColor: selectedThemeColor.secondary },
                   ]} />
                   <Text style={[
                     styles.cardItemTitle,
-                    { color: selectedThemeColor.text }
+                    { color: selectedThemeColor.text },
                   ]}>
                     Məhsul {item}
                   </Text>
                   <Text style={[
                     styles.cardItemPrice,
-                    { color: selectedThemeColor.primary }
+                    { color: selectedThemeColor.primary },
                   ]}>
                     150 AZN
                   </Text>
@@ -415,23 +415,23 @@ export default function StoreThemeScreen() {
                   key={item}
                   style={[
                     styles.listItem,
-                    { backgroundColor: selectedThemeColor.background }
+                    { backgroundColor: selectedThemeColor.background },
                   ]}
                 >
                   <View style={[
                     styles.listItemImage,
-                    { backgroundColor: selectedThemeColor.secondary }
+                    { backgroundColor: selectedThemeColor.secondary },
                   ]} />
                   <View style={styles.listItemContent}>
                     <Text style={[
                       styles.listItemTitle,
-                      { color: selectedThemeColor.text }
+                      { color: selectedThemeColor.text },
                     ]}>
                       Məhsul {item}
                     </Text>
                     <Text style={[
                       styles.listItemPrice,
-                      { color: selectedThemeColor.primary }
+                      { color: selectedThemeColor.primary },
                     ]}>
                       150 AZN
                     </Text>
@@ -447,8 +447,8 @@ export default function StoreThemeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Mağaza Görünüşü',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
@@ -467,10 +467,10 @@ export default function StoreThemeScreen() {
                 <RotateCcw size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
-          )
-        }} 
+          ),
+        }}
       />
-      
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {previewMode ? (
           renderPreview()
@@ -485,7 +485,7 @@ export default function StoreThemeScreen() {
               <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
                 Mağazanız üçün uyğun rəng palitrasını seçin
               </Text>
-              
+
               <View style={styles.colorGrid}>
                 {themeColors.map(renderColorOption)}
               </View>
@@ -500,7 +500,7 @@ export default function StoreThemeScreen() {
               <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
                 Məhsullarınızın necə göstəriləcəyini seçin
               </Text>
-              
+
               <View style={styles.layoutGrid}>
                 {themeLayouts.map(renderLayoutOption)}
               </View>
@@ -512,9 +512,9 @@ export default function StoreThemeScreen() {
                 <Sparkles size={24} color={colors.primary} />
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Əlavə Seçimlər</Text>
               </View>
-              
-              <TouchableOpacity 
-                style={[styles.advancedOption, { borderBottomColor: colors.border }]} 
+
+              <TouchableOpacity
+                style={[styles.advancedOption, { borderBottomColor: colors.border }]}
                 onPress={() => Alert.alert('Premium Xüsusiyyət', 'Bu xüsusiyyət premium istifadəçilər üçündür')}
               >
                 <View style={styles.advancedOptionLeft}>
@@ -531,8 +531,8 @@ export default function StoreThemeScreen() {
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.advancedOption, { borderBottomColor: colors.border }]} 
+              <TouchableOpacity
+                style={[styles.advancedOption, { borderBottomColor: colors.border }]}
                 onPress={() => Alert.alert('Premium Xüsusiyyət', 'Bu xüsusiyyət premium istifadəçilər üçündür')}
               >
                 <View style={styles.advancedOptionLeft}>
@@ -549,8 +549,8 @@ export default function StoreThemeScreen() {
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.advancedOption, { borderBottomColor: colors.border }]} 
+              <TouchableOpacity
+                style={[styles.advancedOption, { borderBottomColor: colors.border }]}
                 onPress={() => Alert.alert('Premium Xüsusiyyət', 'Bu xüsusiyyət premium istifadəçilər üçündür')}
               >
                 <View style={styles.advancedOptionLeft}>

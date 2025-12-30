@@ -25,7 +25,7 @@ export default protectedProcedure
       text: z.string().max(1000).default(''),
       type: z.enum(['text', 'image', 'audio', 'file']).default('text') as z.ZodType<ChatMessageType>,
       attachments: z.array(attachmentSchema).optional(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const senderId = ctx.user.userId;

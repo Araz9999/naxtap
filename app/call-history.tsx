@@ -35,18 +35,18 @@ export default function CallHistoryScreen() {
   const { currentUser } = useUserStore();
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
 
-  logger.info('[CallHistory] Screen opened:', { 
+  logger.info('[CallHistory] Screen opened:', {
     userId: currentUser?.id,
-    totalCalls: calls.length 
+    totalCalls: calls.length,
   });
 
-  const userCalls = calls.filter(call => 
-    call.callerId === currentUser?.id || call.receiverId === currentUser?.id
+  const userCalls = calls.filter(call =>
+    call.callerId === currentUser?.id || call.receiverId === currentUser?.id,
   );
-  
-  logger.info('[CallHistory] User calls filtered:', { 
+
+  logger.info('[CallHistory] User calls filtered:', {
     totalCalls: calls.length,
-    userCalls: userCalls.length 
+    userCalls: userCalls.length,
   });
 
   const formatDuration = (seconds?: number) => {
@@ -54,10 +54,10 @@ export default function CallHistoryScreen() {
     if (seconds === undefined || seconds === null || isNaN(seconds) || !isFinite(seconds)) {
       return '00:00';
     }
-    
+
     // ✅ Handle negative values
     const validSeconds = Math.max(0, Math.floor(seconds));
-    
+
     const mins = Math.floor(validSeconds / 60);
     const secs = validSeconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -66,12 +66,12 @@ export default function CallHistoryScreen() {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      
+
       // ✅ Validate date
       if (isNaN(date.getTime())) {
         return language === 'az' ? 'Naməlum' : 'Неизвестно';
       }
-      
+
       const now = new Date();
       const diffTime = Math.abs(now.getTime() - date.getTime());
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // ✅ Use floor, not ceil
@@ -88,9 +88,9 @@ export default function CallHistoryScreen() {
     } catch (error) {
       return language === 'az' ? 'Naməlum' : 'Неизвестно';
     }
-  }
-    
-    const now = new Date();
+  };
+
+  const now = new Date();
 
   const getCallIcon = (call: Call) => {
     const isIncoming = call.receiverId === currentUser?.id;
@@ -113,7 +113,7 @@ export default function CallHistoryScreen() {
       case 'declined':
         return <PhoneOff size={iconSize} color={iconColor} />;
       default:
-        return isIncoming 
+        return isIncoming
           ? <PhoneIncoming size={iconSize} color={iconColor} />
           : <PhoneOutgoing size={iconSize} color={iconColor} />;
     }
@@ -121,10 +121,10 @@ export default function CallHistoryScreen() {
 
   const getCallStatusText = (call: Call) => {
     const isIncoming = call.receiverId === currentUser?.id;
-    const callTypeText = call.type === 'video' 
+    const callTypeText = call.type === 'video'
       ? (language === 'az' ? 'Video' : 'Видео')
       : (language === 'az' ? 'Səsli' : 'Голосовой');
-    
+
     switch (call.status) {
       case 'missed':
         return `${language === 'az' ? 'Buraxılmış' : 'Пропущенный'} ${callTypeText.toLowerCase()}`;
@@ -133,7 +133,7 @@ export default function CallHistoryScreen() {
       case 'ended':
         return formatDuration(call.duration);
       default:
-        const directionText = isIncoming 
+        const directionText = isIncoming
           ? (language === 'az' ? 'Gələn' : 'Входящий')
           : (language === 'az' ? 'Gedən' : 'Исходящий');
         return `${directionText} ${callTypeText.toLowerCase()}`;
@@ -146,24 +146,24 @@ export default function CallHistoryScreen() {
         logger.error('Invalid call object');
         return;
       }
-      
+
       if (!call.isRead) {
         markCallAsRead(call.id);
       }
 
       const otherUserId = call.callerId === currentUser?.id ? call.receiverId : call.callerId;
-      
+
       // ✅ Validate otherUserId
       if (!otherUserId || typeof otherUserId !== 'string') {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+          language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
         );
         return;
       }
-      
+
       const otherUser = users.find(u => u.id === otherUserId);
-      
+
       if (otherUser?.privacySettings?.hidePhoneNumber) {
         // Initiate app call with same type as previous call
         try {
@@ -172,7 +172,7 @@ export default function CallHistoryScreen() {
             logger.error('No current user for initiating call');
             Alert.alert(
               language === 'az' ? 'Xəta' : 'Ошибка',
-              language === 'az' ? 'Zəng başlatmaq üçün daxil olun' : 'Войдите, чтобы начать звонок'
+              language === 'az' ? 'Zəng başlatmaq üçün daxil olun' : 'Войдите, чтобы начать звонок',
             );
             return;
           }
@@ -183,9 +183,9 @@ export default function CallHistoryScreen() {
           logger.error('Failed to initiate call:', error);
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' 
+            language === 'az'
               ? 'Zəng başlatıla bilmədi. Xahiş edirik yenidən cəhd edin.'
-              : 'Не удалось начать звонок. Пожалуйста, попробуйте снова.'
+              : 'Не удалось начать звонок. Пожалуйста, попробуйте снова.',
           );
         }
       }
@@ -196,29 +196,29 @@ export default function CallHistoryScreen() {
 
   const handleDeleteCall = (callId: string) => {
     logger.info('[CallHistory] Delete call requested:', { callId });
-    
+
     const callToDelete = calls.find(call => call.id === callId);
     if (!callToDelete) {
       logger.error('[CallHistory] Call not found for deletion:', { callId });
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Zəng tapılmadı' : 'Звонок не найден'
+        language === 'az' ? 'Zəng tapılmadı' : 'Звонок не найден',
       );
       return;
     }
-    
+
     const otherUserId = callToDelete?.callerId === currentUser?.id ? callToDelete?.receiverId : callToDelete?.callerId;
     const otherUser = users.find(u => u.id === otherUserId);
-    
-    logger.info('[CallHistory] Showing delete confirmation:', { 
-      callId, 
+
+    logger.info('[CallHistory] Showing delete confirmation:', {
+      callId,
       otherUserId,
-      otherUserName: otherUser?.name 
+      otherUserName: otherUser?.name,
     });
-    
+
     Alert.alert(
       language === 'az' ? 'Zəngi sil' : 'Удалить звонок',
-      language === 'az' 
+      language === 'az'
         ? `${otherUser?.name || 'Bu istifadəçi'} ilə olan zəngi silmək istədiyinizə əminsiniz?`
         : `Вы уверены, что хотите удалить звонок с ${otherUser?.name || 'этим пользователем'}?`,
       [
@@ -227,7 +227,7 @@ export default function CallHistoryScreen() {
           style: 'cancel',
           onPress: () => {
             logger.info('[CallHistory] Delete call cancelled:', { callId });
-          }
+          },
         },
         {
           text: language === 'az' ? 'Sil' : 'Удалить',
@@ -239,16 +239,16 @@ export default function CallHistoryScreen() {
             logger.info('[CallHistory] Call deleted successfully:', { callId });
           },
         },
-      ]
+      ],
     );
   };
 
   const handleClearAllHistory = () => {
     logger.info('[CallHistory] Clear all history requested:', { totalCalls: userCalls.length });
-    
+
     Alert.alert(
       language === 'az' ? 'Bütün tarixçəni sil' : 'Очистить всю историю',
-      language === 'az' 
+      language === 'az'
         ? 'Bütün zəng tarixçəsini silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.'
         : 'Вы уверены, что хотите очистить всю историю звонков? Это действие нельзя отменить.',
       [
@@ -257,7 +257,7 @@ export default function CallHistoryScreen() {
           style: 'cancel',
           onPress: () => {
             logger.info('[CallHistory] Clear all history cancelled');
-          }
+          },
         },
         {
           text: language === 'az' ? 'Sil' : 'Удалить',
@@ -268,7 +268,7 @@ export default function CallHistoryScreen() {
             logger.info('[CallHistory] All history cleared successfully');
           },
         },
-      ]
+      ],
     );
   };
 
@@ -292,12 +292,12 @@ export default function CallHistoryScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-        
+
         <TouchableOpacity
           style={[
-            styles.callItem, 
+            styles.callItem,
             isUnread && styles.unreadCall,
-            isSwipedOpen && styles.swipedItem
+            isSwipedOpen && styles.swipedItem,
           ]}
           onPress={() => {
             if (isSwipedOpen) {
@@ -311,8 +311,8 @@ export default function CallHistoryScreen() {
           }}
           testID={`call-item-${item.id}`}
         >
-          <Image 
-            source={{ uri: otherUser?.avatar || 'https://via.placeholder.com/50' }} 
+          <Image
+            source={{ uri: otherUser?.avatar || 'https://via.placeholder.com/50' }}
             style={styles.avatar}
             // defaultSource={require('@/assets/images/default-avatar.png')}
             onError={() => {
@@ -320,7 +320,7 @@ export default function CallHistoryScreen() {
               logger.debug('Avatar image failed to load for user:', otherUserId);
             }}
           />
-          
+
           <View style={styles.callInfo}>
             <View style={styles.callHeader}>
               <Text style={[styles.userName, isUnread && styles.unreadText]}>
@@ -330,7 +330,7 @@ export default function CallHistoryScreen() {
                 {formatDate(item.startTime)}
               </Text>
             </View>
-            
+
             <View style={styles.callDetails}>
               <View style={styles.callStatus}>
                 {getCallIcon(item)}
@@ -343,7 +343,7 @@ export default function CallHistoryScreen() {
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.callActions}>
             <TouchableOpacity
               style={styles.callButton}
@@ -351,7 +351,7 @@ export default function CallHistoryScreen() {
             >
               <Phone size={20} color={Colors.primary} />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.callButton, styles.videoButton]}
               onPress={async () => {
@@ -361,7 +361,7 @@ export default function CallHistoryScreen() {
                     logger.error('No current user for video call initiation');
                     Alert.alert(
                       language === 'az' ? 'Xəta' : 'Ошибка',
-                      language === 'az' ? 'Video zəng başlatmaq üçün giriş edin' : 'Войдите для видеозвонка'
+                      language === 'az' ? 'Video zəng başlatmaq üçün giriş edin' : 'Войдите для видеозвонка',
                     );
                     return;
                   }
@@ -371,14 +371,14 @@ export default function CallHistoryScreen() {
                   logger.error('Failed to initiate video call:', error);
                   Alert.alert(
                     language === 'az' ? 'Video Zəng Xətası' : 'Ошибка видеозвонка',
-                    language === 'az' ? 'Video zəng başlatmaq mümkün olmadı' : 'Не удалось начать видеозвонок'
+                    language === 'az' ? 'Video zəng başlatmaq mümkün olmadı' : 'Не удалось начать видеозвонок',
                   );
                 }
               }}
             >
               <Video size={20} color={Colors.primary} />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.callButton, styles.deleteCallButton]}
               onPress={() => handleDeleteCall(item.id)}
@@ -408,7 +408,7 @@ export default function CallHistoryScreen() {
           ) : null,
         }}
       />
-      
+
       {userCalls.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Phone size={64} color={Colors.textSecondary} />
@@ -416,7 +416,7 @@ export default function CallHistoryScreen() {
             {language === 'az' ? 'Zəng tarixçəsi boşdur' : 'История звонков пуста'}
           </Text>
           <Text style={styles.emptyText}>
-            {language === 'az' 
+            {language === 'az'
               ? 'Hələ heç bir zəng etməmisiniz və ya qəbul etməmisiniz'
               : 'Вы еще не совершали и не принимали звонков'
             }
@@ -437,7 +437,7 @@ export default function CallHistoryScreen() {
               </TouchableOpacity>
             )}
           </View>
-          
+
           <FlatList
             data={userCalls}
             renderItem={renderCallItem}

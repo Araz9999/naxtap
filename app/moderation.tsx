@@ -11,17 +11,17 @@ import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { useNotificationStore } from '@/store/notificationStore';
 import { notificationService } from '@/services/notificationService';
-import { 
-  Shield, 
-  Users, 
-  BarChart3, 
+import {
+  Shield,
+  Users,
+  BarChart3,
   Settings,
   ChevronRight,
   Clock,
   CheckCircle,
   UserCheck,
   Flag,
-  HelpCircle
+  HelpCircle,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -31,8 +31,8 @@ export default function ModerationScreen() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
   const { currentUser } = useUserStore();
-  const { 
-    moderators, 
+  const {
+    moderators,
     stats,
     getReportsByStatus,
   } = useModerationStore();
@@ -70,10 +70,10 @@ export default function ModerationScreen() {
   const actualStats = backendStats || stats;
   const actualReports = allReports || getReportsByStatus('pending');
   const actualModerators = backendModerators || moderators || [];
-  
+
   const isLoading = statsLoading || reportsLoading || moderatorsLoading;
   const hasError = statsError || reportsError;
-  
+
   // Log errors for debugging
   useEffect(() => {
     if (statsError) {
@@ -83,7 +83,7 @@ export default function ModerationScreen() {
       logger.error('[Moderation] Error fetching reports:', reportsError);
     }
   }, [statsError, reportsError]);
-  
+
   // ✅ Get moderator permissions
   const hasPermission = (permission: string) => {
     if (!currentUser) return false;
@@ -93,7 +93,7 @@ export default function ModerationScreen() {
     }
     return false;
   };
-  
+
   const isAdmin = currentUser?.role === 'admin';
   const canManageReports = hasPermission('manage_reports');
   const canManageTickets = hasPermission('manage_tickets');
@@ -112,14 +112,10 @@ export default function ModerationScreen() {
             text: language === 'az' ? 'Geri' : 'Назад',
             onPress: () => router.back(),
           },
-        ]
+        ],
       );
     }
   }, [canAccessModeration, language, router]);
-
-  if (!canAccessModeration) {
-    return null;
-  }
 
   // ✅ Get reports by status from backend data
   const pendingReports = actualReports?.filter((r: any) => r.status === 'pending') || [];
@@ -180,12 +176,16 @@ export default function ModerationScreen() {
     addNotification,
   ]);
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    icon: Icon, 
-    color, 
-    onPress 
+  if (!canAccessModeration) {
+    return null;
+  }
+
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
+    color,
+    onPress,
   }: {
     title: string;
     value: number;
@@ -193,7 +193,7 @@ export default function ModerationScreen() {
     color: string;
     onPress?: () => void;
   }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.statCard, { backgroundColor: colors.card }]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -206,13 +206,13 @@ export default function ModerationScreen() {
     </TouchableOpacity>
   );
 
-  const MenuCard = ({ 
-    title, 
-    subtitle, 
-    icon: Icon, 
+  const MenuCard = ({
+    title,
+    subtitle,
+    icon: Icon,
     onPress,
     badge,
-    color = colors.primary
+    color = colors.primary,
   }: {
     title: string;
     subtitle: string;
@@ -221,7 +221,7 @@ export default function ModerationScreen() {
     badge?: number;
     color?: string;
   }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.menuCard, { backgroundColor: colors.card }]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -251,21 +251,21 @@ export default function ModerationScreen() {
         language === 'az' ? 'Xəta' : 'Ошибка',
         language === 'az'
           ? 'Səhifə açıla bilmədi. Zəhmət olmasa yenidən cəhd edin.'
-          : 'Не удалось открыть страницу. Пожалуйста, попробуйте снова.'
+          : 'Не удалось открыть страницу. Пожалуйста, попробуйте снова.',
       );
     }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: language === 'az' ? 'Moderasiya' : 'Модерация',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
-        }} 
+        }}
       />
-      
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.primary }]}>
@@ -275,8 +275,8 @@ export default function ModerationScreen() {
               {language === 'az' ? 'Moderasiya Paneli' : 'Панель модерации'}
             </Text>
             <Text style={styles.headerSubtitle}>
-              {language === 'az' 
-                ? 'Tətbiqi təhlükəsiz saxlayın' 
+              {language === 'az'
+                ? 'Tətbiqi təhlükəsiz saxlayın'
                 : 'Обеспечьте безопасность приложения'
               }
             </Text>
@@ -291,8 +291,8 @@ export default function ModerationScreen() {
           {hasError ? (
             <View style={[styles.errorContainer, { backgroundColor: `${colors.error || '#EF4444'}15` }]}>
               <Text style={[styles.errorText, { color: colors.error || '#EF4444' }]}>
-                {language === 'az' 
-                  ? 'Məlumat yüklənərkən xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.' 
+                {language === 'az'
+                  ? 'Məlumat yüklənərkən xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
                   : 'Произошла ошибка при загрузке данных. Пожалуйста, попробуйте еще раз.'}
               </Text>
             </View>
@@ -304,46 +304,46 @@ export default function ModerationScreen() {
               </Text>
             </View>
           ) : (
-          <View style={styles.statsGrid}>
-            <StatCard
-              title={language === 'az' ? 'Gözləyən şikayətlər' : 'Ожидающие жалобы'}
-              value={pendingReportsCount}
-              icon={Clock}
-              color="#F59E0B"
-              onPress={() => go('/admin-reports')}
-            />
-            <StatCard
-              title={language === 'az' ? 'Açıq biletlər' : 'Открытые тикеты'}
-              value={openTicketsCount + inProgressTicketsCount}
-              icon={HelpCircle}
-              color="#3B82F6"
-              onPress={() => go('/admin-tickets')}
-            />
-            <StatCard
-              title={language === 'az' ? 'Moderatorlar' : 'Модераторы'}
-              value={actualModerators?.length || 0} 
-              icon={UserCheck}
-              color="#10B981"
-              onPress={() => {
-                if (!isAdmin) {
-                  Alert.alert(
-                    language === 'az' ? 'Giriş məhduddur' : 'Доступ ограничен',
-                    language === 'az'
-                      ? 'Bu bölmə yalnız admin üçün nəzərdə tutulub.'
-                      : 'Этот раздел доступен только администратору.'
-                  );
-                  return;
-                }
-                go('/admin-moderators');
-              }}
-            />
-            <StatCard
-              title={language === 'az' ? 'Həll edilmiş' : 'Решенные'}
-              value={resolvedReportsCount}
-              icon={CheckCircle}
-              color="#059669"
-            />
-          </View>
+            <View style={styles.statsGrid}>
+              <StatCard
+                title={language === 'az' ? 'Gözləyən şikayətlər' : 'Ожидающие жалобы'}
+                value={pendingReportsCount}
+                icon={Clock}
+                color="#F59E0B"
+                onPress={() => go('/admin-reports')}
+              />
+              <StatCard
+                title={language === 'az' ? 'Açıq biletlər' : 'Открытые тикеты'}
+                value={openTicketsCount + inProgressTicketsCount}
+                icon={HelpCircle}
+                color="#3B82F6"
+                onPress={() => go('/admin-tickets')}
+              />
+              <StatCard
+                title={language === 'az' ? 'Moderatorlar' : 'Модераторы'}
+                value={actualModerators?.length || 0}
+                icon={UserCheck}
+                color="#10B981"
+                onPress={() => {
+                  if (!isAdmin) {
+                    Alert.alert(
+                      language === 'az' ? 'Giriş məhduddur' : 'Доступ ограничен',
+                      language === 'az'
+                        ? 'Bu bölmə yalnız admin üçün nəzərdə tutulub.'
+                        : 'Этот раздел доступен только администратору.',
+                    );
+                    return;
+                  }
+                  go('/admin-moderators');
+                }}
+              />
+              <StatCard
+                title={language === 'az' ? 'Həll edilmiş' : 'Решенные'}
+                value={resolvedReportsCount}
+                icon={CheckCircle}
+                color="#059669"
+              />
+            </View>
           )}
         </View>
 
@@ -352,13 +352,13 @@ export default function ModerationScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {language === 'az' ? 'Sürətli əməliyyatlar' : 'Быстрые действия'}
           </Text>
-          
+
           {/* ✅ Only show if user has manage_reports permission */}
           {canManageReports && (
             <MenuCard
               title={language === 'az' ? 'Şikayətləri idarə et' : 'Управление жалобами'}
-              subtitle={language === 'az' 
-                ? `${pendingReportsCount} gözləyən şikayət` 
+              subtitle={language === 'az'
+                ? `${pendingReportsCount} gözləyən şikayət`
                 : `${pendingReportsCount} ожидающих жалоб`
               }
               icon={Flag}
@@ -372,8 +372,8 @@ export default function ModerationScreen() {
           {canManageTickets && (
             <MenuCard
               title={language === 'az' ? 'Dəstək biletləri' : 'Тикеты поддержки'}
-              subtitle={language === 'az' 
-                ? `${openTicketsCount + inProgressTicketsCount} aktiv bilet` 
+              subtitle={language === 'az'
+                ? `${openTicketsCount + inProgressTicketsCount} aktiv bilet`
                 : `${openTicketsCount + inProgressTicketsCount} активных тикетов`
               }
               icon={HelpCircle}
@@ -387,8 +387,8 @@ export default function ModerationScreen() {
           {canManageUsers && (
             <MenuCard
               title={language === 'az' ? 'İstifadəçi idarəetməsi' : 'Управление пользователями'}
-              subtitle={language === 'az' 
-                ? 'İstifadəçiləri idarə edin və moderasiya edin' 
+              subtitle={language === 'az'
+                ? 'İstifadəçiləri idarə edin və moderasiya edin'
                 : 'Управляйте и модерируйте пользователей'
               }
               icon={Users}
@@ -401,8 +401,8 @@ export default function ModerationScreen() {
           {canManageModerators && (
             <MenuCard
               title={language === 'az' ? 'Moderator idarəetməsi' : 'Управление модераторами'}
-              subtitle={language === 'az' 
-                ? `${actualModerators?.length || 0} aktiv moderator` 
+              subtitle={language === 'az'
+                ? `${actualModerators?.length || 0} aktiv moderator`
                 : `${actualModerators?.length || 0} активных модераторов`
               }
               icon={UserCheck}
@@ -415,8 +415,8 @@ export default function ModerationScreen() {
           {canViewAnalytics && (
             <MenuCard
               title={language === 'az' ? 'Analitika və hesabatlar' : 'Аналитика и отчеты'}
-              subtitle={language === 'az' 
-                ? 'Moderasiya statistikası və hesabatlar' 
+              subtitle={language === 'az'
+                ? 'Moderasiya statistikası və hesabatlar'
                 : 'Статистика модерации и отчеты'
               }
               icon={BarChart3}
@@ -428,26 +428,26 @@ export default function ModerationScreen() {
           {/* ✅ Settings always visible to all moderators */}
           <MenuCard
             title={language === 'az' ? 'Moderasiya tənzimləmələri' : 'Настройки модерации'}
-            subtitle={language === 'az' 
-              ? 'Avtomatik qaydalar və tənzimləmələr' 
+            subtitle={language === 'az'
+              ? 'Avtomatik qaydalar və tənzimləmələr'
               : 'Автоматические правила и настройки'
             }
             icon={Settings}
             onPress={() => go('/admin-moderation-settings')}
             color="#6B7280"
           />
-          
+
           {/* ✅ Show warning if moderator has no permissions */}
-          {currentUser?.role === 'moderator' && 
-           !canManageReports && 
-           !canManageTickets && 
-           !canManageUsers && 
-           !canManageModerators && 
+          {currentUser?.role === 'moderator' &&
+           !canManageReports &&
+           !canManageTickets &&
+           !canManageUsers &&
+           !canManageModerators &&
            !canViewAnalytics && (
             <View style={[styles.warningCard, { backgroundColor: `${colors.error}20` }]}>
               <Text style={[styles.warningText, { color: colors.error }]}>
-                {language === 'az' 
-                  ? 'Sizin heç bir moderasiya icazəniz yoxdur. Admin ilə əlaqə saxlayın.' 
+                {language === 'az'
+                  ? 'Sizin heç bir moderasiya icazəniz yoxdur. Admin ilə əlaqə saxlayın.'
                   : 'У вас нет прав модерации. Обратитесь к администратору.'
                 }
               </Text>
@@ -460,7 +460,7 @@ export default function ModerationScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {language === 'az' ? 'Son fəaliyyət' : 'Последняя активность'}
           </Text>
-          
+
           <View style={[styles.activityCard, { backgroundColor: colors.card }]}>
             <View style={styles.activityItem}>
               <View style={[styles.activityIcon, { backgroundColor: '#EF444420' }]}>

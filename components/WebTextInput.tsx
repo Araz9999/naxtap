@@ -60,16 +60,18 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
     }
 
     // Create native HTML input
-    const input = multiline 
+    const input = multiline
       ? document.createElement('textarea')
       : document.createElement('input');
-    
-    input.type = multiline ? undefined : 'text';
+
+    if (!multiline) {
+      (input as HTMLInputElement).type = 'text';
+    }
     input.placeholder = placeholder || '';
     input.value = valueRef.current;
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('spellcheck', 'false');
-    
+
     if (maxLength) {
       input.maxLength = maxLength;
     }
@@ -102,7 +104,7 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
     const handleInput = () => {
       const newValue = input.value;
       valueRef.current = newValue;
-      
+
       // Call onChangeText in next tick to avoid React error #185
       if (onChangeText) {
         requestAnimationFrame(() => {
@@ -114,17 +116,18 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
     input.addEventListener('input', handleInput);
 
     // Handle Enter key
-    if (!multiline) {
-      input.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          if (onSubmitEditing) {
-            requestAnimationFrame(() => {
-              onSubmitEditing();
-            });
-          }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (onSubmitEditing) {
+          requestAnimationFrame(() => {
+            onSubmitEditing();
+          });
         }
-      });
+      }
+    };
+    if (!multiline) {
+      input.addEventListener('keydown', handleKeyDown as unknown as EventListener);
     }
 
     // Handle focus
@@ -141,6 +144,9 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
     // Cleanup
     return () => {
       input.removeEventListener('input', handleInput);
+      if (!multiline) {
+        input.removeEventListener('keydown', handleKeyDown as unknown as EventListener);
+      }
       if (containerRef.current && input.parentNode === containerRef.current) {
         containerRef.current.removeChild(input);
       }
@@ -176,7 +182,7 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
   }
 
   return (
-    <View 
+    <View
       ref={containerRef as any}
       style={[styles.container, style]}
       collapsable={false}

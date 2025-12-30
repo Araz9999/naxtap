@@ -48,7 +48,7 @@ export default function LiveChatScreen() {
   const [isScrolling, setIsScrolling] = useState<boolean>(false);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showAttachments, setShowAttachments] = useState<boolean>(false);
-  
+
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -63,7 +63,7 @@ export default function LiveChatScreen() {
     {
       enabled: !!currentUser?.id,
       refetchInterval: 5000,
-    }
+    },
   );
 
   const activeConversation = useMemo(() => {
@@ -78,7 +78,7 @@ export default function LiveChatScreen() {
     {
       enabled: !!conversationId,
       refetchInterval: 2000,
-    }
+    },
   );
 
   const createConversationMutation = trpc.liveChat.createConversation.useMutation();
@@ -133,11 +133,11 @@ export default function LiveChatScreen() {
       logger.error('[LiveChat] Cannot start chat: user not logged in');
       return;
     }
-    
+
     if (!selectedCategory || !subject.trim()) {
       logger.warn('[LiveChat] Start chat validation failed:', {
         hasCategory: !!selectedCategory,
-        hasSubject: !!subject.trim()
+        hasSubject: !!subject.trim(),
       });
       return;
     }
@@ -146,7 +146,7 @@ export default function LiveChatScreen() {
       userId: currentUser.id,
       category: selectedCategory,
       priority,
-      subjectLength: subject.trim().length
+      subjectLength: subject.trim().length,
     });
 
     try {
@@ -179,7 +179,7 @@ export default function LiveChatScreen() {
         hasMessage: !!messageToSend.trim(),
         hasAttachments: attachments.length > 0,
         hasChatId: !!conversationId,
-        hasUser: !!currentUser
+        hasUser: !!currentUser,
       });
       return;
     }
@@ -188,7 +188,7 @@ export default function LiveChatScreen() {
       conversationId,
       userId: currentUser.id,
       messageLength: messageToSend.trim().length,
-      attachmentsCount: attachments.length
+      attachmentsCount: attachments.length,
     });
 
     try {
@@ -210,19 +210,19 @@ export default function LiveChatScreen() {
             await utils.liveChat.getMessages.invalidate({ conversationId });
             await utils.liveChat.getConversations.invalidate({ userId: currentUser.id });
           },
-        }
+        },
       );
-      
+
       // Clear message - on web, also clear the native input
       setMessage('');
       if (Platform.OS === 'web' && webChatInputRef.current) {
         webChatInputRef.current.clear();
       }
-      
+
       setAttachments([]);
       setShowAttachments(false);
       setShouldScrollToEnd(true);
-      
+
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
@@ -239,9 +239,9 @@ export default function LiveChatScreen() {
     if (Number.isNaN(date.getTime())) {
       return '--:--';
     }
-    return date.toLocaleTimeString('az-AZ', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('az-AZ', {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -252,11 +252,11 @@ export default function LiveChatScreen() {
     return (
       <View style={[
         styles.messageBubble,
-        isUser ? styles.userMessage : styles.operatorMessage
+        isUser ? styles.userMessage : styles.operatorMessage,
       ]}>
         {isSupport && (
           <View style={styles.operatorInfo}>
-            <Image 
+            <Image
               source={{ uri: msg.senderAvatar || 'https://via.placeholder.com/30' }}
               style={styles.operatorAvatar}
             />
@@ -265,43 +265,43 @@ export default function LiveChatScreen() {
             </Text>
           </View>
         )}
-        
+
         <View style={[
           styles.messageContent,
           {
             backgroundColor: isUser ? colors.primary : colors.card,
-            alignSelf: isUser ? 'flex-end' : 'flex-start'
-          }
+            alignSelf: isUser ? 'flex-end' : 'flex-start',
+          },
         ]}>
           <Text style={[
             styles.messageText,
-            { color: isUser ? '#fff' : colors.text }
+            { color: isUser ? '#fff' : colors.text },
           ]}>
             {msg.message}
           </Text>
-          
+
           {Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
             <View style={styles.attachmentsContainer}>
               {msg.attachments.map((attachment: string, index: number) => {
-                const isImage = attachment.toLowerCase().includes('.jpg') || 
-                               attachment.toLowerCase().includes('.jpeg') || 
-                               attachment.toLowerCase().includes('.png') || 
+                const isImage = attachment.toLowerCase().includes('.jpg') ||
+                               attachment.toLowerCase().includes('.jpeg') ||
+                               attachment.toLowerCase().includes('.png') ||
                                attachment.toLowerCase().includes('.gif') ||
                                attachment.startsWith('file://') ||
                                attachment.startsWith('content://') ||
                                attachment.startsWith('ph://');
-                
+
                 return (
                   <TouchableOpacity
                     key={index}
                     style={[
                       styles.attachmentPreview,
-                      { backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : colors.border }
+                      { backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : colors.border },
                     ]}
                   >
                     {isImage ? (
-                      <Image 
-                        source={{ uri: attachment }} 
+                      <Image
+                        source={{ uri: attachment }}
                         style={styles.attachmentImage}
                         resizeMode="cover"
                       />
@@ -318,11 +318,11 @@ export default function LiveChatScreen() {
               })}
             </View>
           )}
-          
+
           <View style={styles.messageFooter}>
             <Text style={[
               styles.messageTime,
-              { color: isUser ? 'rgba(255,255,255,0.7)' : colors.textSecondary }
+              { color: isUser ? 'rgba(255,255,255,0.7)' : colors.textSecondary },
             ]}>
               {formatTime(msg.timestamp)}
             </Text>
@@ -491,12 +491,12 @@ export default function LiveChatScreen() {
     logger.warn('[LiveChat] Access denied: user not logged in');
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <Stack.Screen 
-          options={{ 
+        <Stack.Screen
+          options={{
             title: language === 'az' ? 'Canlı Dəstək' : 'Живая поддержка',
             headerStyle: { backgroundColor: colors.card },
             headerTintColor: colors.text,
-          }} 
+          }}
         />
         <View style={styles.centerContainer}>
           <Text style={[styles.errorText, { color: colors.text }]}>
@@ -506,21 +506,21 @@ export default function LiveChatScreen() {
       </SafeAreaView>
     );
   }
-  
-  logger.info('[LiveChat] Screen accessed:', { 
+
+  logger.info('[LiveChat] Screen accessed:', {
     userId: currentUser.id,
     hasChatId: !!conversationId,
-    showStartForm
+    showStartForm,
   });
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: language === 'az' ? 'Canlı Dəstək' : 'Живая поддержка',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
-        }} 
+        }}
       />
       {showStartForm ? (
         <StartChatForm />

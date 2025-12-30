@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -24,7 +24,7 @@ import {
   Clock,
   Zap,
   TrendingUp,
-  Gift
+  Gift,
 } from 'lucide-react-native';
 import { logger } from '@/utils/logger';
 
@@ -40,120 +40,120 @@ export default function RenewalOffersScreen() {
   const { language } = useLanguageStore();
   const { getExpiringListings, listings, promoteListing } = useListingStore();
   const { currentUser, walletBalance, bonusBalance, spendFromWallet, spendFromBonus } = useUserStore();
-  
+
   const [renewalOffers, setRenewalOffers] = useState<RenewalOffer[]>([]);
   const [isRenewing, setIsRenewing] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (!currentUser) return;
-    
+
     // Calculate renewal offers based on expiration time
     const offers: RenewalOffer[] = [];
-    
+
     // 7 days - 15% discount
     const expiring7Days = getExpiringListings(currentUser.id, 7);
     expiring7Days.forEach(l => {
       const now = new Date();
       const expiresAt = new Date(l.expiresAt);
       const daysRemaining = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       if (daysRemaining === 7) {
         offers.push({
           listingId: l.id,
           daysRemaining: 7,
           discount: 15,
-          reason: '7days'
+          reason: '7days',
         });
       }
     });
-    
+
     // 3 days - 10% discount
     const expiring3Days = getExpiringListings(currentUser.id, 3);
     expiring3Days.forEach(l => {
       const now = new Date();
       const expiresAt = new Date(l.expiresAt);
       const daysRemaining = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       if (daysRemaining === 3) {
         offers.push({
           listingId: l.id,
           daysRemaining: 3,
           discount: 10,
-          reason: '3days'
+          reason: '3days',
         });
       }
     });
-    
+
     // 1 day - 5% discount
     const expiring1Day = getExpiringListings(currentUser.id, 1);
     expiring1Day.forEach(l => {
       const now = new Date();
       const expiresAt = new Date(l.expiresAt);
       const daysRemaining = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       if (daysRemaining === 1) {
         offers.push({
           listingId: l.id,
           daysRemaining: 1,
           discount: 5,
-          reason: '1day'
+          reason: '1day',
         });
       }
     });
-    
+
     setRenewalOffers(offers);
   }, [currentUser, listings]);
-  
+
   const handleRenew = async (offer: RenewalOffer) => {
     // Find listing
     const listing = listings.find(l => l.id === offer.listingId);
-    
+
     if (!listing) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено'
+        language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено',
       );
       return;
     }
-    
+
     if (!currentUser) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Daxil olmamısınız' : 'Вы не вошли в систему'
+        language === 'az' ? 'Daxil olmamısınız' : 'Вы не вошли в систему',
       );
       return;
     }
-    
+
     // Find current package
     const currentPackage = adPackages.find(p => p.id === listing.adType);
     const renewalPackage = currentPackage || adPackages.find(p => p.id === 'standard-30');
-    
+
     if (!renewalPackage) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Yeniləmə paketi tapılmadı' : 'Пакет продления не найден'
+        language === 'az' ? 'Yeniləmə paketi tapılmadı' : 'Пакет продления не найден',
       );
       return;
     }
-    
+
     // Calculate discounted price
     const originalPrice = renewalPackage.price;
     const discountAmount = (originalPrice * offer.discount) / 100;
     const finalPrice = originalPrice - discountAmount;
-    
+
     // Check balance
     const totalBalance = walletBalance + bonusBalance;
-    
+
     if (totalBalance < finalPrice) {
       Alert.alert(
         language === 'az' ? 'Kifayət qədər balans yoxdur' : 'Недостаточно средств',
         language === 'az'
           ? `Bu paket üçün ${finalPrice.toFixed(2)} AZN lazımdır (${offer.discount}% endirim). Balansınız: ${totalBalance.toFixed(2)} AZN`
-          : `Для этого пакета требуется ${finalPrice.toFixed(2)} AZN (скидка ${offer.discount}%). Ваш баланс: ${totalBalance.toFixed(2)} AZN`
+          : `Для этого пакета требуется ${finalPrice.toFixed(2)} AZN (скидка ${offer.discount}%). Ваш баланс: ${totalBalance.toFixed(2)} AZN`,
       );
       return;
     }
-    
+
     // Show confirmation
     Alert.alert(
       language === 'az' ? '🎁 Güzəştli Yeniləmə Təklifi' : '🎁 Предложение со скидкой',
@@ -166,77 +166,77 @@ export default function RenewalOffersScreen() {
           text: language === 'az' ? 'Yenilə' : 'Продлить',
           onPress: async () => {
             setIsRenewing(offer.listingId);
-            
+
             let spentFromBonusAmount = 0;
             let spentFromWalletAmount = 0;
-            
+
             try {
               // Process payment
               let remainingAmount = finalPrice;
-              
+
               if (bonusBalance > 0) {
                 spentFromBonusAmount = Math.min(bonusBalance, remainingAmount);
                 spendFromBonus(spentFromBonusAmount);
                 remainingAmount -= spentFromBonusAmount;
               }
-              
+
               if (remainingAmount > 0) {
                 spentFromWalletAmount = remainingAmount;
                 spendFromWallet(remainingAmount);
               }
-              
+
               // Promote listing (extends duration)
               await promoteListing(listing.id, 'featured', renewalPackage.duration);
-              
+
               Alert.alert(
                 language === 'az' ? '✅ Uğurlu!' : '✅ Успешно!',
                 language === 'az'
                   ? `"${listing.title.az}" elanı ${offer.discount}% endirim ilə yeniləndi!\n\n💰 Ödənilib: ${finalPrice.toFixed(2)} AZN\n📅 Yeni bitmə tarixi: ${new Date(Date.now() + renewalPackage.duration * 24 * 60 * 60 * 1000).toLocaleDateString('az-AZ')}`
                   : `Объявление "${listing.title.ru}" продлено со скидкой ${offer.discount}%!\n\n💰 Оплачено: ${finalPrice.toFixed(2)} AZN\n📅 Новая дата истечения: ${new Date(Date.now() + renewalPackage.duration * 24 * 60 * 60 * 1000).toLocaleDateString('ru-RU')}`,
                 [{ text: 'OK' }],
-                { cancelable: false }
+                { cancelable: false },
               );
             } catch (error) {
               // Rollback payment (use any to avoid missing type definitions)
-                            const userState = useUserStore.getState() as any;
-                            
-                            if (spentFromBonusAmount > 0 && typeof userState.addToBonus === 'function') {
-                              userState.addToBonus(spentFromBonusAmount);
-                            }
-                            
-                            if (spentFromWalletAmount > 0 && typeof userState.addToWallet === 'function') {
-                              userState.addToWallet(spentFromWalletAmount);
-                            }
-                            
-                            let errorMessage = language === 'az' 
-                              ? 'Elan yenilənə bilmədi' 
-                              : 'Не удалось продлить объявление';
-                            
-                            if (error instanceof Error) {
-                              if (error.message.includes('tapılmadı') || error.message.includes('not found')) {
-                                errorMessage = language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено';
-                              } else if (error.message.includes('network') || error.message.includes('timeout')) {
-                                errorMessage = language === 'az' ? 'Şəbəkə xətası. Yenidən cəhd edin.' : 'Ошибка сети. Попробуйте снова.';
-                              }
-                            }
-                            
-                            errorMessage += language === 'az' 
-                              ? '\n\nÖdənişiniz geri qaytarıldı.'
-                              : '\n\nВаш платеж был возвращен.';
-                            
-                            Alert.alert(
-                              language === 'az' ? 'Xəta' : 'Ошибка',
-                              errorMessage
-                            );
+              const userState = useUserStore.getState() as any;
+
+              if (spentFromBonusAmount > 0 && typeof userState.addToBonus === 'function') {
+                userState.addToBonus(spentFromBonusAmount);
+              }
+
+              if (spentFromWalletAmount > 0 && typeof userState.addToWallet === 'function') {
+                userState.addToWallet(spentFromWalletAmount);
+              }
+
+              let errorMessage = language === 'az'
+                ? 'Elan yenilənə bilmədi'
+                : 'Не удалось продлить объявление';
+
+              if (error instanceof Error) {
+                if (error.message.includes('tapılmadı') || error.message.includes('not found')) {
+                  errorMessage = language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено';
+                } else if (error.message.includes('network') || error.message.includes('timeout')) {
+                  errorMessage = language === 'az' ? 'Şəbəkə xətası. Yenidən cəhd edin.' : 'Ошибка сети. Попробуйте снова.';
+                }
+              }
+
+              errorMessage += language === 'az'
+                ? '\n\nÖdənişiniz geri qaytarıldı.'
+                : '\n\nВаш платеж был возвращен.';
+
+              Alert.alert(
+                language === 'az' ? 'Xəta' : 'Ошибка',
+                errorMessage,
+              );
             } finally {
               setIsRenewing(null);
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
-  
+
   const getOfferBadgeColor = (reason: RenewalOffer['reason']) => {
     switch (reason) {
       case '7days':
@@ -249,7 +249,7 @@ export default function RenewalOffersScreen() {
         return Colors.textSecondary;
     }
   };
-  
+
   const getOfferIcon = (reason: RenewalOffer['reason']) => {
     switch (reason) {
       case '7days':
@@ -262,7 +262,7 @@ export default function RenewalOffersScreen() {
         return <Percent size={20} color="white" />;
     }
   };
-  
+
   if (!currentUser) {
     return (
       <View style={styles.container}>
@@ -275,7 +275,7 @@ export default function RenewalOffersScreen() {
           </Text>
           <View style={styles.placeholder} />
         </View>
-        
+
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>
             {language === 'az' ? 'Daxil olmamısınız' : 'Вы не вошли в систему'}
@@ -284,7 +284,7 @@ export default function RenewalOffersScreen() {
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -296,7 +296,7 @@ export default function RenewalOffersScreen() {
         </Text>
         <View style={styles.placeholder} />
       </View>
-      
+
       {renewalOffers.length === 0 ? (
         <View style={styles.emptyState}>
           <Percent size={64} color={Colors.textSecondary} />
@@ -309,7 +309,7 @@ export default function RenewalOffersScreen() {
               : 'Когда срок ваших объявлений будет истекать, здесь появятся предложения со скидкой'
             }
           </Text>
-          
+
           <View style={styles.infoBox}>
             <Text style={styles.infoTitle}>
               {language === 'az' ? '💡 Güzəşt Sistemi' : '💡 Система скидок'}
@@ -339,22 +339,22 @@ export default function RenewalOffersScreen() {
               </Text>
             </View>
           </View>
-          
+
           {/* Renewal Offers */}
           {renewalOffers.map(offer => {
             const listing = listings.find(l => l.id === offer.listingId);
             if (!listing) return null;
-            
+
             const isRenewingThis = isRenewing === offer.listingId;
             const currentPackage = adPackages.find(p => p.id === listing.adType);
             const renewalPackage = currentPackage || adPackages.find(p => p.id === 'standard-30');
-            
+
             if (!renewalPackage) return null;
-            
+
             const originalPrice = renewalPackage.price;
             const discountAmount = (originalPrice * offer.discount) / 100;
             const finalPrice = originalPrice - discountAmount;
-            
+
             return (
               <View key={offer.listingId} style={styles.offerCard}>
                 {/* Discount Badge */}
@@ -364,19 +364,19 @@ export default function RenewalOffersScreen() {
                     {offer.discount}% {language === 'az' ? 'ENDİRİM' : 'СКИДКА'}
                   </Text>
                 </View>
-                
+
                 <View style={styles.offerContent}>
                   <Image
                     source={{ uri: listing.images[0] || 'https://via.placeholder.com/80' }}
                     style={styles.offerImage}
                     // defaultSource={require('@/assets/images/placeholder.png')}
                   />
-                  
+
                   <View style={styles.offerInfo}>
                     <Text style={styles.offerTitle} numberOfLines={2}>
                       {listing.title[language as keyof typeof listing.title]}
                     </Text>
-                    
+
                     <View style={styles.offerDetails}>
                       <View style={styles.detailItem}>
                         <Clock size={14} color={Colors.error} />
@@ -384,7 +384,7 @@ export default function RenewalOffersScreen() {
                           {offer.daysRemaining} {language === 'az' ? 'gün qalıb' : 'дней осталось'}
                         </Text>
                       </View>
-                      
+
                       <View style={styles.detailItem}>
                         <Eye size={14} color={Colors.textSecondary} />
                         <Text style={styles.detailText}>
@@ -392,7 +392,7 @@ export default function RenewalOffersScreen() {
                         </Text>
                       </View>
                     </View>
-                    
+
                     <View style={styles.priceInfo}>
                       <View style={styles.priceRow}>
                         <Text style={styles.priceLabel}>
@@ -402,7 +402,7 @@ export default function RenewalOffersScreen() {
                           {originalPrice.toFixed(2)} AZN
                         </Text>
                       </View>
-                      
+
                       <View style={styles.priceRow}>
                         <Text style={styles.priceLabel}>
                           {language === 'az' ? 'Endirim:' : 'Скидка:'}
@@ -411,9 +411,9 @@ export default function RenewalOffersScreen() {
                           -{discountAmount.toFixed(2)} AZN
                         </Text>
                       </View>
-                      
+
                       <View style={styles.divider} />
-                      
+
                       <View style={styles.priceRow}>
                         <Text style={styles.priceLabelFinal}>
                           {language === 'az' ? 'Yekun:' : 'Итого:'}
@@ -423,7 +423,7 @@ export default function RenewalOffersScreen() {
                         </Text>
                       </View>
                     </View>
-                    
+
                     <TouchableOpacity
                       style={[styles.renewButton, isRenewingThis && styles.renewButtonDisabled]}
                       onPress={() => handleRenew(offer)}

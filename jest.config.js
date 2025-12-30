@@ -5,13 +5,10 @@
 
 module.exports = {
   preset: 'jest-expo',
-  
-  // Test environment
-  testEnvironment: 'node',
-  
+
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  
+
   // Module name mapping for path aliases
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
@@ -27,25 +24,14 @@ module.exports = {
     // Mock static assets
     '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/__mocks__/fileMock.js',
   },
-  
-  // Transform files
-  transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react',
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-      },
-    }],
-  },
-  
+
   // Test match patterns
   testMatch: [
     '**/__tests__/**/*.(test|spec).(ts|tsx)',
     '**/*.test.(ts|tsx)',
     '**/*.spec.(ts|tsx)',
   ],
-  
+
   // Coverage configuration
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
@@ -58,9 +44,9 @@ module.exports = {
     '!**/__tests__/**',
     '!**/coverage/**',
   ],
-  
+
   // Coverage thresholds
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 70,
       functions: 70,
@@ -68,20 +54,20 @@ module.exports = {
       statements: 70,
     },
   },
-  
+
   // Ignore patterns
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.expo/',
     '/dist/',
   ],
-  
+
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
-  
+
   // Verbose output
   verbose: true,
-  
+
   // Timeout for tests
   testTimeout: 10000,
 };

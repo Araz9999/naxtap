@@ -7,7 +7,7 @@ export default publicProcedure
     z.object({
       conversationId: z.string(),
       agentId: z.string(),
-    })
+    }),
   )
   .mutation(({ input }) => {
     return liveChatDb.conversations.assignAgent(input.conversationId, input.agentId);

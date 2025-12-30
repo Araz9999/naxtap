@@ -11,6 +11,7 @@ import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
 import { validateEmail } from '@/utils/inputValidation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { User, UserRole } from '@/types/user';
 
 export default function LoginScreen() {
   console.log('[Login] Component mounted');
@@ -18,78 +19,78 @@ export default function LoginScreen() {
   const router = useRouter();
   const { t, language } = useTranslation();
   const { login } = useUserStore();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSocial, setLoadingSocial] = useState<string | null>(null);
-  
+
   const loginMutation = trpc.auth.login.useMutation();
 
   const handleLogin = async () => {
     console.log('[Login] handleLogin called', { email, hasPassword: !!password });
     logger.info('[Login] Login button clicked', { email: email?.substring(0, 5) + '...' });
-    
+
     // ===== VALIDATION START =====
-    
+
     // 1. Email validation
     if (!email || typeof email !== 'string' || email.trim().length === 0) {
       console.log('[Login] Email validation failed');
       Alert.alert(
         t('error'),
-        t("emailRequired") || 'Email tələb olunur'
+        t('emailRequired') || 'Email tələb olunur',
       );
       return;
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       Alert.alert(
         t('error'),
-        t('invalidEmail') || 'Düzgün email daxil edin'
+        t('invalidEmail') || 'Düzgün email daxil edin',
       );
       return;
     }
-    
+
     if (email.length > 255) {
       Alert.alert(
         t('error'),
-        'Email çox uzundur (maks 255 simvol)'
+        'Email çox uzundur (maks 255 simvol)',
       );
       return;
     }
-    
+
     // 2. Password validation
     if (!password || typeof password !== 'string' || password.length === 0) {
       Alert.alert(
         t('error'),
-        t('passwordRequired') || 'Şifrə tələb olunur'
+        t('passwordRequired') || 'Şifrə tələb olunur',
       );
       return;
     }
-    
+
     if (password.length < 6) {
       Alert.alert(
         t('error'),
-        'Şifrə ən azı 6 simvol olmalıdır'
+        'Şifrə ən azı 6 simvol olmalıdır',
       );
       return;
     }
-    
+
     if (password.length > 128) {
       Alert.alert(
         t('error'),
-        'Şifrə çox uzundur (maks 128 simvol)'
+        'Şifrə çox uzundur (maks 128 simvol)',
       );
       return;
     }
-    
+
     // ===== VALIDATION END =====
-    
+
     setIsLoading(true);
     console.log('[Login] Starting login mutation...');
-    
+
     try {
       // ✅ Use tRPC mutation for real backend login
       console.log('[Login] Calling loginMutation.mutateAsync');
@@ -98,15 +99,21 @@ export default function LoginScreen() {
         password: password,
       });
       console.log('[Login] Login mutation result:', result ? 'Success' : 'No result');
-      
+
       if (result && result.user && result.tokens) {
         // ✅ Convert role to lowercase (backend returns uppercase: ADMIN, MODERATOR, USER)
-        const normalizedRole = (result.user.role || 'USER').toLowerCase() as 'user' | 'moderator' | 'admin';
-        
+        const normalizedRole = (String(result.user.role || 'USER')).toLowerCase() as UserRole;
+
         // ✅ Create user object for store
-        const user = {
-          ...result.user,
-          role: normalizedRole, // Convert to lowercase
+        const baseUser = result.user as any;
+        const user: User = {
+          id: String(baseUser.id),
+          name: String(baseUser.name || ''),
+          phone: typeof baseUser.phone === 'string' ? baseUser.phone : '',
+          email: String(baseUser.email || ''),
+          avatar: String(baseUser.avatar || ''),
+          balance: typeof baseUser.balance === 'number' ? baseUser.balance : 0,
+          role: normalizedRole,
           rating: 0,
           totalRatings: 0,
           memberSince: new Date().toISOString(),
@@ -128,7 +135,7 @@ export default function LoginScreen() {
 
         // ✅ Attach moderator permissions from DB (if any)
         if (user.role === 'moderator') {
-          const perms = (result.user as any).moderatorPermissions || [];
+          const perms = baseUser.moderatorPermissions || [];
           user.moderatorInfo = {
             assignedDate: new Date().toISOString(),
             permissions: perms,
@@ -137,14 +144,14 @@ export default function LoginScreen() {
             isActive: true,
           };
         }
-        
+
         // ✅ Save tokens
         await AsyncStorage.setItem('auth_tokens', JSON.stringify(result.tokens));
-        
+
         // ✅ Login user
         login(user);
         console.log('[Login] User logged in successfully', { role: user.role, userId: user.id, email: user.email });
-        
+
         // ✅ Redirect based on user role
         if (user.role === 'admin') {
           console.log('[Login] Redirecting admin to tabs');
@@ -162,10 +169,10 @@ export default function LoginScreen() {
     } catch (error: any) {
       logger.error('Login error:', error);
       console.error('[Login] Full error:', error);
-      
+
       // Extract error message from tRPC error structure
       let errorMessage = 'Giriş zamanı xəta baş verdi. Yenidən cəhd edin.';
-      
+
       if (error?.data?.message) {
         errorMessage = error.data.message;
       } else if (error?.message) {
@@ -175,17 +182,17 @@ export default function LoginScreen() {
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
-      
+
       console.log('[Login] Showing error alert:', errorMessage);
       Alert.alert(
         t('error'),
-        errorMessage
+        errorMessage,
       );
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const handleClose = () => {
     if (router.canGoBack()) {
       router.back();
@@ -193,32 +200,32 @@ export default function LoginScreen() {
       router.replace('/');
     }
   };
-  
+
   const handleRegister = () => {
     logger.info('[Login] Navigating to /auth/register');
     router.push('/auth/register');
   };
-  
+
   const handleForgotPassword = () => {
     router.push('/auth/forgot-password');
   };
 
   const handleSocialLogin = async (provider: 'google' | 'facebook' | 'vk') => {
     logger.info('[Login] Social login initiated:', { provider });
-    
+
     try {
       setLoadingSocial(provider);
-      
+
       // ✅ Use correct backend URL (port 3000) - always use 3000 in dev
-      const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL || 
-                      process.env.EXPO_PUBLIC_BACKEND_URL || 
+      const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL ||
+                      process.env.EXPO_PUBLIC_BACKEND_URL ||
                       (__DEV__ ? 'http://localhost:3000' : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'));
 
       console.log('[Login] Checking social auth status at:', `${baseUrl}/api/auth/status`);
-      
+
       try {
         const statusResponse = await fetch(`${baseUrl}/api/auth/status`);
-        
+
         if (statusResponse.ok) {
           const statusData = await statusResponse.json();
           console.log('[Login] Social auth status:', statusData);
@@ -227,7 +234,7 @@ export default function LoginScreen() {
             logger.warn('[Login] Provider not configured:', { provider });
             Alert.alert(
               'Not Configured',
-              `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not configured yet. Please use email/password login.`
+              `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not configured yet. Please use email/password login.`,
             );
             return;
           }
@@ -239,55 +246,55 @@ export default function LoginScreen() {
         console.error('[Login] Status check error:', statusError);
         // Continue anyway - might work
       }
-      
+
       await initiateSocialLogin(
         provider,
         (result) => {
           setLoadingSocial(null);
           if (result.success && result.user) {
-                logger.info(`[Login] Social login successful (${provider}):`, { 
-                  userId: result.user.id,
-                  email: result.user.email
-                });
-                
-                // ✅ Create complete user object
-                const userObject = {
-                  id: result.user.id as string,
-                  name: result.user.name as string,
-                  email: result.user.email as string,
-                  phone: '',
-                  avatar: result.user.avatar as string || '',
-                  verified: true,
-                  rating: 0,
-                  totalRatings: 0,
-                  memberSince: new Date().toISOString(),
-                  location: { az: '', ru: '', en: '' },
-                  privacySettings: {
-                    hidePhoneNumber: false,
-                    allowDirectContact: true,
-                    onlyAppMessaging: false,
-                  },
-                  analytics: {
-                    lastOnline: new Date().toISOString(),
-                    messageResponseRate: 0,
-                    averageResponseTime: 0,
-                    totalMessages: 0,
-                    totalResponses: 0,
-                    isOnline: true,
-                  },
-                  balance: 0,
-                  role: 'user',
-                };
-                
-                login(userObject as any);
-                router.replace('/(tabs)');
-              }
+            logger.info(`[Login] Social login successful (${provider}):`, {
+              userId: result.user.id,
+              email: result.user.email,
+            });
+
+            // ✅ Create complete user object
+            const userObject = {
+              id: result.user.id as string,
+              name: result.user.name as string,
+              email: result.user.email as string,
+              phone: '',
+              avatar: result.user.avatar as string || '',
+              verified: true,
+              rating: 0,
+              totalRatings: 0,
+              memberSince: new Date().toISOString(),
+              location: { az: '', ru: '', en: '' },
+              privacySettings: {
+                hidePhoneNumber: false,
+                allowDirectContact: true,
+                onlyAppMessaging: false,
+              },
+              analytics: {
+                lastOnline: new Date().toISOString(),
+                messageResponseRate: 0,
+                averageResponseTime: 0,
+                totalMessages: 0,
+                totalResponses: 0,
+                isOnline: true,
+              },
+              balance: 0,
+              role: 'user',
+            };
+
+            login(userObject as any);
+            router.replace('/(tabs)');
+          }
         },
         (error) => {
           setLoadingSocial(null);
           logger.error(`[Login] Social login error (${provider}):`, error);
           showSocialLoginError(provider, error);
-        }
+        },
       );
     } catch (error) {
       setLoadingSocial(null);
@@ -302,7 +309,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
@@ -311,18 +318,18 @@ export default function LoginScreen() {
             <X size={24} color={Colors.text} />
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.logoContainer}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=80&w=200' }} 
-            style={styles.logo} 
+          <Image
+            source={{ uri: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=80&w=200' }}
+            style={styles.logo}
           />
         </View>
-        
+
         <Text style={styles.title}>
           {t('loginToAccount')}
         </Text>
-        
+
         <View style={styles.form}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
@@ -340,7 +347,7 @@ export default function LoginScreen() {
               blurOnSubmit={false}
             />
           </View>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {t('password')}
@@ -356,7 +363,7 @@ export default function LoginScreen() {
                 returnKeyType="go"
                 onSubmitEditing={handleLogin}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
                 disabled={isLoading}
@@ -369,9 +376,9 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.forgotPassword} 
+
+          <TouchableOpacity
+            style={styles.forgotPassword}
             onPress={handleForgotPassword}
             disabled={isLoading}
           >
@@ -379,12 +386,12 @@ export default function LoginScreen() {
               {t('forgotPassword')}
             </Text>
           </TouchableOpacity>
-          
-          <Pressable 
+
+          <Pressable
             style={[
               styles.loginButton,
-              ((!email || !password) || isLoading) && styles.disabledButton
-            ]} 
+              ((!email || !password) || isLoading) && styles.disabledButton,
+            ]}
             onPress={() => {
               if (!email || !password || isLoading) {
                 console.log('[Login] Button is disabled');
@@ -403,8 +410,8 @@ export default function LoginScreen() {
               </Text>
             )}
           </Pressable>
-          
-          
+
+
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>
@@ -412,9 +419,9 @@ export default function LoginScreen() {
             </Text>
             <View style={styles.dividerLine} />
           </View>
-          
+
           <View style={styles.socialButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.socialButton, styles.googleButton]}
               onPress={() => {
                 console.log('[Login] Google button pressed');
@@ -431,8 +438,8 @@ export default function LoginScreen() {
                 </>
               )}
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.socialButton, styles.facebookButton]}
               onPress={() => handleSocialLogin('facebook')}
               disabled={loadingSocial !== null || isLoading}
@@ -446,8 +453,8 @@ export default function LoginScreen() {
                 </>
               )}
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.socialButton, styles.vkButton]}
               onPress={() => handleSocialLogin('vk')}
               disabled={loadingSocial !== null || isLoading}
@@ -463,14 +470,14 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         <View style={styles.footer}>
           <View style={styles.termsNotice}>
             <Text style={styles.termsNoticeText}>
               {t('agreeToTerms')}
             </Text>
           </View>
-          
+
           <View style={styles.registerSection}>
             <Text style={styles.footerText}>
               {t('noAccount')}

@@ -17,9 +17,9 @@ export const forgotPasswordProcedure = publicProcedure
       email: z.string().email().optional(),
       phone: z.string().optional(),
     })
-    .refine((data) => data.email || data.phone, {
-      message: 'Email və ya telefon nömrəsi tələb olunur',
-    })
+      .refine((data) => data.email || data.phone, {
+        message: 'Email və ya telefon nömrəsi tələb olunur',
+      }),
   )
   .mutation(async ({ input }) => {
     try {
@@ -64,7 +64,7 @@ export const forgotPasswordProcedure = publicProcedure
         throw new Error(
           throttle.reason === 'cooldown'
             ? `Zəhmət olmasa yenidən göndərmək üçün ${seconds} saniyə gözləyin.`
-            : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`
+            : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`,
         );
       }
 
@@ -92,7 +92,7 @@ export const forgotPasswordProcedure = publicProcedure
       } else {
         // Send SMS OTP
         const smsSent = await smsService.sendOTP(contactInfo, otp, 'password-reset');
-        
+
         if (!smsSent) {
           logger.warn('[Auth] Failed to send password reset OTP SMS');
         } else {

@@ -61,49 +61,49 @@ class PayriffService {
   async createPayment(data: PayriffPaymentData): Promise<PayriffPaymentResponse> {
     try {
       // ===== BACKEND VALIDATION START =====
-      
+
       // 1. Check credentials
       if (!this.merchantId || !this.secretKey) {
         throw new Error('Payriff credentials not configured');
       }
-      
+
       // 2. Amount validation (backend double-check)
       if (!data.amount || typeof data.amount !== 'number' || isNaN(data.amount) || !isFinite(data.amount)) {
         throw new Error('Invalid amount');
       }
-      
+
       if (data.amount <= 0) {
         throw new Error('Amount must be positive');
       }
-      
+
       if (data.amount > 100000) {
         throw new Error('Amount exceeds maximum limit');
       }
-      
+
       // 3. OrderId validation
       if (!data.orderId || typeof data.orderId !== 'string' || data.orderId.trim().length === 0) {
         throw new Error('Invalid orderId');
       }
-      
+
       if (data.orderId.length > 255) {
         throw new Error('OrderId too long');
       }
-      
+
       // 4. Description validation
       if (!data.description || typeof data.description !== 'string' || data.description.trim().length === 0) {
         throw new Error('Invalid description');
       }
-      
+
       if (data.description.length > 500) {
         throw new Error('Description too long');
       }
-      
+
       // 5. Language validation
       const validLanguages = ['az', 'en', 'ru'];
       if (data.language && !validLanguages.includes(data.language)) {
         throw new Error('Invalid language');
       }
-      
+
       // ===== BACKEND VALIDATION END =====
 
       const urls = this.getCallbackUrls();
@@ -126,10 +126,10 @@ class PayriffService {
       });
 
       // Use v3 orders endpoint - construct base URL properly
-      const baseUrl = this.apiUrl.includes('/api/') 
+      const baseUrl = this.apiUrl.includes('/api/')
         ? this.apiUrl.replace('/api/v2', '/api/v3')
         : `${this.apiUrl}/api/v3`;
-      
+
       const response = await fetch(`${baseUrl}/orders`, {
         method: 'POST',
         headers: {
@@ -140,10 +140,10 @@ class PayriffService {
       });
 
       const responseText = await response.text();
-      logger.debug('[Payriff] API Response:', { 
-        status: response.status, 
+      logger.debug('[Payriff] API Response:', {
+        status: response.status,
         statusText: response.statusText,
-        responseLength: responseText.length 
+        responseLength: responseText.length,
       });
 
       if (!response.ok) {
@@ -153,15 +153,15 @@ class PayriffService {
         } catch {
           errorData = { message: responseText || 'Unknown error' };
         }
-        
+
         logger.error('[Payriff] API error:', {
           status: response.status,
           statusText: response.statusText,
-          error: errorData
+          error: errorData,
         });
-        
-        const errorMessage = errorData.message || 
-                            errorData.error || 
+
+        const errorMessage = errorData.message ||
+                            errorData.error ||
                             errorData.internalMessage ||
                             `Payriff API error: ${response.status} ${response.statusText}`;
         throw new Error(errorMessage);
@@ -189,7 +189,7 @@ class PayriffService {
       // v3 API response format: { code, message, payload: { orderId, paymentUrl, transactionId } }
       const paymentUrl = result.payload?.paymentUrl || result.route;
       const transactionId = result.payload?.transactionId || result.payload?.orderId;
-      
+
       if (!paymentUrl) {
         logger.error('[Payriff] No payment URL in response:', result);
         throw new Error('Payment URL not received from Payriff');
@@ -251,7 +251,7 @@ class PayriffService {
     try {
       // Provider signs the raw payload with the shared secret
       const computedSignature = this.generateSignature(JSON.stringify(body));
-      
+
       // SECURITY: Use constant-time comparison to prevent timing attacks
       return this.constantTimeCompare(receivedSignature, computedSignature);
     } catch (error) {
@@ -267,12 +267,12 @@ class PayriffService {
     if (a.length !== b.length) {
       return false;
     }
-    
+
     let result = 0;
     for (let i = 0; i < a.length; i++) {
       result |= a.charCodeAt(i) ^ b.charCodeAt(i);
     }
-    
+
     return result === 0;
   }
 
@@ -281,7 +281,7 @@ class PayriffService {
       this.merchantId &&
       this.secretKey &&
       !this.merchantId.includes('your-') &&
-      !this.secretKey.includes('your-')
+      !this.secretKey.includes('your-'),
     );
   }
 

@@ -11,7 +11,7 @@ module.exports = function patchHTML(html) {
   // Add type="module" to all script tags that don't already have it
   return html.replace(
     /<script\s+src="([^"]+)"(?![^>]*type=)([^>]*)><\/script>/g,
-    '<script type="module" src="$1"$2></script>'
+    '<script type="module" src="$1"$2></script>',
   );
 };
 

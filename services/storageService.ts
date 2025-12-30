@@ -31,7 +31,7 @@ class StorageService {
 
   async uploadFile(
     file: File | { uri: string; name: string; type: string },
-    options: UploadOptions = {}
+    options: UploadOptions = {},
   ): Promise<UploadResult> {
     const {
       folder = 'uploads',
@@ -58,7 +58,7 @@ class StorageService {
     try {
       const formData = new FormData();
       const fileName = this.generateFileName(
-        Platform.OS === 'web' ? (file as File).name : (file as { uri: string; name: string; type: string }).name
+        Platform.OS === 'web' ? (file as File).name : (file as { uri: string; name: string; type: string }).name,
       );
       const key = `${folder}/${fileName}`;
 
@@ -90,7 +90,7 @@ class StorageService {
       }
 
       const result = await response.json();
-      
+
       return {
         url: result.url,
         key: result.key,
@@ -105,7 +105,7 @@ class StorageService {
 
   async uploadMultipleFiles(
     files: (File | { uri: string; name: string; type: string })[],
-    options: UploadOptions = {}
+    options: UploadOptions = {},
   ): Promise<UploadResult[]> {
     const uploadPromises = files.map(file => this.uploadFile(file, options));
     return Promise.all(uploadPromises);

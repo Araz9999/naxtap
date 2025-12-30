@@ -10,12 +10,12 @@ interface SupportStore {
   operators: Operator[];
   notifications: ChatNotification[];
   isLoading: boolean;
-  
+
   // ✅ Timeout tracking for cleanup
-  ticketTimeouts: Map<string, NodeJS.Timeout>;
-  chatTimeouts: Map<string, NodeJS.Timeout>;
-  messageTimeouts: Map<string, NodeJS.Timeout>;
-  
+  ticketTimeouts: Map<string, ReturnType<typeof setTimeout>>;
+  chatTimeouts: Map<string, ReturnType<typeof setTimeout>>;
+  messageTimeouts: Map<string, ReturnType<typeof setTimeout>>;
+
   // Ticket Actions
   createTicket: (ticket: Omit<SupportTicket, 'id' | 'createdAt' | 'updatedAt' | 'responses'>) => void;
   addResponse: (ticketId: string, response: Omit<SupportResponse, 'id' | 'createdAt'>) => void;
@@ -30,7 +30,7 @@ interface SupportStore {
   ) => void;
   getTicketsByUser: (userId: string) => SupportTicket[];
   getTicketById: (ticketId: string) => SupportTicket | undefined;
-  
+
   // Live Chat Actions
   startLiveChat: (userId: string, subject: string, category: string, priority: LiveChat['priority']) => string;
   sendMessage: (chatId: string, senderId: string, senderType: LiveChatMessage['senderType'], message: string, attachments?: string[]) => void;
@@ -43,7 +43,7 @@ interface SupportStore {
   getAvailableOperators: () => Operator[];
   addNotification: (notification: Omit<ChatNotification, 'id' | 'timestamp' | 'isRead'>) => void;
   markNotificationAsRead: (notificationId: string) => void;
-  
+
   // ✅ Cleanup
   cleanupTimeouts: () => void;
 }
@@ -55,7 +55,7 @@ const supportCategories: SupportCategory[] = [
     nameRu: 'Техническая проблема',
     icon: 'Settings',
     description: 'Tətbiqdə texniki problemlər',
-    descriptionRu: 'Технические проблемы в приложении'
+    descriptionRu: 'Технические проблемы в приложении',
   },
   {
     id: '2',
@@ -63,7 +63,7 @@ const supportCategories: SupportCategory[] = [
     nameRu: 'Жалоба',
     icon: 'AlertTriangle',
     description: 'İstifadəçi və ya elan şikayəti',
-    descriptionRu: 'Жалоба на пользователя или объявление'
+    descriptionRu: 'Жалоба на пользователя или объявление',
   },
   {
     id: '3',
@@ -71,7 +71,7 @@ const supportCategories: SupportCategory[] = [
     nameRu: 'Предложение',
     icon: 'Lightbulb',
     description: 'Yaxşılaşdırma təklifləri',
-    descriptionRu: 'Предложения по улучшению'
+    descriptionRu: 'Предложения по улучшению',
   },
   {
     id: '4',
@@ -79,7 +79,7 @@ const supportCategories: SupportCategory[] = [
     nameRu: 'Оплата',
     icon: 'CreditCard',
     description: 'Ödəniş və faktura problemləri',
-    descriptionRu: 'Проблемы с оплатой и счетами'
+    descriptionRu: 'Проблемы с оплатой и счетами',
   },
   {
     id: '5',
@@ -87,8 +87,8 @@ const supportCategories: SupportCategory[] = [
     nameRu: 'Другое',
     icon: 'HelpCircle',
     description: 'Digər suallar',
-    descriptionRu: 'Другие вопросы'
-  }
+    descriptionRu: 'Другие вопросы',
+  },
 ];
 
 // Mock operators data
@@ -104,7 +104,7 @@ const mockOperators: Operator[] = [
     specialties: ['texniki_problem', 'odenis'],
     rating: 4.8,
     totalChats: 1250,
-    responseTime: 45
+    responseTime: 45,
   },
   {
     id: 'op2',
@@ -117,7 +117,7 @@ const mockOperators: Operator[] = [
     specialties: ['sikayet', 'diger'],
     rating: 4.9,
     totalChats: 980,
-    responseTime: 32
+    responseTime: 32,
   },
   {
     id: 'op3',
@@ -130,8 +130,8 @@ const mockOperators: Operator[] = [
     specialties: ['teklif', 'texniki_problem'],
     rating: 4.7,
     totalChats: 1450,
-    responseTime: 28
-  }
+    responseTime: 28,
+  },
 ];
 
 export const useSupportStore = create<SupportStore>((set, get) => ({
@@ -141,7 +141,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
   operators: mockOperators,
   notifications: [],
   isLoading: false,
-  
+
   // ✅ Initialize timeout maps
   ticketTimeouts: new Map(),
   chatTimeouts: new Map(),
@@ -150,7 +150,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
   createTicket: (ticketData) => {
     // ✅ Generate unique ticket ID
     const ticketId = `ticket_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    
+
     const newTicket: SupportTicket = {
       ...ticketData,
       id: ticketId,
@@ -164,7 +164,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
     };
 
     set((state) => ({
-      tickets: [newTicket, ...state.tickets]
+      tickets: [newTicket, ...state.tickets],
     }));
 
     // Add notification to main notification system
@@ -174,7 +174,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         type: 'general',
         title: 'Müraciət Göndərildi',
         message: `"${ticketData.subject}" mövzusunda müraciətiniz qəbul edildi`,
-        data: { ticketId: newTicket.id, type: 'support_ticket' }
+        data: { ticketId: newTicket.id, type: 'support_ticket' },
       });
     } catch (error) {
       logger.debug('Notification store not available:', error);
@@ -183,7 +183,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
     // ✅ Simulate admin auto-response after 2 seconds (with tracking)
     const timeout = setTimeout(() => {
       const store = get();
-      
+
       // ✅ Check if ticket still exists
       const ticket = store.tickets.find(t => t.id === ticketId);
       if (!ticket || ticket.status === 'closed') {
@@ -193,18 +193,18 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         set({ ticketTimeouts: newTimeouts });
         return;
       }
-      
-      const responseMessage = ticketData.category === '1' 
+
+      const responseMessage = ticketData.category === '1'
         ? 'Texniki problemlə bağlı müraciətiniz qəbul edildi. Tezliklə cavab veriləcək.'
         : 'Müraciətiniz qəbul edildi və araşdırılır. 24 saat ərzində cavab veriləcək.';
-      
+
       store.addResponse(ticketId, {
         ticketId: ticketId,
         userId: 'admin',
         message: responseMessage,
-        isAdmin: true
+        isAdmin: true,
       });
-      
+
       // Add notification for admin response
       try {
         const notificationStore = useNotificationStore.getState();
@@ -213,21 +213,21 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
           title: 'Dəstək Cavabı',
           message: responseMessage.substring(0, 50) + '...',
           fromUserName: 'Dəstək Komandası',
-          data: { ticketId: ticketId, type: 'support_response' }
+          data: { ticketId: ticketId, type: 'support_response' },
         });
       } catch (error) {
         logger.debug('Notification store not available:', error);
       }
-      
+
       // ✅ Remove from timeout map
       const newTimeouts = new Map(get().ticketTimeouts);
       newTimeouts.delete(ticketId);
       set({ ticketTimeouts: newTimeouts });
     }, 2000);
-    
+
     // ✅ Store timeout for cleanup
     set((state) => ({
-      ticketTimeouts: new Map(state.ticketTimeouts).set(ticketId, timeout)
+      ticketTimeouts: new Map(state.ticketTimeouts).set(ticketId, timeout),
     }));
   },
 
@@ -236,7 +236,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
     const newResponse: SupportResponse = {
       ...responseData,
       id: `response_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     set((state) => ({
@@ -245,12 +245,12 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         const next = state.tickets.map((ticket) =>
           ticket.id === ticketId
             ? {
-                ...ticket,
-                responses: [...ticket.responses, newResponse],
-                updatedAt,
-                status: responseData.isAdmin ? 'in_progress' : ticket.status,
-              }
-            : ticket
+              ...ticket,
+              responses: [...ticket.responses, newResponse],
+              updatedAt,
+              status: responseData.isAdmin ? 'in_progress' : ticket.status,
+            }
+            : ticket,
         );
         // Move updated ticket to top (newest activity)
         return next.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
@@ -306,7 +306,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       createdAt: new Date(),
       updatedAt: new Date(),
       userTyping: false,
-      operatorTyping: false
+      operatorTyping: false,
     };
 
     // Add system welcome message
@@ -317,14 +317,14 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       senderType: 'system',
       message: 'Salam! Dəstək komandamız tezliklə sizinlə əlaqə saxlayacaq. Zəhmət olmasa gözləyin.',
       timestamp: new Date(),
-      isRead: false
+      isRead: false,
     };
 
     newChat.messages = [...newChat.messages, welcomeMessage];
     newChat.lastMessageAt = new Date();
 
     set((state) => ({
-      liveChats: [newChat, ...state.liveChats]
+      liveChats: [newChat, ...state.liveChats],
     }));
 
     // ✅ Auto-assign available operator after 3 seconds (with tracking)
@@ -338,24 +338,24 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         set({ chatTimeouts: newTimeouts });
         return;
       }
-      
+
       const availableOperators = get().getAvailableOperators();
       if (availableOperators.length > 0) {
-        const bestOperator = availableOperators.reduce((best, current) => 
-          current.activeChats < best.activeChats ? current : best
+        const bestOperator = availableOperators.reduce((best, current) =>
+          current.activeChats < best.activeChats ? current : best,
         );
         get().assignOperator(chatId, bestOperator.id);
       }
-      
+
       // ✅ Remove from timeout map
       const newTimeouts = new Map(get().chatTimeouts);
       newTimeouts.delete(`assign_${chatId}`);
       set({ chatTimeouts: newTimeouts });
     }, 3000);
-    
+
     // ✅ Store timeout for cleanup
     set((state) => ({
-      chatTimeouts: new Map(state.chatTimeouts).set(`assign_${chatId}`, assignTimeout)
+      chatTimeouts: new Map(state.chatTimeouts).set(`assign_${chatId}`, assignTimeout),
     }));
 
     // Add notification to main notification system
@@ -365,7 +365,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         type: 'general',
         title: 'Yeni Dəstək Söhbəti',
         message: `Yeni söhbət başladı: ${subject}`,
-        data: { chatId, type: 'support_chat' }
+        data: { chatId, type: 'support_chat' },
       });
     } catch (error) {
       logger.debug('Notification store not available:', error);
@@ -375,7 +375,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
     get().addNotification({
       chatId,
       type: 'user_joined',
-      message: `Yeni söhbət başladı: ${subject}`
+      message: `Yeni söhbət başladı: ${subject}`,
     });
 
     logger.debug('Live chat started:', chatId);
@@ -391,22 +391,22 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       message,
       timestamp: new Date(),
       isRead: false,
-      attachments
+      attachments,
     };
 
     set((state) => ({
       liveChats: state.liveChats.map(chat =>
         chat.id === chatId
           ? {
-              ...chat,
-              messages: [...chat.messages, newMessage],
-              lastMessageAt: new Date(),
-              updatedAt: new Date(),
-              userTyping: false,
-              operatorTyping: false
-            }
-          : chat
-      )
+            ...chat,
+            messages: [...chat.messages, newMessage],
+            lastMessageAt: new Date(),
+            updatedAt: new Date(),
+            userTyping: false,
+            operatorTyping: false,
+          }
+          : chat,
+      ),
     }));
 
     // Add notification for new message
@@ -415,7 +415,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       try {
         const notificationStore = useNotificationStore.getState();
         const chat = get().liveChats.find(c => c.id === chatId);
-        
+
         if (senderType === 'operator' && chat) {
           const operator = get().operators.find(op => op.id === senderId);
           notificationStore.addNotification({
@@ -425,17 +425,17 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
             fromUserId: senderId,
             fromUserName: operator?.name,
             fromUserAvatar: operator?.avatar,
-            data: { chatId, type: 'support_message' }
+            data: { chatId, type: 'support_message' },
           });
         }
       } catch (error) {
         logger.debug('Notification store not available:', error);
       }
-      
+
       get().addNotification({
         chatId,
         type: 'new_message',
-        message: `Yeni mesaj: ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`
+        message: `Yeni mesaj: ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`,
       });
     }
 
@@ -453,25 +453,25 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
             set({ messageTimeouts: newTimeouts });
             return;
           }
-          
+
           const responses = [
             'Anladım, probleminizlə bağlı araşdırma aparıram.',
             'Bu məsələni həll etmək üçün bir neçə dəqiqə vaxt lazımdır.',
             'Əlavə məlumat lazımdırsa, mənə yazın.',
-            'Probleminizi həll etməyə çalışıram, zəhmət olmasa gözləyin.'
+            'Probleminizi həll etməyə çalışıram, zəhmət olmasa gözləyin.',
           ];
           const randomResponse = responses[Math.floor(Math.random() * responses.length)];
           get().sendMessage(chatId, currentChat.operatorId!, 'operator', randomResponse);
-          
+
           // ✅ Remove from timeout map
           const newTimeouts = new Map(get().messageTimeouts);
           newTimeouts.delete(`response_${chatId}_${newMessage.id}`);
           set({ messageTimeouts: newTimeouts });
         }, 2000 + Math.random() * 3000);
-        
+
         // ✅ Store timeout for cleanup
         set((state) => ({
-          messageTimeouts: new Map(state.messageTimeouts).set(`response_${chatId}_${newMessage.id}`, responseTimeout)
+          messageTimeouts: new Map(state.messageTimeouts).set(`response_${chatId}_${newMessage.id}`, responseTimeout),
         }));
       }
     }
@@ -484,13 +484,13 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       liveChats: state.liveChats.map(chat =>
         chat.id === chatId
           ? { ...chat, operatorId, status: 'active', updatedAt: new Date() }
-          : chat
+          : chat,
       ),
       operators: state.operators.map(op =>
         op.id === operatorId
           ? { ...op, activeChats: op.activeChats + 1 }
-          : op
-      )
+          : op,
+      ),
     }));
 
     // Send operator introduction message
@@ -500,7 +500,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         chatId,
         operatorId,
         'operator',
-        `Salam! Mən ${operator.name}. Sizə necə kömək edə bilərəm?`
+        `Salam! Mən ${operator.name}. Sizə necə kömək edə bilərəm?`,
       );
     }
 
@@ -514,7 +514,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         fromUserId: operatorId,
         fromUserName: operator?.name,
         fromUserAvatar: operator?.avatar,
-        data: { chatId, operatorId, type: 'operator_assigned' }
+        data: { chatId, operatorId, type: 'operator_assigned' },
       });
     } catch (error) {
       logger.debug('Notification store not available:', error);
@@ -524,7 +524,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
     get().addNotification({
       chatId,
       type: 'chat_assigned',
-      message: `Operator təyin edildi: ${operator?.name}`
+      message: `Operator təyin edildi: ${operator?.name}`,
     });
 
     logger.debug('Operator assigned:', operatorId, 'to chat:', chatId);
@@ -532,17 +532,17 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
 
   closeLiveChat: (chatId) => {
     const chat = get().liveChats.find(c => c.id === chatId);
-    
+
     // ✅ Clear any pending timeouts for this chat
     const chatTimeouts = get().chatTimeouts;
     const messageTimeouts = get().messageTimeouts;
-    
+
     // Clear assignment timeout
     const assignTimeout = chatTimeouts.get(`assign_${chatId}`);
     if (assignTimeout) {
       clearTimeout(assignTimeout);
     }
-    
+
     // Clear all message response timeouts for this chat
     const timeoutsToDelete: string[] = [];
     messageTimeouts.forEach((_, key) => {
@@ -551,29 +551,29 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         timeoutsToDelete.push(key);
       }
     });
-    
+
     // Update timeout maps
     const newChatTimeouts = new Map(chatTimeouts);
     newChatTimeouts.delete(`assign_${chatId}`);
-    
+
     const newMessageTimeouts = new Map(messageTimeouts);
     timeoutsToDelete.forEach(key => newMessageTimeouts.delete(key));
-    
+
     set((state) => ({
       liveChats: state.liveChats.map(c =>
         c.id === chatId
           ? { ...c, status: 'closed', updatedAt: new Date() }
-          : c
+          : c,
       ),
       operators: chat?.operatorId
         ? state.operators.map(op =>
-            op.id === chat.operatorId
-              ? { ...op, activeChats: Math.max(0, op.activeChats - 1) }
-              : op
-          )
+          op.id === chat.operatorId
+            ? { ...op, activeChats: Math.max(0, op.activeChats - 1) }
+            : op,
+        )
         : state.operators,
       chatTimeouts: newChatTimeouts,
-      messageTimeouts: newMessageTimeouts
+      messageTimeouts: newMessageTimeouts,
     }));
 
     // Send closing message
@@ -581,7 +581,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       chatId,
       'system',
       'system',
-      'Söhbət bağlandı. Əlavə sualınız varsa, yenidən əlaqə saxlaya bilərsiniz.'
+      'Söhbət bağlandı. Əlavə sualınız varsa, yenidən əlaqə saxlaya bilərsiniz.',
     );
 
     // Add notification to main notification system
@@ -591,7 +591,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
         type: 'general',
         title: 'Söhbət Bağlandı',
         message: 'Dəstək söhbətiniz tamamlandı',
-        data: { chatId, type: 'chat_closed' }
+        data: { chatId, type: 'chat_closed' },
       });
     } catch (error) {
       logger.debug('Notification store not available:', error);
@@ -601,7 +601,7 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
     get().addNotification({
       chatId,
       type: 'chat_closed',
-      message: 'Söhbət bağlandı'
+      message: 'Söhbət bağlandı',
     });
 
     logger.debug('Chat closed:', chatId);
@@ -612,12 +612,12 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       liveChats: state.liveChats.map(chat =>
         chat.id === chatId
           ? {
-              ...chat,
-              userTyping: userType === 'user' ? isTyping : chat.userTyping,
-              operatorTyping: userType === 'operator' ? isTyping : chat.operatorTyping
-            }
-          : chat
-      )
+            ...chat,
+            userTyping: userType === 'user' ? isTyping : chat.userTyping,
+            operatorTyping: userType === 'operator' ? isTyping : chat.operatorTyping,
+          }
+          : chat,
+      ),
     }));
   },
 
@@ -626,13 +626,13 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       liveChats: state.liveChats.map(chat =>
         chat.id === chatId
           ? {
-              ...chat,
-              messages: chat.messages.map(msg =>
-                msg.senderId !== userId ? { ...msg, isRead: true } : msg
-              )
-            }
-          : chat
-      )
+            ...chat,
+            messages: chat.messages.map(msg =>
+              msg.senderId !== userId ? { ...msg, isRead: true } : msg,
+            ),
+          }
+          : chat,
+      ),
     }));
   },
 
@@ -645,8 +645,8 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
   },
 
   getAvailableOperators: () => {
-    return get().operators.filter(op => 
-      op.isOnline && op.isAvailable && op.activeChats < op.maxChats
+    return get().operators.filter(op =>
+      op.isOnline && op.isAvailable && op.activeChats < op.maxChats,
     );
   },
 
@@ -655,19 +655,19 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
       ...notificationData,
       id: `notif_${Date.now()}`,
       timestamp: new Date(),
-      isRead: false
+      isRead: false,
     };
 
     set((state) => ({
-      notifications: [newNotification, ...state.notifications.slice(0, 49)] // Keep only last 50
+      notifications: [newNotification, ...state.notifications.slice(0, 49)], // Keep only last 50
     }));
   },
 
   markNotificationAsRead: (notificationId) => {
     set((state) => ({
       notifications: state.notifications.map(notif =>
-        notif.id === notificationId ? { ...notif, isRead: true } : notif
-      )
+        notif.id === notificationId ? { ...notif, isRead: true } : notif,
+      ),
     }));
   },
 

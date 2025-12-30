@@ -47,20 +47,20 @@ function ListingGrid() {
 
   if (filteredListings.length === 0) {
     return (
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.emptyContainer}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-          {language === 'az' 
-            ? 'Heç bir elan tapılmadı' 
+          {language === 'az'
+            ? 'Heç bir elan tapılmadı'
             : 'Объявления не найдены'}
         </Text>
         <Text style={[styles.emptySubText, { color: colors.textSecondary }]}>
-          {language === 'az' 
-            ? 'Filtrləri dəyişdirməyə cəhd edin' 
+          {language === 'az'
+            ? 'Filtrləri dəyişdirməyə cəhd edin'
             : 'Попробуйте изменить фильтры'}
         </Text>
       </ScrollView>
@@ -68,7 +68,7 @@ function ListingGrid() {
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={[styles.scrollContainer, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: Platform.select({
-      web: Dimensions.get('window').width > 1024 ? '24%' : 
-           Dimensions.get('window').width > 768 ? '32%' : '49%',
-      default: '49%'
+      web: Dimensions.get('window').width > 1024 ? '24%' :
+        Dimensions.get('window').width > 768 ? '32%' : '49%',
+      default: '49%',
     }),
     marginBottom: 12,
   },

@@ -8,7 +8,7 @@ export const getOrderProcedure = publicProcedure
   .input(
     z.object({
       orderId: z.string(),
-    })
+    }),
   )
   .query(async ({ ctx, input }) => {
     const secretKey = config.PAYRIFF_SECRET_KEY;

@@ -12,19 +12,19 @@ export default function CategoryScreen() {
   const { language } = useLanguageStore();
   const { selectedCategory, selectedSubcategory, setSelectedSubcategory } = useListingStore();
   const [selectedSubSubcategory, setSelectedSubSubcategory] = useState<number | null>(null);
-  
+
   const category = categories.find(c => c.id === selectedCategory);
   const subcategory = category?.subcategories.find(s => s.id === selectedSubcategory);
   const subSubcategory = subcategory?.subcategories?.find(ss => ss.id === selectedSubSubcategory);
-  
+
   const title = subSubcategory
     ? subSubcategory.name[language]
-    : subcategory 
+    : subcategory
       ? subcategory.name[language]
-      : category 
+      : category
         ? category.name[language]
-        : language === 'az' 
-          ? 'Bütün elanlar' 
+        : language === 'az'
+          ? 'Bütün elanlar'
           : 'Все объявления';
 
   const handleSubcategoryPress = (subcategoryId: number) => {
@@ -39,21 +39,21 @@ export default function CategoryScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title }} />
-      
+
       {category && (
         <View style={styles.subcategoriesContainer}>
           <Text style={styles.subcategoriesTitle}>
             {language === 'az' ? 'Alt kateqoriyalar' : 'Подкатегории'}
           </Text>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.subcategoriesScroll}
           >
             <TouchableOpacity
               style={[
                 styles.subcategoryItem,
-                selectedSubcategory === null && styles.selectedSubcategory
+                selectedSubcategory === null && styles.selectedSubcategory,
               ]}
               onPress={() => {
                 setSelectedSubcategory(null);
@@ -62,24 +62,24 @@ export default function CategoryScreen() {
             >
               <Text style={[
                 styles.subcategoryText,
-                selectedSubcategory === null && styles.selectedSubcategoryText
+                selectedSubcategory === null && styles.selectedSubcategoryText,
               ]}>
                 {language === 'az' ? 'Hamısı' : 'Все'}
               </Text>
             </TouchableOpacity>
-            
+
             {category.subcategories.map(sub => (
               <TouchableOpacity
                 key={sub.id}
                 style={[
                   styles.subcategoryItem,
-                  selectedSubcategory === sub.id && styles.selectedSubcategory
+                  selectedSubcategory === sub.id && styles.selectedSubcategory,
                 ]}
                 onPress={() => handleSubcategoryPress(sub.id)}
               >
                 <Text style={[
                   styles.subcategoryText,
-                  selectedSubcategory === sub.id && styles.selectedSubcategoryText
+                  selectedSubcategory === sub.id && styles.selectedSubcategoryText,
                 ]}>
                   {sub.name[language]}
                 </Text>
@@ -88,44 +88,44 @@ export default function CategoryScreen() {
           </ScrollView>
         </View>
       )}
-      
+
       {subcategory && subcategory.subcategories && subcategory.subcategories.length > 0 && (
         <View style={styles.subcategoriesContainer}>
           <Text style={styles.subcategoriesTitle}>
             {language === 'az' ? 'Daha alt kateqoriyalar' : 'Подподкатегории'}
           </Text>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.subcategoriesScroll}
           >
             <TouchableOpacity
               style={[
                 styles.subcategoryItem,
-                selectedSubSubcategory === null && styles.selectedSubcategory
+                selectedSubSubcategory === null && styles.selectedSubcategory,
               ]}
               onPress={() => setSelectedSubSubcategory(null)}
             >
               <Text style={[
                 styles.subcategoryText,
-                selectedSubSubcategory === null && styles.selectedSubcategoryText
+                selectedSubSubcategory === null && styles.selectedSubcategoryText,
               ]}>
                 {language === 'az' ? 'Hamısı' : 'Все'}
               </Text>
             </TouchableOpacity>
-            
+
             {subcategory.subcategories.map(subSub => (
               <TouchableOpacity
                 key={subSub.id}
                 style={[
                   styles.subcategoryItem,
-                  selectedSubSubcategory === subSub.id && styles.selectedSubcategory
+                  selectedSubSubcategory === subSub.id && styles.selectedSubcategory,
                 ]}
                 onPress={() => handleSubSubcategoryPress(subSub.id)}
               >
                 <Text style={[
                   styles.subcategoryText,
-                  selectedSubSubcategory === subSub.id && styles.selectedSubcategoryText
+                  selectedSubSubcategory === subSub.id && styles.selectedSubcategoryText,
                 ]}>
                   {subSub.name[language]}
                 </Text>
@@ -134,7 +134,7 @@ export default function CategoryScreen() {
           </ScrollView>
         </View>
       )}
-      
+
       <ListingGrid />
     </View>
   );

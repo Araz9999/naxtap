@@ -14,6 +14,7 @@ import Colors from '@/constants/colors';
 import { Listing } from '@/types/listing';
 import { Category } from '@/types/category';
 import { Camera, ChevronDown, Plus, Check, Clock, Award, Image as ImageIcon, MapPin, Info, AlertCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { sanitizeNumericInput } from '@/utils/inputValidation';
 
 import { logger } from '@/utils/logger';
 export default function CreateListingScreen() {
@@ -22,7 +23,7 @@ export default function CreateListingScreen() {
   const { isAuthenticated, currentUser, canAfford, spendFromBalance, getTotalBalance } = useUserStore();
   const { getAllUserStores, canAddListing } = useStoreStore();
   const { addListingToStore } = useListingStore();
-  
+
   // All useState hooks must be at the top level
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -37,11 +38,11 @@ export default function CreateListingScreen() {
   const [contactPreference, setContactPreference] = useState<'phone' | 'message' | 'both'>('both');
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
-  
+
   // Category navigation state
   const [categoryNavigationStack, setCategoryNavigationStack] = useState<any[]>([]);
   const [currentCategoryLevel, setCurrentCategoryLevel] = useState<'main' | 'sub' | 'subsub'>('main');
-  
+
   // New states for ad package selection
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPackage, setSelectedPackage] = useState(adPackages[0].id);
@@ -54,7 +55,7 @@ export default function CreateListingScreen() {
   const [addToStore, setAddToStore] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [showStoreModal, setShowStoreModal] = useState(false);
-  
+
   // Check authentication after hooks
   if (!isAuthenticated || !currentUser) {
     return (
@@ -68,7 +69,7 @@ export default function CreateListingScreen() {
             {t('loginToPostAd')}
           </Text>
           <View style={styles.authRequiredButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.authRequiredButton}
               onPress={() => router.push('/auth/login')}
             >
@@ -76,7 +77,7 @@ export default function CreateListingScreen() {
                 {t('login')}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.authRequiredButton, styles.authRequiredSecondaryButton]}
               onPress={() => router.push('/auth/register')}
             >
@@ -89,13 +90,13 @@ export default function CreateListingScreen() {
       </View>
     );
   }
-  
+
   const userStores = currentUser ? getAllUserStores(currentUser.id) : [];
   const activeUserStores = userStores.filter(store => store.status === 'active' || store.status === 'grace_period');
-  
+
   const selectedStore = selectedStoreId ? activeUserStores.find(s => s.id === selectedStoreId) : null;
   const canAddToSelectedStore = selectedStore ? canAddListing(selectedStore.id) : false;
-  
+
   const selectedCategoryData = categories.find(c => c.id === selectedCategory);
   const selectedPackageData = adPackages.find(p => p.id === selectedPackage);
   const selectedLocationData = locations.find(l => l.id === selectedLocation);
@@ -107,9 +108,9 @@ export default function CreateListingScreen() {
         if (status !== 'granted') {
           Alert.alert(
             language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-            language === 'az' 
-              ? 'Qalereya daxil olmaq üçün icazə lazımdır' 
-              : 'Для доступа к галерее требуется разрешение'
+            language === 'az'
+              ? 'Qalereya daxil olmaq üçün icazə lazımdır'
+              : 'Для доступа к галерее требуется разрешение',
           );
           return;
         }
@@ -125,29 +126,29 @@ export default function CreateListingScreen() {
       // ✅ Validate assets array and file size
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // ✅ Check image limit
         if (images.length >= (selectedPackageData?.features.photosCount || 3)) {
           Alert.alert(
             language === 'az' ? 'Limit aşıldı' : 'Лимит превышен',
-            language === 'az' 
-              ? `Seçdiyiniz paket maksimum ${selectedPackageData?.features.photosCount} şəkil əlavə etməyə imkan verir` 
-              : `Выбранный пакет позволяет добавить максимум ${selectedPackageData?.features.photosCount} изображений`
+            language === 'az'
+              ? `Seçdiyiniz paket maksimum ${selectedPackageData?.features.photosCount} şəkil əlavə etməyə imkan verir`
+              : `Выбранный пакет позволяет добавить максимум ${selectedPackageData?.features.photosCount} изображений`,
           );
           return;
         }
-        
+
         // ✅ Validate file size (max 10MB)
         if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
           Alert.alert(
             language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
-            language === 'az' 
-              ? 'Maksimum 10MB ölçüsündə şəkil əlavə edin' 
-              : 'Добавьте изображение размером до 10MB'
+            language === 'az'
+              ? 'Maksimum 10MB ölçüsündə şəkil əlavə edin'
+              : 'Добавьте изображение размером до 10MB',
           );
           return;
         }
-        
+
         setImages([...images, asset.uri]);
         logger.info('Image added from gallery', { fileSize: asset.fileSize });
       }
@@ -155,7 +156,7 @@ export default function CreateListingScreen() {
       logger.error('Gallery error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение'
+        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение',
       );
     }
   };
@@ -165,9 +166,9 @@ export default function CreateListingScreen() {
       if (Platform.OS === 'web') {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' 
-            ? 'Kamera ilə şəkil çəkmək veb versiyada mövcud deyil' 
-            : 'Съемка камерой недоступна в веб-версии'
+          language === 'az'
+            ? 'Kamera ilə şəkil çəkmək veb versiyada mövcud deyil'
+            : 'Съемка камерой недоступна в веб-версии',
         );
         return;
       }
@@ -176,9 +177,9 @@ export default function CreateListingScreen() {
       if (status !== 'granted') {
         Alert.alert(
           language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-          language === 'az' 
-            ? 'Kameradan istifadə etmək üçün icazə lazımdır' 
-            : 'Для использования камеры требуется разрешение'
+          language === 'az'
+            ? 'Kameradan istifadə etmək üçün icazə lazımdır'
+            : 'Для использования камеры требуется разрешение',
         );
         return;
       }
@@ -192,24 +193,24 @@ export default function CreateListingScreen() {
       // ✅ Validate assets array and file size
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // ✅ Check file size (max 10MB - same as gallery for consistency)
         if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
           Alert.alert(
             language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
-            language === 'az' 
-              ? 'Maksimum 10MB ölçüsündə şəkil əlavə edin' 
-              : 'Добавьте изображение размером до 10MB'
+            language === 'az'
+              ? 'Maksimum 10MB ölçüsündə şəkil əlavə edin'
+              : 'Добавьте изображение размером до 10MB',
           );
           return;
         }
-        
+
         if (images.length >= (selectedPackageData?.features.photosCount || 3)) {
           Alert.alert(
             language === 'az' ? 'Limit aşıldı' : 'Лимит превышен',
-            language === 'az' 
-              ? `Seçdiyiniz paket maksimum ${selectedPackageData?.features.photosCount} şəkil əlavə etməyə imkan verir` 
-              : `Выбранный пакет позволяет добавить максимум ${selectedPackageData?.features.photosCount} изображений`
+            language === 'az'
+              ? `Seçdiyiniz paket maksimum ${selectedPackageData?.features.photosCount} şəkil əlavə etməyə imkan verir`
+              : `Выбранный пакет позволяет добавить максимум ${selectedPackageData?.features.photosCount} изображений`,
           );
           return;
         }
@@ -219,7 +220,7 @@ export default function CreateListingScreen() {
       logger.error('Camera error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil çəkilə bilmədi' : 'Не удалось сделать фото'
+        language === 'az' ? 'Şəkil çəkilə bilmədi' : 'Не удалось сделать фото',
       );
     }
   };
@@ -230,110 +231,110 @@ export default function CreateListingScreen() {
       if (!title.trim()) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Elan başlığını daxil edin' : 'Введите заголовок объявления'
+          language === 'az' ? 'Elan başlığını daxil edin' : 'Введите заголовок объявления',
         );
         return;
       }
-      
+
       if (title.trim().length < 5) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Başlıq ən azı 5 simvol olmalıdır' : 'Заголовок должен быть не менее 5 символов'
+          language === 'az' ? 'Başlıq ən azı 5 simvol olmalıdır' : 'Заголовок должен быть не менее 5 символов',
         );
         return;
       }
-      
+
       if (title.trim().length > 100) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Başlıq maksimum 100 simvol ola bilər' : 'Заголовок не должен превышать 100 символов'
+          language === 'az' ? 'Başlıq maksimum 100 simvol ola bilər' : 'Заголовок не должен превышать 100 символов',
         );
         return;
       }
-      
+
       // Validation: Description
       if (!description.trim()) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Təsvir daxil edin' : 'Введите описание'
+          language === 'az' ? 'Təsvir daxil edin' : 'Введите описание',
         );
         return;
       }
-      
+
       if (description.trim().length < 10) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Təsvir ən azı 10 simvol olmalıdır' : 'Описание должно быть не менее 10 символов'
+          language === 'az' ? 'Təsvir ən azı 10 simvol olmalıdır' : 'Описание должно быть не менее 10 символов',
         );
         return;
       }
-      
+
       // Validation: Price (if not by agreement)
       if (!priceByAgreement) {
         if (!price.trim()) {
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Qiymət daxil edin' : 'Введите цену'
+            language === 'az' ? 'Qiymət daxil edin' : 'Введите цену',
           );
           return;
         }
-        
+
         const priceValue = parseFloat(price);
         if (isNaN(priceValue) || priceValue <= 0) {
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Düzgün qiymət daxil edin' : 'Введите корректную цену'
+            language === 'az' ? 'Düzgün qiymət daxil edin' : 'Введите корректную цену',
           );
           return;
         }
-        
+
         if (priceValue > 1000000) {
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Qiymət maksimum 1,000,000 ola bilər' : 'Цена не должна превышать 1,000,000'
+            language === 'az' ? 'Qiymət maksimum 1,000,000 ola bilər' : 'Цена не должна превышать 1,000,000',
           );
           return;
         }
       }
-      
+
       // Validation: Location
       if (!selectedLocation) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Yerləşdiyiniz yeri seçin' : 'Выберите местоположение'
+          language === 'az' ? 'Yerləşdiyiniz yeri seçin' : 'Выберите местоположение',
         );
         return;
       }
-      
+
       // Validation: Category
       if (!selectedCategory) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию'
+          language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию',
         );
         return;
       }
-      
+
       // Validation: Subcategory (yalnız əgər seçilmiş kateqoriyanın alt kateqoriyası varsa)
       const selectedCategoryData = categories.find(c => c.id === selectedCategory);
       if (selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && !selectedSubcategory) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Alt kateqoriya seçin' : 'Выберите подкатегорию'
+          language === 'az' ? 'Alt kateqoriya seçin' : 'Выберите подкатегорию',
         );
         return;
       }
-      
+
       setCurrentStep(2);
     } else if (currentStep === 2) {
       // Check if adding to store with available slots (no payment required)
       const isStoreListingWithSlots = addToStore && selectedStore && canAddToSelectedStore;
-      
+
       if (!isStoreListingWithSlots && selectedPackage !== 'free' && !canAfford(selectedPackageData?.price || 0)) {
         Alert.alert(
           language === 'az' ? 'Balans kifayət etmir' : 'Недостаточно средств',
-          language === 'az' 
-            ? 'Elan yerləşdirmək üçün balansınızı artırın' 
+          language === 'az'
+            ? 'Elan yerləşdirmək üçün balansınızı artırın'
             : 'Пополните баланс для размещения объявления',
           [
             {
@@ -344,11 +345,11 @@ export default function CreateListingScreen() {
               text: language === 'az' ? 'Balans artır' : 'Пополнить баланс',
               onPress: () => router.push('/wallet'),
             },
-          ]
+          ],
         );
         return;
       }
-      
+
       // Show confirmation alert before posting the listing
       Alert.alert(
         language === 'az' ? 'Elanı yerləşdir' : 'Разместить объявление',
@@ -364,7 +365,7 @@ export default function CreateListingScreen() {
             text: language === 'az' ? 'Bəli, yerləşdir' : 'Да, разместить',
             onPress: () => handleSubmit(),
           },
-        ]
+        ],
       );
     }
   };
@@ -378,16 +379,16 @@ export default function CreateListingScreen() {
   const handleSubmit = async () => {
     // Check if adding to store with available slots (no payment required)
     const isStoreListingWithSlots = addToStore && selectedStore && canAddToSelectedStore;
-    
+
     // Check free ad limit for non-store listings only
     if (selectedPackage === 'free' && !isStoreListingWithSlots) {
       const { canPostFreeAd, incrementFreeAds } = useUserStore.getState();
       if (!canPostFreeAd()) {
         Alert.alert(
           language === 'az' ? 'Limit aşıldı' : 'Лимит превышен',
-          language === 'az' 
-            ? 'Ay ərzində maksimum 3 pulsuz elan yerləşdirə bilərsiniz' 
-            : 'Вы можете размещать максимум 3 бесплатных объявления в месяц'
+          language === 'az'
+            ? 'Ay ərzində maksimum 3 pulsuz elan yerləşdirə bilərsiniz'
+            : 'Вы можете размещать максимум 3 бесплатных объявления в месяц',
         );
         return;
       }
@@ -398,9 +399,9 @@ export default function CreateListingScreen() {
     if (addToStore && selectedStore && !canAddToSelectedStore) {
       Alert.alert(
         language === 'az' ? 'Mağaza limiti dolub' : 'Лимит магазина исчерпан',
-        language === 'az' 
-          ? 'Mağazanızda daha çox elan yerləşdirmək üçün paketi yüksəldin' 
-          : 'Для размещения большего количества объявлений в магазине улучшите пакет'
+        language === 'az'
+          ? 'Mağazanızda daha çox elan yerləşdirmək üçün paketi yüksəldin'
+          : 'Для размещения большего количества объявлений в магазине улучшите пакет',
       );
       return;
     }
@@ -422,7 +423,7 @@ export default function CreateListingScreen() {
             text: language === 'az' ? 'Təsdiq et' : 'Подтвердить',
             onPress: () => processListingSubmission(),
           },
-        ]
+        ],
       );
       return;
     }
@@ -438,13 +439,13 @@ export default function CreateListingScreen() {
       // ✅ Process payment only if not adding to store with available slots
       if (!isStoreListingWithSlots && selectedPackage !== 'free') {
         const packagePrice = selectedPackageData?.price || 0;
-        
+
         // ✅ Check if can afford first
         if (!canAfford(packagePrice)) {
           Alert.alert(
             language === 'az' ? 'Balans kifayət etmir' : 'Недостаточно средств',
-            language === 'az' 
-              ? 'Balansınızı artırın' 
+            language === 'az'
+              ? 'Balansınızı artırın'
               : 'Пополните баланс',
             [
               {
@@ -455,23 +456,23 @@ export default function CreateListingScreen() {
                 text: language === 'az' ? 'Balans artır' : 'Пополнить баланс',
                 onPress: () => router.push('/wallet'),
               },
-            ]
+            ],
           );
           return;
         }
-        
+
         // ✅ Actually spend and check success
         const paymentSuccess = spendFromBalance(packagePrice);
         if (!paymentSuccess) {
           Alert.alert(
             language === 'az' ? 'Ödəniş xətası' : 'Ошибка оплаты',
-            language === 'az' 
-              ? 'Balansınızdan ödəniş çıxıla bilmədi. Yenidən cəhd edin.' 
-              : 'Не удалось списать средства с баланса. Попробуйте еще раз.'
+            language === 'az'
+              ? 'Balansınızdan ödəniş çıxıla bilmədi. Yenidən cəhd edin.'
+              : 'Не удалось списать средства с баланса. Попробуйте еще раз.',
           );
           return;
         }
-        
+
         logger.info('Payment successful for listing', { packagePrice, package: selectedPackage });
       }
 
@@ -479,7 +480,7 @@ export default function CreateListingScreen() {
       const now = new Date();
       const duration = Math.max(1, Math.min(365, selectedPackageData?.duration || 3)); // 1-365 days
       const expirationDate = new Date(now.getTime() + duration * 24 * 60 * 60 * 1000);
-      
+
       // ✅ Validate result
       if (isNaN(expirationDate.getTime())) {
         logger.error('Invalid expiration date calculated, using fallback');
@@ -492,12 +493,12 @@ export default function CreateListingScreen() {
         title: {
           az: title,
           ru: title,
-          en: title
+          en: title,
         },
         description: {
           az: description,
           ru: description,
-          en: description
+          en: description,
         },
         price: priceByAgreement ? 0 : (parseFloat(price) || 0),
         currency: currency as 'AZN' | 'USD',
@@ -509,7 +510,7 @@ export default function CreateListingScreen() {
         location: {
           az: selectedLocationData?.name.az || '',
           ru: selectedLocationData?.name.ru || '',
-          en: selectedLocationData?.name.en || ''
+          en: selectedLocationData?.name.en || '',
         },
         userId: currentUser.id,
         createdAt: new Date().toISOString(),
@@ -520,7 +521,7 @@ export default function CreateListingScreen() {
         isPremium: selectedPackageData?.features.priorityPlacement || false,
         isVip: selectedPackage === 'vip',
         adType: selectedPackage as 'free' | 'standard' | 'colored' | 'auto-renewal' | 'premium' | 'vip',
-        contactPreference
+        contactPreference,
       };
 
       // Add to store if selected, otherwise add normally
@@ -532,38 +533,38 @@ export default function CreateListingScreen() {
 
       Alert.alert(
         language === 'az' ? 'Uğurlu' : 'Успешно',
-        language === 'az' 
-          ? (isStoreListingWithSlots 
-              ? 'Elan mağazanıza pulsuz əlavə edildi' 
-              : addToStore 
-                ? 'Elan mağazanıza uğurla əlavə edildi' 
-                : 'Elanınız uğurla yerləşdirildi')
-          : (isStoreListingWithSlots 
-              ? 'Объявление бесплатно добавлено в ваш магазин' 
-              : addToStore 
-                ? 'Объявление успешно добавлено в ваш магазин' 
-                : 'Ваше объявление успешно размещено'),
+        language === 'az'
+          ? (isStoreListingWithSlots
+            ? 'Elan mağazanıza pulsuz əlavə edildi'
+            : addToStore
+              ? 'Elan mağazanıza uğurla əlavə edildi'
+              : 'Elanınız uğurla yerləşdirildi')
+          : (isStoreListingWithSlots
+            ? 'Объявление бесплатно добавлено в ваш магазин'
+            : addToStore
+              ? 'Объявление успешно добавлено в ваш магазин'
+              : 'Ваше объявление успешно размещено'),
         [
           {
             text: 'OK',
             onPress: () => router.push('/'),
           },
-        ]
+        ],
       );
     } catch {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
-          ? 'Elan yerləşdirilərkən xəta baş verdi' 
-          : 'Произошла ошибка при размещении объявления'
+        language === 'az'
+          ? 'Elan yerləşdirilərkən xəta baş verdi'
+          : 'Произошла ошибка при размещении объявления',
       );
     }
   };
 
-  const filteredCategories = categorySearchQuery 
-    ? categories.filter(category => 
-        category.name[language].toLowerCase().includes(categorySearchQuery.toLowerCase())
-      )
+  const filteredCategories = categorySearchQuery
+    ? categories.filter(category =>
+      category.name[language].toLowerCase().includes(categorySearchQuery.toLowerCase()),
+    )
     : categories;
 
   const renderStoreModal = () => {
@@ -580,14 +581,14 @@ export default function CreateListingScreen() {
               <Text style={styles.modalTitle}>
                 {language === 'az' ? 'Mağaza seçin' : 'Выберите магазин'}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setShowStoreModal(false)}
               >
                 <Text style={styles.modalCloseText}>×</Text>
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               data={activeUserStores}
               keyExtractor={(item) => item.id}
@@ -597,7 +598,7 @@ export default function CreateListingScreen() {
                   <TouchableOpacity
                     style={[
                       styles.modalItem,
-                      !canAdd && styles.disabledModalItem
+                      !canAdd && styles.disabledModalItem,
                     ]}
                     onPress={() => {
                       if (canAdd) {
@@ -610,12 +611,12 @@ export default function CreateListingScreen() {
                     <View style={styles.storeModalItemContent}>
                       <Text style={[
                         styles.modalItemText,
-                        !canAdd && styles.disabledModalItemText
+                        !canAdd && styles.disabledModalItemText,
                       ]}>
                         {item.name}
                       </Text>
                       <Text style={styles.storeModalItemSubtext}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? `${item.adsUsed}/${item.maxAds} elan istifadə edilib`
                           : `${item.adsUsed}/${item.maxAds} объявлений использовано`}
                       </Text>
@@ -676,7 +677,7 @@ export default function CreateListingScreen() {
       // Subcategory reset et, amma main category qalsın
       setSelectedSubcategory(null);
       setSelectedSubSubcategory(null);
-      // Main category-ni SAXLA (reset etmə!)  
+      // Main category-ni SAXLA (reset etmə!)
       // setSelectedCategory(null); // BU XƏTA IDI!
     }
   };
@@ -684,7 +685,7 @@ export default function CreateListingScreen() {
   const renderCategoryModal = () => {
     let currentCategories = [];
     let title = language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию';
-    
+
     if (currentCategoryLevel === 'main') {
       currentCategories = filteredCategories;
       title = language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию';
@@ -715,19 +716,19 @@ export default function CreateListingScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               {currentCategoryLevel !== 'main' && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.categoryBackButton}
                   onPress={handleCategoryBack}
                 >
                   <ChevronLeft size={24} color={Colors.primary} />
                 </TouchableOpacity>
               )}
-              
+
               <Text style={[styles.modalTitle, currentCategoryLevel !== 'main' && styles.modalTitleWithBack]}>
                 {title}
               </Text>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => {
                   // Close button - yalnız modal-ı bağla, seçimləri saxla
@@ -739,7 +740,7 @@ export default function CreateListingScreen() {
                 <Text style={styles.modalCloseText}>×</Text>
               </TouchableOpacity>
             </View>
-            
+
             {currentCategoryLevel === 'main' && (
               <View style={styles.searchContainer}>
                 <Search size={20} color={Colors.textSecondary} style={styles.searchIcon} />
@@ -752,7 +753,7 @@ export default function CreateListingScreen() {
                 />
               </View>
             )}
-            
+
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.categoriesContainer}
@@ -790,8 +791,8 @@ export default function CreateListingScreen() {
     // ✅ Filter locations based on search query
     const filteredLocations = locationSearchQuery
       ? locations.filter(loc =>
-          loc.name[language].toLowerCase().includes(locationSearchQuery.toLowerCase())
-        )
+        loc.name[language].toLowerCase().includes(locationSearchQuery.toLowerCase()),
+      )
       : locations;
 
     return (
@@ -810,7 +811,7 @@ export default function CreateListingScreen() {
               <Text style={styles.modalTitle}>
                 {language === 'az' ? 'Yer seçin' : 'Выберите местоположение'}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => {
                   setShowLocationModal(false);
@@ -820,7 +821,7 @@ export default function CreateListingScreen() {
                 <Text style={styles.modalCloseText}>×</Text>
               </TouchableOpacity>
             </View>
-            
+
             {/* ✅ Search input */}
             <View style={styles.searchContainer}>
               <Search size={20} color={Colors.textSecondary} />
@@ -832,7 +833,7 @@ export default function CreateListingScreen() {
                 onChangeText={setLocationSearchQuery}
               />
             </View>
-            
+
             {/* ✅ Show message if no results */}
             {filteredLocations.length === 0 ? (
               <View style={styles.emptySearchContainer}>
@@ -849,7 +850,7 @@ export default function CreateListingScreen() {
                   <TouchableOpacity
                     style={[
                       styles.modalItem,
-                      selectedLocation === item.id && styles.selectedModalItem
+                      selectedLocation === item.id && styles.selectedModalItem,
                     ]}
                     onPress={() => {
                       // ✅ Validate selection
@@ -857,7 +858,7 @@ export default function CreateListingScreen() {
                         logger.error('[CreateListing] Invalid location selected');
                         return;
                       }
-                      
+
                       setSelectedLocation(item.id);
                       setShowLocationModal(false);
                       setLocationSearchQuery('');
@@ -866,7 +867,7 @@ export default function CreateListingScreen() {
                   >
                     <Text style={[
                       styles.modalItemText,
-                      selectedLocation === item.id && styles.selectedModalItemText
+                      selectedLocation === item.id && styles.selectedModalItemText,
                     ]}>
                       {item.name[language]}
                     </Text>
@@ -889,7 +890,7 @@ export default function CreateListingScreen() {
         <Text style={styles.title}>
           {language === 'az' ? 'Yeni elan yerləşdir' : 'Разместить новое объявление'}
         </Text>
-        
+
         <View style={styles.imageSection}>
           <View style={styles.labelRow}>
             <Text style={styles.sectionTitle}>
@@ -901,15 +902,15 @@ export default function CreateListingScreen() {
           </View>
           <View style={styles.imageHeaderRow}>
             <Text style={styles.imageLimit}>
-              {language === 'az' 
-                ? `${images.length}/${selectedPackageData?.features.photosCount} şəkil` 
+              {language === 'az'
+                ? `${images.length}/${selectedPackageData?.features.photosCount} şəkil`
                 : `${images.length}/${selectedPackageData?.features.photosCount} изображений`}
             </Text>
             <TouchableOpacity onPress={() => Alert.alert(
               language === 'az' ? 'Şəkillər haqqında' : 'О фотографиях',
-              language === 'az' 
-                ? 'Yaxşı keyfiyyətli və aydın şəkillər elanınızın daha tez satılmasına kömək edəcək.' 
-                : 'Качественные и четкие фотографии помогут быстрее продать ваш товар.'
+              language === 'az'
+                ? 'Yaxşı keyfiyyətli və aydın şəkillər elanınızın daha tez satılmasına kömək edəcək.'
+                : 'Качественные и четкие фотографии помогут быстрее продать ваш товар.',
             )}>
               <Info size={16} color={Colors.textSecondary} />
             </TouchableOpacity>
@@ -918,7 +919,7 @@ export default function CreateListingScreen() {
             {images.map((image, index) => (
               <View key={index} style={styles.imageContainer}>
                 <Image source={{ uri: image }} style={styles.image} />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => setImages(images.filter((_, i) => i !== index))}
                 >
@@ -946,7 +947,7 @@ export default function CreateListingScreen() {
             )}
           </ScrollView>
         </View>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>
             {language === 'az' ? 'Başlıq' : 'Заголовок'}
@@ -961,7 +962,7 @@ export default function CreateListingScreen() {
           />
           <Text style={styles.charCount}>{title.length}/70</Text>
         </View>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>
             {language === 'az' ? 'Təsvir' : 'Описание'}
@@ -979,21 +980,20 @@ export default function CreateListingScreen() {
           />
           <Text style={styles.charCount}>{description.length}/1000</Text>
         </View>
-        
 
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>
             {language === 'az' ? 'Qiymət' : 'Цена'}
           </Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.agreementOption}
             onPress={() => setPriceByAgreement(!priceByAgreement)}
           >
             <View style={[
               styles.checkbox,
-              priceByAgreement && styles.checkedCheckbox
+              priceByAgreement && styles.checkedCheckbox,
             ]}>
               {priceByAgreement && <Check size={16} color="white" />}
             </View>
@@ -1001,7 +1001,7 @@ export default function CreateListingScreen() {
               {language === 'az' ? 'Razılaşma yolu ilə' : 'По договоренности'}
             </Text>
           </TouchableOpacity>
-          
+
           {!priceByAgreement && (
             <>
               <View style={styles.priceContainer}>
@@ -1017,20 +1017,20 @@ export default function CreateListingScreen() {
                   {currency}
                 </Text>
               </View>
-              
+
               <View style={styles.currencyOptions}>
                 {['AZN', 'USD'].map((curr) => (
                   <TouchableOpacity
                     key={curr}
                     style={[
                       styles.currencyOption,
-                      currency === curr && styles.selectedCurrencyOption
+                      currency === curr && styles.selectedCurrencyOption,
                     ]}
                     onPress={() => setCurrency(curr)}
                   >
                     <Text style={[
                       styles.currencyOptionText,
-                      currency === curr && styles.selectedCurrencyOptionText
+                      currency === curr && styles.selectedCurrencyOptionText,
                     ]}>
                       {curr}
                     </Text>
@@ -1040,47 +1040,47 @@ export default function CreateListingScreen() {
             </>
           )}
         </View>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>
             {language === 'az' ? 'Yer' : 'Местоположение'}
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.locationButton}
             onPress={() => setShowLocationModal(true)}
           >
             <MapPin size={20} color={Colors.textSecondary} style={styles.locationIcon} />
             <Text style={selectedLocation ? styles.locationText : styles.locationPlaceholder}>
-              {selectedLocation 
+              {selectedLocation
                 ? selectedLocationData?.name[language]
                 : language === 'az' ? 'Şəhər, rayon seçin' : 'Выберите город, район'}
             </Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>
             {language === 'az' ? 'Kateqoriya' : 'Категория'}
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.pickerButton}
             onPress={() => setShowCategoryModal(true)}
           >
             <Text style={selectedCategory ? styles.pickerText : styles.pickerPlaceholder}>
-              {selectedCategory 
+              {selectedCategory
                 ? categories.find(c => c.id === selectedCategory)?.name[language]
                 : language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию'}
             </Text>
             <ChevronDown size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
         </View>
-        
+
         {selectedCategory && selectedSubcategory && (
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {language === 'az' ? 'Alt kateqoriya' : 'Подкатегория'}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.pickerButton}
               onPress={() => {
                 setCurrentCategoryLevel('sub');
@@ -1095,13 +1095,13 @@ export default function CreateListingScreen() {
             </TouchableOpacity>
           </View>
         )}
-        
+
         {selectedCategory && selectedSubcategory && selectedSubSubcategory && (
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {language === 'az' ? 'Daha alt kateqoriya' : 'Подподкатегория'}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.pickerButton}
               onPress={() => {
                 setCurrentCategoryLevel('subsub');
@@ -1128,30 +1128,30 @@ export default function CreateListingScreen() {
             </Text>
           </View>
           <View style={styles.conditionOptions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.conditionOption,
-                condition === 'new' && styles.selectedConditionOption
+                condition === 'new' && styles.selectedConditionOption,
               ]}
               onPress={() => setCondition(condition === 'new' ? null : 'new')}
             >
               <Text style={[
                 styles.conditionOptionText,
-                condition === 'new' && styles.selectedConditionOptionText
+                condition === 'new' && styles.selectedConditionOptionText,
               ]}>
                 {language === 'az' ? 'Yeni' : 'Новое'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.conditionOption,
-                condition === 'used' && styles.selectedConditionOption
+                condition === 'used' && styles.selectedConditionOption,
               ]}
               onPress={() => setCondition(condition === 'used' ? null : 'used')}
             >
               <Text style={[
                 styles.conditionOptionText,
-                condition === 'used' && styles.selectedConditionOptionText
+                condition === 'used' && styles.selectedConditionOptionText,
               ]}>
                 {language === 'az' ? 'İşlənmiş' : 'Б/у'}
               </Text>
@@ -1168,13 +1168,13 @@ export default function CreateListingScreen() {
               {language === 'az' ? '(İstəyə bağlı)' : '(Необязательно)'}
             </Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.deliveryOption}
             onPress={() => setDeliveryAvailable(!deliveryAvailable)}
           >
             <View style={[
               styles.checkbox,
-              deliveryAvailable && styles.checkedCheckbox
+              deliveryAvailable && styles.checkedCheckbox,
             ]}>
               {deliveryAvailable && <Check size={16} color="white" />}
             </View>
@@ -1182,28 +1182,28 @@ export default function CreateListingScreen() {
               {language === 'az' ? 'Çatdırılma mümkündür' : 'Возможна доставка'}
             </Text>
           </TouchableOpacity>
-          
+
           {deliveryAvailable && (
             <View style={styles.deliveryTypeContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.pickerButton}
                 onPress={() => setShowDeliveryTypes(!showDeliveryTypes)}
               >
                 <Text style={deliveryType ? styles.pickerText : styles.pickerPlaceholder}>
-                  {deliveryType 
+                  {deliveryType
                     ? deliveryType
                     : language === 'az' ? 'Çatdırılma növünü seçin' : 'Выберите тип доставки'}
                 </Text>
                 <ChevronDown size={20} color={Colors.textSecondary} />
               </TouchableOpacity>
-              
+
               {showDeliveryTypes && (
                 <View style={styles.pickerOptions}>
                   {[
                     { id: 'free', name: { az: 'Pulsuz çatdırılma', ru: 'Бесплатная доставка', en: 'Free delivery' } },
                     { id: 'paid', name: { az: 'Ödənişli çatdırılma', ru: 'Платная доставка', en: 'Paid delivery' } },
                     { id: 'regions', name: { az: 'Rayonlara çatdırılma', ru: 'Доставка в регионы', en: 'Regional delivery' } },
-                    { id: 'pickup', name: { az: 'Ünvandan götürmə', ru: 'Самовывоз', en: 'Pickup' } }
+                    { id: 'pickup', name: { az: 'Ünvandan götürmə', ru: 'Самовывоз', en: 'Pickup' } },
                   ].map(type => {
                     const typeName = type.name[language as 'az' | 'ru' | 'en'];
                     return (
@@ -1211,7 +1211,7 @@ export default function CreateListingScreen() {
                         key={type.id}
                         style={[
                           styles.pickerOption,
-                          deliveryType === typeName && styles.selectedPickerOption
+                          deliveryType === typeName && styles.selectedPickerOption,
                         ]}
                         onPress={() => {
                           setDeliveryType(typeName);
@@ -1220,7 +1220,7 @@ export default function CreateListingScreen() {
                       >
                         <Text style={[
                           styles.pickerOptionText,
-                          deliveryType === typeName && styles.selectedPickerOptionText
+                          deliveryType === typeName && styles.selectedPickerOptionText,
                         ]}>
                           {typeName}
                         </Text>
@@ -1238,64 +1238,64 @@ export default function CreateListingScreen() {
             {language === 'az' ? 'Əlaqə üsulu' : 'Способ связи'}
           </Text>
           <View style={styles.contactOptions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.contactOption,
-                contactPreference === 'phone' && styles.selectedContactOption
+                contactPreference === 'phone' && styles.selectedContactOption,
               ]}
               onPress={() => setContactPreference('phone')}
             >
               <Text style={[
                 styles.contactOptionText,
-                contactPreference === 'phone' && styles.selectedContactOptionText
+                contactPreference === 'phone' && styles.selectedContactOptionText,
               ]}>
                 {language === 'az' ? 'Telefon' : 'Телефон'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.contactOption,
-                contactPreference === 'message' && styles.selectedContactOption
+                contactPreference === 'message' && styles.selectedContactOption,
               ]}
               onPress={() => setContactPreference('message')}
             >
               <Text style={[
                 styles.contactOptionText,
-                contactPreference === 'message' && styles.selectedContactOptionText
+                contactPreference === 'message' && styles.selectedContactOptionText,
               ]}>
                 {language === 'az' ? 'Mesaj' : 'Сообщение'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.contactOption,
-                contactPreference === 'both' && styles.selectedContactOption
+                contactPreference === 'both' && styles.selectedContactOption,
               ]}
               onPress={() => setContactPreference('both')}
             >
               <Text style={[
                 styles.contactOptionText,
-                contactPreference === 'both' && styles.selectedContactOptionText
+                contactPreference === 'both' && styles.selectedContactOptionText,
               ]}>
                 {language === 'az' ? 'Hər ikisi' : 'Оба'}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {/* Store Option */}
         {activeUserStores.length > 0 && (
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {language === 'az' ? 'Mağaza' : 'Магазин'}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.storeOption}
               onPress={() => setAddToStore(!addToStore)}
             >
               <View style={[
                 styles.checkbox,
-                addToStore && styles.checkedCheckbox
+                addToStore && styles.checkedCheckbox,
               ]}>
                 {addToStore && <Check size={16} color="white" />}
               </View>
@@ -1308,25 +1308,25 @@ export default function CreateListingScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
-            
+
             {addToStore && (
               <View style={styles.storeSelectionContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.pickerButton}
                   onPress={() => setShowStoreModal(true)}
                 >
                   <Text style={selectedStore ? styles.pickerText : styles.pickerPlaceholder}>
-                    {selectedStore 
+                    {selectedStore
                       ? selectedStore.name
                       : language === 'az' ? 'Mağaza seçin' : 'Выберите магазин'}
                   </Text>
                   <ChevronDown size={20} color={Colors.textSecondary} />
                 </TouchableOpacity>
-                
+
                 {selectedStore && (
                   <View style={styles.storeUsageInfo}>
                     <Text style={styles.storeUsageText}>
-                      {language === 'az' 
+                      {language === 'az'
                         ? `${selectedStore.adsUsed}/${selectedStore.maxAds} elan istifadə edilib`
                         : `${selectedStore.adsUsed}/${selectedStore.maxAds} объявлений использовано`}
                     </Text>
@@ -1351,14 +1351,14 @@ export default function CreateListingScreen() {
         <Text style={styles.title}>
           {language === 'az' ? 'Elan paketi seçin' : 'Выберите пакет объявления'}
         </Text>
-        
+
         <View style={styles.packagesContainer}>
           {adPackages.map(pkg => (
             <TouchableOpacity
               key={pkg.id}
               style={[
                 styles.packageCard,
-                selectedPackage === pkg.id && styles.selectedPackageCard
+                selectedPackage === pkg.id && styles.selectedPackageCard,
               ]}
               onPress={() => setSelectedPackage(pkg.id)}
             >
@@ -1368,37 +1368,37 @@ export default function CreateListingScreen() {
                   {pkg.price > 0 ? `${pkg.price} ${pkg.currency}` : language === 'az' ? 'Pulsuz' : 'Бесплатно'}
                 </Text>
               </View>
-              
+
               <View style={styles.packageFeatures}>
                 <View style={styles.packageFeature}>
                   <Clock size={16} color={Colors.textSecondary} />
                   <Text style={styles.packageFeatureText}>
-                    {language === 'az' 
-                      ? `${pkg.duration} gün` 
+                    {language === 'az'
+                      ? `${pkg.duration} gün`
                       : `${pkg.duration} дней`}
                   </Text>
                 </View>
-                
+
                 <View style={styles.packageFeature}>
                   <ImageIcon size={16} color={Colors.textSecondary} />
                   <Text style={styles.packageFeatureText}>
-                    {language === 'az' 
-                      ? `${pkg.features.photosCount} şəkil` 
+                    {language === 'az'
+                      ? `${pkg.features.photosCount} şəkil`
                       : `${pkg.features.photosCount} фото`}
                   </Text>
                 </View>
-                
+
                 {pkg.features.priorityPlacement && (
                   <View style={styles.packageFeature}>
                     <Award size={16} color={Colors.textSecondary} />
                     <Text style={styles.packageFeatureText}>
-                      {language === 'az' 
-                        ? 'Prioritet yerləşdirmə' 
+                      {language === 'az'
+                        ? 'Prioritet yerləşdirmə'
                         : 'Приоритетное размещение'}
                     </Text>
                   </View>
                 )}
-                
+
                 {pkg.features.featured && (
                   <View style={styles.packageFeature}>
                     <Award size={16} color={Colors.secondary} />
@@ -1408,7 +1408,7 @@ export default function CreateListingScreen() {
                   </View>
                 )}
               </View>
-              
+
               {selectedPackage === pkg.id && (
                 <View style={styles.selectedPackageCheck}>
                   <Check size={20} color="white" />
@@ -1417,25 +1417,25 @@ export default function CreateListingScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        
+
         {/* Payment Info - Show only if not adding to store with available slots */}
         {(() => {
           const isStoreListingWithSlots = addToStore && selectedStore && canAddToSelectedStore;
-          
+
           if (isStoreListingWithSlots) {
             return (
               <View style={styles.balanceInfo}>
                 <View style={styles.paymentStatusSuccess}>
                   <Check size={16} color={Colors.success} />
                   <Text style={styles.paymentStatusText}>
-                    {language === 'az' 
-                      ? 'Mağazanızda boş yer var - ödəniş tələb olunmur' 
+                    {language === 'az'
+                      ? 'Mağazanızda boş yer var - ödəniş tələb olunmur'
                       : 'В вашем магазине есть свободное место - оплата не требуется'}
                   </Text>
                 </View>
                 <View style={styles.storeUsageInfo}>
                   <Text style={styles.storeUsageText}>
-                    {language === 'az' 
+                    {language === 'az'
                       ? `${selectedStore.adsUsed + 1}/${selectedStore.maxAds} elan istifadə ediləcək`
                       : `${selectedStore.adsUsed + 1}/${selectedStore.maxAds} объявлений будет использовано`}
                   </Text>
@@ -1443,7 +1443,7 @@ export default function CreateListingScreen() {
               </View>
             );
           }
-          
+
           if (selectedPackage !== 'free') {
             return (
               <View style={styles.balanceInfo}>
@@ -1455,7 +1455,7 @@ export default function CreateListingScreen() {
                     {getTotalBalance().toFixed(2)} AZN
                   </Text>
                 </View>
-                
+
                 <View style={styles.packageCostRow}>
                   <Text style={styles.packageCostLabel}>
                     {language === 'az' ? 'Paket qiyməti:' : 'Стоимость пакета:'}
@@ -1464,13 +1464,13 @@ export default function CreateListingScreen() {
                     {selectedPackageData?.price} AZN
                   </Text>
                 </View>
-                
+
                 {canAfford(selectedPackageData?.price || 0) ? (
                   <View style={styles.paymentStatusSuccess}>
                     <Check size={16} color={Colors.success} />
                     <Text style={styles.paymentStatusText}>
-                      {language === 'az' 
-                        ? 'Balansınızdan avtomatik ödəniş ediləcək' 
+                      {language === 'az'
+                        ? 'Balansınızdan avtomatik ödəniş ediləcək'
                         : 'Оплата будет автоматически списана с баланса'}
                     </Text>
                   </View>
@@ -1478,15 +1478,15 @@ export default function CreateListingScreen() {
                   <View style={styles.paymentStatusError}>
                     <AlertCircle size={16} color={Colors.error} />
                     <Text style={styles.paymentStatusText}>
-                      {language === 'az' 
-                        ? `Balansınız kifayət etmir. ${((selectedPackageData?.price || 0) - getTotalBalance()).toFixed(2)} AZN əlavə edin.` 
+                      {language === 'az'
+                        ? `Balansınız kifayət etmir. ${((selectedPackageData?.price || 0) - getTotalBalance()).toFixed(2)} AZN əlavə edin.`
                         : `Недостаточно средств. Добавьте ${((selectedPackageData?.price || 0) - getTotalBalance()).toFixed(2)} AZN.`}
                     </Text>
                   </View>
                 )}
-                
+
                 {!canAfford(selectedPackageData?.price || 0) && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.topUpButton}
                     onPress={() => router.push('/wallet')}
                   >
@@ -1499,15 +1499,15 @@ export default function CreateListingScreen() {
               </View>
             );
           }
-          
+
           return null;
         })()}
 
         <View style={styles.rulesContainer}>
           <AlertCircle size={20} color={Colors.textSecondary} />
           <Text style={styles.rulesText}>
-            {language === 'az' 
-              ? 'Elan yerləşdirməklə siz saytın qaydaları və şərtləri ilə razılaşırsınız.' 
+            {language === 'az'
+              ? 'Elan yerləşdirməklə siz saytın qaydaları və şərtləri ilə razılaşırsınız.'
               : 'Размещая объявление, вы соглашаетесь с правилами и условиями сайта.'}
           </Text>
         </View>
@@ -1521,7 +1521,7 @@ export default function CreateListingScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
@@ -1534,9 +1534,9 @@ export default function CreateListingScreen() {
             <Text style={[styles.stepText, currentStep >= 2 && styles.activeStepText]}>2</Text>
           </View>
         </View>
-        
+
         {currentStep === 1 ? renderStepOne() : renderStepTwo()}
-        
+
         <View style={styles.navigationButtons}>
           {currentStep > 1 && (
             <TouchableOpacity style={styles.backButton} onPress={handlePrevStep}>
@@ -1545,23 +1545,23 @@ export default function CreateListingScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[
               styles.nextButton,
-              currentStep === 1 && styles.fullWidthButton
-            ]} 
+              currentStep === 1 && styles.fullWidthButton,
+            ]}
             onPress={handleNextStep}
           >
             <Text style={styles.nextButtonText}>
-              {currentStep === 1 
+              {currentStep === 1
                 ? (language === 'az' ? 'Davam et' : 'Продолжить')
                 : (language === 'az' ? 'Elanı yerləşdir' : 'Разместить объявление')}
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-      
+
       {renderCategoryModal()}
       {renderLocationModal()}
       {renderStoreModal()}

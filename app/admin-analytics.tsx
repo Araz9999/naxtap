@@ -27,8 +27,6 @@ export default function AdminAnalyticsScreen() {
     refetchInterval: 60000,
   });
 
-  if (!canAccess) return null;
-
   const data: any = analyticsQuery.data;
   const mod: any = moderationStatsQuery.data;
 
@@ -48,6 +46,8 @@ export default function AdminAnalyticsScreen() {
     if (!total) return 0;
     return Math.round((verified / total) * 1000) / 10;
   }, [users?.total, users?.verified]);
+
+  if (!canAccess) return null;
 
   const Card = ({ icon: Icon, title, value, color }: any) => (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>

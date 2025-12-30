@@ -11,16 +11,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationService } from '@/services/notificationService';
 import * as FileSystem from 'expo-file-system';
 import { LucideIcon } from 'lucide-react-native';
-import { 
-  Moon, 
-  Sun, 
-  Palette, 
-  Type, 
-  Bell, 
-  Volume2, 
-  Vibrate, 
-  RefreshCw, 
-  Eye, 
+import {
+  Moon,
+  Sun,
+  Palette,
+  Type,
+  Bell,
+  Volume2,
+  Vibrate,
+  RefreshCw,
+  Eye,
   Layout,
   Globe,
   Shield,
@@ -102,13 +102,13 @@ export default function SettingsScreen() {
     }).start();
 
     // Staggered section animations
-    const animations = sectionAnimations.map((anim, index) => 
+    const animations = sectionAnimations.map((anim, index) =>
       Animated.timing(anim, {
         toValue: 1,
         duration: 600,
         delay: index * 100,
         useNativeDriver: true,
-      })
+      }),
     );
 
     Animated.stagger(100, animations).start();
@@ -126,7 +126,7 @@ export default function SettingsScreen() {
           duration: 1000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulseLoop.start();
 
@@ -183,7 +183,7 @@ export default function SettingsScreen() {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
           style: 'cancel',
         },
-      ]
+      ],
     );
   };
 
@@ -191,19 +191,19 @@ export default function SettingsScreen() {
     try {
       await sendNotification(
         language === 'az' ? 'Test bildirişi' : 'Тестовое уведомление',
-        language === 'az' ? 'Bu bir test bildirişidir' : 'Это тестовое уведомление'
+        language === 'az' ? 'Bu bir test bildirişidir' : 'Это тестовое уведомление',
       );
-      
+
       // Show confirmation alert
       Alert.alert(
         language === 'az' ? 'Uğurlu' : 'Успешно',
-        language === 'az' ? 'Test bildirişi göndərildi' : 'Тестовое уведомление отправлено'
+        language === 'az' ? 'Test bildirişi göndərildi' : 'Тестовое уведомление отправлено',
       );
     } catch (error) {
       logger.error('Test notification failed:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Bildiriş göndərilə bilmədi' : 'Не удалось отправить уведомление'
+        language === 'az' ? 'Bildiriş göndərilə bilmədi' : 'Не удалось отправить уведомление',
       );
     }
   };
@@ -213,14 +213,14 @@ export default function SettingsScreen() {
       await playNotificationSound();
       Alert.alert(
         language === 'az' ? 'Test səsi' : 'Тестовый звук',
-        language === 'az' ? 'Səs testi tamamlandı' : 'Тест звука завершен'
+        language === 'az' ? 'Səs testi tamamlandı' : 'Тест звука завершен',
       );
     } catch (error) {
       logger.error('Test sound failed:', error);
       // Sound test failed silently
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Səs testi uğursuz oldu' : 'Тест звука не удался'
+        language === 'az' ? 'Səs testi uğursuz oldu' : 'Тест звука не удался',
       );
     }
   };
@@ -230,13 +230,13 @@ export default function SettingsScreen() {
       await triggerVibration();
       Alert.alert(
         language === 'az' ? 'Test vibrasiyas' : 'Тестовая вибрация',
-        language === 'az' ? 'Vibrasiya testi tamamlandı' : 'Тест вибрации завершен'
+        language === 'az' ? 'Vibrasiya testi tamamlandı' : 'Тест вибрации завершен',
       );
     } catch (error) {
       logger.error('Test vibration failed:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Vibrasiya testi uğursuz oldu' : 'Тест вибрации не удался'
+        language === 'az' ? 'Vibrasiya testi uğursuz oldu' : 'Тест вибрации не удался',
       );
     }
   };
@@ -252,24 +252,24 @@ export default function SettingsScreen() {
             try {
               // Clear AsyncStorage cache (except user settings)
               const keys = await AsyncStorage.getAllKeys();
-              const cacheKeys = keys.filter(key => 
-                key.includes('cache') || 
+              const cacheKeys = keys.filter(key =>
+                key.includes('cache') ||
                 key.includes('temp') ||
                 key.includes('listing') ||
-                key.includes('image')
+                key.includes('image'),
               );
-              
+
               if (cacheKeys.length > 0) {
                 await AsyncStorage.multiRemove(cacheKeys);
                 logger.info(`Cleared ${cacheKeys.length} cache items from AsyncStorage`);
               }
-              
+
               // Clear file system cache if available
               if (Platform.OS !== 'web' && FileSystem.cacheDirectory) {
                 try {
                   const cacheDir = FileSystem.cacheDirectory;
                   const files = await FileSystem.readDirectoryAsync(cacheDir);
-                  
+
                   // Delete cache files
                   for (const file of files) {
                     try {
@@ -278,22 +278,22 @@ export default function SettingsScreen() {
                       logger.debug(`Could not delete cache file: ${file}`);
                     }
                   }
-                  
+
                   logger.info(`Cleared ${files.length} files from cache directory`);
                 } catch (fsError) {
                   logger.debug('File system cache clearing not available:', fsError);
                 }
               }
-              
+
               Alert.alert(
                 language === 'az' ? 'Uğurlu' : 'Успешно',
-                language === 'az' ? 'Keş təmizləndi' : 'Кэш очищен'
+                language === 'az' ? 'Keş təmizləndi' : 'Кэш очищен',
               );
             } catch (error) {
               logger.error('Failed to clear cache:', error);
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
-                language === 'az' ? 'Keş təmizlənərkən xəta baş verdi' : 'Ошибка при очистке кэша'
+                language === 'az' ? 'Keş təmizlənərkən xəta baş verdi' : 'Ошибка при очистке кэша',
               );
             }
           },
@@ -302,7 +302,7 @@ export default function SettingsScreen() {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
           style: 'cancel',
         },
-      ]
+      ],
     );
   };
 
@@ -329,7 +329,7 @@ export default function SettingsScreen() {
             setAdaptiveInterfaceEnabled(true);
             Alert.alert(
               language === 'az' ? 'Uğurlu' : 'Успешно',
-              language === 'az' ? 'Tənzimləmələr sıfırlandı' : 'Настройки сброшены'
+              language === 'az' ? 'Tənzimləmələr sıfırlandı' : 'Настройки сброшены',
             );
           },
         },
@@ -337,7 +337,7 @@ export default function SettingsScreen() {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
           style: 'cancel',
         },
-      ]
+      ],
     );
   };
 
@@ -353,16 +353,16 @@ export default function SettingsScreen() {
         } else {
           Alert.alert(
             language === 'az' ? 'İcazə lazımdır' : 'Требуется разрешение',
-            language === 'az' 
-              ? 'Bildirişlər üçün icazə verilməlidir. Tənzimləmələrdən icazə verə bilərsiniz.' 
-              : 'Необходимо разрешение для уведомлений. Вы можете предоставить его в настройках.'
+            language === 'az'
+              ? 'Bildirişlər üçün icazə verilməlidir. Tənzimləmələrdən icazə verə bilərsiniz.'
+              : 'Необходимо разрешение для уведомлений. Вы можете предоставить его в настройках.',
           );
         }
       } catch (error) {
         logger.error('Notification permission error:', error);
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'İcazə alınarkən xəta baş verdi' : 'Ошибка при запросе разрешения'
+          language === 'az' ? 'İcazə alınarkən xəta baş verdi' : 'Ошибка при запросе разрешения',
         );
       }
     } else {
@@ -371,15 +371,15 @@ export default function SettingsScreen() {
     }
   };
 
-  const SettingItem = ({ 
-    icon: Icon, 
-    title, 
-    subtitle, 
-    onPress, 
+  const SettingItem = ({
+    icon: Icon,
+    title,
+    subtitle,
+    onPress,
     rightComponent,
     isPremium = false,
     isNew = false,
-    gradient = false
+    gradient = false,
   }: {
     icon: React.ComponentType<any>;
     title: string;
@@ -406,32 +406,32 @@ export default function SettingsScreen() {
       }).start();
     };
 
-    const iconBackgroundColor = gradient 
+    const iconBackgroundColor = gradient
       ? colors.primary
-      : isPremium 
-      ? '#FFD700'
-      : `${colors.primary}20`;
+      : isPremium
+        ? '#FFD700'
+        : `${colors.primary}20`;
 
     const iconColor = gradient || isPremium ? '#fff' : colors.primary;
 
     return (
       <Animated.View style={{ transform: [{ scale: pressAnimation }] }}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.settingItem,
             isPremium && styles.premiumItem,
-            gradient && [styles.gradientItem, { backgroundColor: colors.primary }]
-          ]} 
+            gradient && [styles.gradientItem, { backgroundColor: colors.primary }],
+          ]}
           onPress={onPress}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           activeOpacity={0.7}
         >
           <View style={[
-            styles.iconContainer, 
+            styles.iconContainer,
             { backgroundColor: iconBackgroundColor },
             isPremium && styles.premiumIconContainer,
-            gradient && styles.gradientIconContainer
+            gradient && styles.gradientIconContainer,
           ]}>
             <Icon size={20} color={iconColor} />
             {isPremium && (
@@ -443,9 +443,9 @@ export default function SettingsScreen() {
           <View style={styles.settingContent}>
             <View style={styles.titleRow}>
               <Text style={[
-                styles.settingTitle, 
+                styles.settingTitle,
                 { color: gradient ? '#fff' : colors.text },
-                isPremium && styles.premiumTitle
+                isPremium && styles.premiumTitle,
               ]}>
                 {title}
               </Text>
@@ -457,17 +457,17 @@ export default function SettingsScreen() {
             </View>
             {subtitle && (
               <Text style={[
-                styles.settingSubtitle, 
-                { color: gradient ? 'rgba(255,255,255,0.8)' : colors.textSecondary }
+                styles.settingSubtitle,
+                { color: gradient ? 'rgba(255,255,255,0.8)' : colors.textSecondary },
               ]}>
                 {subtitle}
               </Text>
             )}
           </View>
           {rightComponent || (
-            <ChevronRight 
-              size={20} 
-              color={gradient ? 'rgba(255,255,255,0.8)' : colors.textSecondary} 
+            <ChevronRight
+              size={20}
+              color={gradient ? 'rgba(255,255,255,0.8)' : colors.textSecondary}
             />
           )}
         </TouchableOpacity>
@@ -475,8 +475,8 @@ export default function SettingsScreen() {
     );
   };
 
-  const SectionHeader = ({ title, icon: Icon, gradient = false }: { 
-    title: string; 
+  const SectionHeader = ({ title, icon: Icon, gradient = false }: {
+    title: string;
     icon?: any;
     gradient?: boolean;
   }) => (
@@ -484,15 +484,15 @@ export default function SettingsScreen() {
       {Icon && (
         <View style={[
           styles.sectionHeaderIcon,
-          { backgroundColor: gradient ? colors.primary : `${colors.primary}15` }
+          { backgroundColor: gradient ? colors.primary : `${colors.primary}15` },
         ]}>
           <Icon size={16} color={gradient ? '#fff' : colors.primary} />
         </View>
       )}
       <Text style={[
-        styles.sectionHeader, 
+        styles.sectionHeader,
         { color: colors.textSecondary },
-        Icon && styles.sectionHeaderWithIcon
+        Icon && styles.sectionHeaderWithIcon,
       ]}>
         {title}
       </Text>
@@ -521,14 +521,14 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: language === 'az' ? 'Tənzimləmələr' : 'Настройки',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
-        }} 
+        }}
       />
-      
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
         <Animated.View style={[
@@ -542,14 +542,14 @@ export default function SettingsScreen() {
                 outputRange: [-50, 0],
               }),
             }],
-          }
+          },
         ]}>
           <View style={styles.heroContent}>
             <View style={styles.heroIconContainer}>
               <Settings2 size={32} color="#fff" />
               <Animated.View style={[
                 styles.heroSparkle,
-                { transform: [{ scale: pulseAnimation }] }
+                { transform: [{ scale: pulseAnimation }] },
               ]}>
                 <Sparkles size={16} color="#FFD700" />
               </Animated.View>
@@ -558,8 +558,8 @@ export default function SettingsScreen() {
               {language === 'az' ? 'Tənzimləmələr' : 'Настройки'}
             </Text>
             <Text style={styles.heroSubtitle}>
-              {language === 'az' 
-                ? 'Tətbiqi özünüzə uyğunlaşdırın' 
+              {language === 'az'
+                ? 'Tətbiqi özünüzə uyğunlaşdırın'
                 : 'Настройте приложение под себя'
               }
             </Text>
@@ -568,16 +568,16 @@ export default function SettingsScreen() {
 
         {/* Appearance Section */}
         <AnimatedSection index={0}>
-          <SectionHeader 
-            title={language === 'az' ? 'GÖRÜNÜŞ' : 'ВНЕШНИЙ ВИД'} 
+          <SectionHeader
+            title={language === 'az' ? 'GÖRÜNÜŞ' : 'ВНЕШНИЙ ВИД'}
             icon={Palette}
             gradient
           />
-          
+
           <SettingItem
             icon={themeMode === 'light' ? Sun : themeMode === 'dark' ? Moon : RefreshCw}
             title={language === 'az' ? 'Tema rejimi' : 'Режим темы'}
-            subtitle={language === 'az' 
+            subtitle={language === 'az'
               ? themeModes.find(t => t.key === themeMode)?.label
               : themeModes.find(t => t.key === themeMode)?.labelRu
             }
@@ -594,7 +594,7 @@ export default function SettingsScreen() {
                     text: language === 'az' ? 'Ləğv et' : 'Отмена',
                     style: 'cancel' as const,
                   },
-                ]
+                ],
               );
             }}
           />
@@ -616,16 +616,16 @@ export default function SettingsScreen() {
                     text: language === 'az' ? 'Ləğv et' : 'Отмена',
                     style: 'cancel' as const,
                   },
-                ]
+                ],
               );
             }}
             rightComponent={
               <View style={styles.colorPreview}>
-                <View 
+                <View
                   style={[
-                    styles.colorDot, 
-                    { backgroundColor: colorThemes.find(t => t.key === colorTheme)?.color }
-                  ]} 
+                    styles.colorDot,
+                    { backgroundColor: colorThemes.find(t => t.key === colorTheme)?.color },
+                  ]}
                 />
                 <ChevronRight size={20} color={colors.textSecondary} />
               </View>
@@ -635,7 +635,7 @@ export default function SettingsScreen() {
           <SettingItem
             icon={Type}
             title={language === 'az' ? 'Şrift ölçüsü' : 'Размер шрифта'}
-            subtitle={language === 'az' 
+            subtitle={language === 'az'
               ? fontSizes.find(f => f.key === fontSize)?.label
               : fontSizes.find(f => f.key === fontSize)?.labelRu
             }
@@ -652,7 +652,7 @@ export default function SettingsScreen() {
                     text: language === 'az' ? 'Ləğv et' : 'Отмена',
                     style: 'cancel' as const,
                   },
-                ]
+                ],
               );
             }}
           />
@@ -660,8 +660,8 @@ export default function SettingsScreen() {
           <SettingItem
             icon={Layout}
             title={language === 'az' ? 'Kompakt rejim' : 'Компактный режим'}
-            subtitle={language === 'az' 
-              ? 'Daha çox məlumat göstər' 
+            subtitle={language === 'az'
+              ? 'Daha çox məlumat göstər'
               : 'Показать больше информации'
             }
             rightComponent={
@@ -677,16 +677,16 @@ export default function SettingsScreen() {
 
         {/* Display Section */}
         <AnimatedSection index={1}>
-          <SectionHeader 
-            title={language === 'az' ? 'EKRAN' : 'ДИСПЛЕЙ'} 
+          <SectionHeader
+            title={language === 'az' ? 'EKRAN' : 'ДИСПЛЕЙ'}
             icon={Monitor}
           />
-          
+
           <SettingItem
             icon={Eye}
             title={language === 'az' ? 'Başlıqda qiymət göstər' : 'Показать цену в заголовке'}
-            subtitle={language === 'az' 
-              ? 'Elan başlığında qiymət göstərilsin' 
+            subtitle={language === 'az'
+              ? 'Elan başlığında qiymət göstərilsin'
               : 'Показывать цену в заголовке объявления'
             }
             rightComponent={
@@ -702,8 +702,8 @@ export default function SettingsScreen() {
           <SettingItem
             icon={RefreshCw}
             title={language === 'az' ? 'Avtomatik yenilənmə' : 'Автообновление'}
-            subtitle={language === 'az' 
-              ? 'Səhifələr avtomatik yenilənsin' 
+            subtitle={language === 'az'
+              ? 'Səhifələr avtomatik yenilənsin'
               : 'Автоматически обновлять страницы'
             }
             rightComponent={
@@ -719,16 +719,16 @@ export default function SettingsScreen() {
 
         {/* Notifications Section */}
         <AnimatedSection index={2}>
-          <SectionHeader 
-            title={language === 'az' ? 'BİLDİRİŞLƏR' : 'УВЕДОМЛЕНИЯ'} 
+          <SectionHeader
+            title={language === 'az' ? 'BİLDİRİŞLƏR' : 'УВЕДОМЛЕНИЯ'}
             icon={Bell}
           />
-          
+
           <SettingItem
             icon={Bell}
             title={language === 'az' ? 'Bildirişlər' : 'Уведомления'}
-            subtitle={language === 'az' 
-              ? 'Push bildirişləri al' 
+            subtitle={language === 'az'
+              ? 'Push bildirişləri al'
               : 'Получать push-уведомления'
             }
             rightComponent={
@@ -740,12 +740,12 @@ export default function SettingsScreen() {
               />
             }
           />
-          
+
           <SettingItem
             icon={Bell}
             title={language === 'az' ? 'Bildiriş tarixçəsi' : 'История уведомлений'}
-            subtitle={language === 'az' 
-              ? 'Bütün bildirişləri görün' 
+            subtitle={language === 'az'
+              ? 'Bütün bildirişləri görün'
               : 'Посмотреть все уведомления'
             }
             onPress={() => router.push('/notifications')}
@@ -754,8 +754,8 @@ export default function SettingsScreen() {
           <SettingItem
             icon={Volume2}
             title={language === 'az' ? 'Səs' : 'Звук'}
-            subtitle={language === 'az' 
-              ? 'Bildiriş səsləri' 
+            subtitle={language === 'az'
+              ? 'Bildiriş səsləri'
               : 'Звуки уведомлений'
             }
             rightComponent={
@@ -771,8 +771,8 @@ export default function SettingsScreen() {
           <SettingItem
             icon={Vibrate}
             title={language === 'az' ? 'Vibrasiya' : 'Вибрация'}
-            subtitle={language === 'az' 
-              ? 'Bildiriş vibrasiyas' 
+            subtitle={language === 'az'
+              ? 'Bildiriş vibrasiyas'
               : 'Вибрация уведомлений'
             }
             rightComponent={
@@ -788,16 +788,16 @@ export default function SettingsScreen() {
 
         {/* Communication Section */}
         <AnimatedSection index={3}>
-          <SectionHeader 
-            title={language === 'az' ? 'ƏLAQƏ' : 'СВЯЗЬ'} 
+          <SectionHeader
+            title={language === 'az' ? 'ƏLAQƏ' : 'СВЯЗЬ'}
             icon={Phone}
           />
-          
+
           <SettingItem
             icon={Phone}
             title={language === 'az' ? 'Zəng tarixçəsi' : 'История звонков'}
-            subtitle={language === 'az' 
-              ? 'Tətbiq üzərindən edilmiş zənglər' 
+            subtitle={language === 'az'
+              ? 'Tətbiq üzərindən edilmiş zənglər'
               : 'Звонки, совершенные через приложение'
             }
             onPress={() => router.push('/call-history')}
@@ -806,16 +806,16 @@ export default function SettingsScreen() {
 
         {/* Privacy Settings */}
         <AnimatedSection index={4}>
-          <SectionHeader 
-            title={language === 'az' ? 'MƏXFİLİK TƏNZİMLƏMƏLƏRİ' : 'НАСТРОЙКИ КОНФИДЕНЦИАЛЬНОСТИ'} 
+          <SectionHeader
+            title={language === 'az' ? 'MƏXFİLİK TƏNZİMLƏMƏLƏRİ' : 'НАСТРОЙКИ КОНФИДЕНЦИАЛЬНОСТИ'}
             icon={Shield}
           />
-          
+
           <SettingItem
             icon={EyeOff}
             title={language === 'az' ? 'Telefon nömrəsini gizlət' : 'Скрыть номер телефона'}
-            subtitle={language === 'az' 
-              ? 'Telefon nömrəniz digər istifadəçilərə göstərilməsin' 
+            subtitle={language === 'az'
+              ? 'Telefon nömrəniz digər istifadəçilərə göstərilməsin'
               : 'Ваш номер телефона не будет показан другим пользователям'
             }
             rightComponent={
@@ -827,11 +827,11 @@ export default function SettingsScreen() {
                     logger.warn('[Settings] No current user');
                     Alert.alert(
                       language === 'az' ? 'Xəta' : 'Ошибка',
-                      language === 'az' ? 'İstifadəçi daxil olmayıb' : 'Пользователь не вошел в систему'
+                      language === 'az' ? 'İstifadəçi daxil olmayıb' : 'Пользователь не вошел в систему',
                     );
                     return;
                   }
-                  
+
                   try {
                     updatePrivacySettings({ hidePhoneNumber: value });
                     logger.info('[Settings] Phone visibility updated:', value);
@@ -839,7 +839,7 @@ export default function SettingsScreen() {
                     logger.error('[Settings] Error updating phone visibility:', error);
                     Alert.alert(
                       language === 'az' ? 'Xəta' : 'Ошибка',
-                      language === 'az' ? 'Tənzimləmə yadda saxlanılmadı' : 'Не удалось сохранить настройку'
+                      language === 'az' ? 'Tənzimləmə yadda saxlanılmadı' : 'Не удалось сохранить настройку',
                     );
                   }
                 }}
@@ -852,8 +852,8 @@ export default function SettingsScreen() {
           <SettingItem
             icon={MessageSquare}
             title={language === 'az' ? 'Yalnız tətbiq üzərindən əlaqə' : 'Только связь через приложение'}
-            subtitle={language === 'az' 
-              ? 'İstifadəçilər sizinlə yalnız tətbiq üzərindən əlaqə saxlaya bilsinlər' 
+            subtitle={language === 'az'
+              ? 'İstifadəçilər sizinlə yalnız tətbiq üzərindən əlaqə saxlaya bilsinlər'
               : 'Пользователи могут связаться с вами только через приложение'
             }
             rightComponent={
@@ -865,23 +865,23 @@ export default function SettingsScreen() {
                     logger.warn('[Settings] No current user');
                     Alert.alert(
                       language === 'az' ? 'Xəta' : 'Ошибка',
-                      language === 'az' ? 'İstifadəçi daxil olmayıb' : 'Пользователь не вошел в систему'
+                      language === 'az' ? 'İstifadəçi daxil olmayıb' : 'Пользователь не вошел в систему',
                     );
                     return;
                   }
-                  
+
                   try {
                     // ✅ Conflict resolution: onlyAppMessaging and allowDirectContact are mutually exclusive
-                    updatePrivacySettings({ 
+                    updatePrivacySettings({
                       onlyAppMessaging: value,
-                      allowDirectContact: !value
+                      allowDirectContact: !value,
                     });
                     logger.info('[Settings] App messaging preference updated:', value);
                   } catch (error) {
                     logger.error('[Settings] Error updating messaging preference:', error);
                     Alert.alert(
                       language === 'az' ? 'Xəta' : 'Ошибка',
-                      language === 'az' ? 'Tənzimləmə yadda saxlanılmadı' : 'Не удалось сохранить настройку'
+                      language === 'az' ? 'Tənzimləmə yadda saxlanılmadı' : 'Не удалось сохранить настройку',
                     );
                   }
                 }}
@@ -894,8 +894,8 @@ export default function SettingsScreen() {
           <SettingItem
             icon={Phone}
             title={language === 'az' ? 'Birbaşa əlaqəyə icazə ver' : 'Разрешить прямой контакт'}
-            subtitle={language === 'az' 
-              ? 'İstifadəçilər sizə birbaşa zəng edə bilsinlər' 
+            subtitle={language === 'az'
+              ? 'İstifadəçilər sizə birbaşa zəng edə bilsinlər'
               : 'Пользователи могут звонить вам напрямую'
             }
             rightComponent={
@@ -907,23 +907,23 @@ export default function SettingsScreen() {
                     logger.warn('[Settings] No current user');
                     Alert.alert(
                       language === 'az' ? 'Xəta' : 'Ошибка',
-                      language === 'az' ? 'İstifadəçi daxil olmayıb' : 'Пользователь не вошел в систему'
+                      language === 'az' ? 'İstifadəçi daxil olmayıb' : 'Пользователь не вошел в систему',
                     );
                     return;
                   }
-                  
+
                   try {
                     // ✅ Conflict resolution: allowDirectContact and onlyAppMessaging are mutually exclusive
-                    updatePrivacySettings({ 
+                    updatePrivacySettings({
                       allowDirectContact: value,
-                      onlyAppMessaging: !value
+                      onlyAppMessaging: !value,
                     });
                     logger.info('[Settings] Direct contact preference updated:', value);
                   } catch (error) {
                     logger.error('[Settings] Error updating direct contact:', error);
                     Alert.alert(
                       language === 'az' ? 'Xəta' : 'Ошибка',
-                      language === 'az' ? 'Tənzimləmə yadda saxlanılmadı' : 'Не удалось сохранить настройку'
+                      language === 'az' ? 'Tənzimləmə yadda saxlanılmadı' : 'Не удалось сохранить настройку',
                     );
                   }
                 }}
@@ -936,8 +936,8 @@ export default function SettingsScreen() {
           <SettingItem
             icon={UserX}
             title={language === 'az' ? 'Blok edilmiş istifadəçilər' : 'Заблокированные пользователи'}
-            subtitle={language === 'az' 
-              ? `${blockedUsers?.length || 0} istifadəçi blok edilib` 
+            subtitle={language === 'az'
+              ? `${blockedUsers?.length || 0} istifadəçi blok edilib`
               : `${blockedUsers?.length || 0} пользователей заблокировано`
             }
             onPress={() => {
@@ -949,11 +949,11 @@ export default function SettingsScreen() {
 
         {/* Language & Region */}
         <AnimatedSection index={4}>
-          <SectionHeader 
-            title={language === 'az' ? 'DİL VƏ REGİON' : 'ЯЗЫК И РЕГИОН'} 
+          <SectionHeader
+            title={language === 'az' ? 'DİL VƏ REGİON' : 'ЯЗЫК И РЕГИОН'}
             icon={Globe}
           />
-          
+
           <SettingItem
             icon={Globe}
             title={language === 'az' ? 'Dil' : 'Язык'}
@@ -964,11 +964,11 @@ export default function SettingsScreen() {
 
         {/* Advanced Settings */}
         <AnimatedSection index={5}>
-          <SectionHeader 
-            title={language === 'az' ? 'QABAQCIL TƏNZİMLƏMƏLƏR' : 'РАСШИРЕННЫЕ НАСТРОЙКИ'} 
+          <SectionHeader
+            title={language === 'az' ? 'QABAQCIL TƏNZİMLƏMƏLƏR' : 'РАСШИРЕННЫЕ НАСТРОЙКИ'}
             icon={Zap}
           />
-          
+
           <SettingItem
             icon={Zap}
             title={language === 'az' ? 'Test bildirişi' : 'Тестовое уведомление'}
@@ -998,7 +998,7 @@ export default function SettingsScreen() {
               simulateIncomingCall();
               Alert.alert(
                 language === 'az' ? 'Test zəngi' : 'Тестовый звонок',
-                language === 'az' ? 'Gələn zəng simulyasiyası başladıldı' : 'Симуляция входящего звонка запущена'
+                language === 'az' ? 'Gələn zəng simulyasiyası başladıldı' : 'Симуляция входящего звонка запущена',
               );
             }}
           />
@@ -1020,12 +1020,12 @@ export default function SettingsScreen() {
 
         {/* Creative Features */}
         <AnimatedSection index={6}>
-          <SectionHeader 
-            title={language === 'az' ? 'KREATİV XÜSUSİYYƏTLƏR' : 'КРЕАТИВНЫЕ ФУНКЦИИ'} 
+          <SectionHeader
+            title={language === 'az' ? 'KREATİV XÜSUSİYYƏTLƏR' : 'КРЕАТИВНЫЕ ФУНКЦИИ'}
             icon={Sparkles}
             gradient
           />
-          
+
           <SettingItem
             icon={Sparkles}
             title={language === 'az' ? 'Animasiya effektləri' : 'Эффекты анимации'}
@@ -1036,21 +1036,21 @@ export default function SettingsScreen() {
               <Switch
                 value={animationEffectsEnabled}
                 onValueChange={(value) => {
-                  logger.info('[Settings] Animation effects toggle:', { 
-                    from: animationEffectsEnabled, 
+                  logger.info('[Settings] Animation effects toggle:', {
+                    from: animationEffectsEnabled,
                     to: value,
-                    feature: 'animation_effects'
+                    feature: 'animation_effects',
                   });
-                  
+
                   setAnimationEffectsEnabled(value);
-                  
+
                   logger.info('[Settings] Animation effects updated successfully:', { enabled: value });
-                  
+
                   Alert.alert(
                     language === 'az' ? 'Animasiya effektləri' : 'Эффекты анимации',
-                    language === 'az' 
+                    language === 'az'
                       ? `Animasiya effektləri ${value ? 'aktiv' : 'deaktiv'} edildi. Tətbiq keçidləri və UI animasiyaları ${value ? 'göstəriləcək' : 'gizlədiləcək'}.`
-                      : `Эффекты анимации ${value ? 'включены' : 'выключены'}. Переходы и UI-анимации ${value ? 'будут показаны' : 'будут скрыты'}.`
+                      : `Эффекты анимации ${value ? 'включены' : 'выключены'}. Переходы и UI-анимации ${value ? 'будут показаны' : 'будут скрыты'}.`,
                   );
                 }}
                 trackColor={{ false: colors.border, true: '#FFD700' }}
@@ -1068,24 +1068,24 @@ export default function SettingsScreen() {
               <Switch
                 value={dynamicColorsEnabled}
                 onValueChange={(value) => {
-                  logger.info('[Settings] Dynamic colors toggle:', { 
-                    from: dynamicColorsEnabled, 
+                  logger.info('[Settings] Dynamic colors toggle:', {
+                    from: dynamicColorsEnabled,
                     to: value,
-                    feature: 'dynamic_colors'
+                    feature: 'dynamic_colors',
                   });
-                  
+
                   setDynamicColorsEnabled(value);
-                  
+
                   logger.info('[Settings] Dynamic colors updated successfully:', { enabled: value });
-                  
+
                   Alert.alert(
                     language === 'az' ? 'Dinamik rənglər' : 'Динамические цвета',
-                    language === 'az' 
+                    language === 'az'
                       ? `Dinamik rənglər ${value ? 'aktiv' : 'deaktiv'} edildi. Tətbiq ${value ? 'elan şəkillərindən dominant rəngləri çıxaracaq və interfeysi avtomatik uyğunlaşdıracaq' : 'standart rəng sxemindən istifadə edəcək'}.`
                       : `Динамические цвета ${value ? 'включены' : 'выключены'}. Приложение ${value ? 'будет извлекать доминантные цвета из изображений объявлений и автоматически адаптировать интерфейс' : 'будет использовать стандартную цветовую схему'}.`,
                     [
-                      { text: language === 'az' ? 'Başa düşdüm' : 'Понятно' }
-                    ]
+                      { text: language === 'az' ? 'Başa düşdüm' : 'Понятно' },
+                    ],
                   );
                 }}
                 trackColor={{ false: 'rgba(255,255,255,0.3)', true: 'rgba(255,255,255,0.8)' }}
@@ -1103,24 +1103,24 @@ export default function SettingsScreen() {
               <Switch
                 value={adaptiveInterfaceEnabled}
                 onValueChange={(value) => {
-                  logger.info('[Settings] Adaptive interface toggle:', { 
-                    from: adaptiveInterfaceEnabled, 
+                  logger.info('[Settings] Adaptive interface toggle:', {
+                    from: adaptiveInterfaceEnabled,
                     to: value,
-                    feature: 'adaptive_interface'
+                    feature: 'adaptive_interface',
                   });
-                  
+
                   setAdaptiveInterfaceEnabled(value);
-                  
+
                   logger.info('[Settings] Adaptive interface updated successfully:', { enabled: value });
-                  
+
                   Alert.alert(
                     language === 'az' ? 'Adaptiv interfeys' : 'Адаптивный интерфейс',
-                    language === 'az' 
+                    language === 'az'
                       ? `Adaptiv interfeys ${value ? 'aktiv' : 'deaktiv'} edildi. Tətbiq ${value ? 'istifadə tərzinizi öyrənəcək və sizə uyğun şəkildə uyğunlaşacaq (ən çox baxdığınız kateqoriyalar, tez-tez istifadə etdiyiniz filtrələr və s.)' : 'standart interfeysdən istifadə edəcək'}.`
                       : `Адаптивный интерфейс ${value ? 'включен' : 'выключен'}. Приложение ${value ? 'будет изучать ваш стиль использования и адаптироваться (наиболее просматриваемые категории, часто используемые фильтры и т.д.)' : 'будет использовать стандартный интерфейс'}.`,
                     [
-                      { text: language === 'az' ? 'Başa düşdüm' : 'Понятно' }
-                    ]
+                      { text: language === 'az' ? 'Başa düşdüm' : 'Понятно' },
+                    ],
                   );
                 }}
                 trackColor={{ false: colors.border, true: '#FFD700' }}
@@ -1136,10 +1136,10 @@ export default function SettingsScreen() {
             isPremium
             onPress={() => {
               logger.info('[Settings] Premium mode tapped:', { userId: currentUser?.id });
-              
+
               Alert.alert(
                 language === 'az' ? 'Premium rejim' : 'Премиум режим',
-                language === 'az' 
+                language === 'az'
                   ? 'Premium üzvlük ilə:\n\n✨ Limitsiz VIP elanlar\n🚀 Prioritet dəstək\n🎨 Eksklüziv dizayn temaları\n📊 Detallı analitika\n💎 Reklamsız təcrübə\n\nÜzvlük üçün əlaqə saxlayın:'
                   : 'С премиум подпиской:\n\n✨ Безлимитные VIP объявления\n🚀 Приоритетная поддержка\n🎨 Эксклюзивные темы дизайна\n📊 Детальная аналитика\n💎 Без рекламы\n\nСвяжитесь с нами для подписки:',
                 [
@@ -1148,14 +1148,14 @@ export default function SettingsScreen() {
                     style: 'cancel',
                     onPress: () => {
                       logger.info('[Settings] Premium mode dialog cancelled');
-                    }
+                    },
                   },
                   {
                     text: language === 'az' ? 'Dəstək' : 'Поддержка',
                     onPress: () => {
                       logger.info('[Settings] Premium mode: navigating to support');
                       router.push('/support');
-                    }
+                    },
                   },
                   {
                     text: language === 'az' ? 'Daha çox' : 'Подробнее',
@@ -1167,14 +1167,14 @@ export default function SettingsScreen() {
                           ? '💎 Aylıq: 19.99 AZN\n👑 İllik: 199.99 AZN (2 ay pulsuz!)\n🌟 Ömürlük: 499.99 AZN\n\nBütün paketlərdə 7 günlük pulsuz sınaq mövcuddur!'
                           : '💎 Месяц: 19.99 AZN\n👑 Год: 199.99 AZN (2 месяца бесплатно!)\n🌟 Навсегда: 499.99 AZN\n\nВо всех пакетах доступна 7-дневная бесплатная пробная версия!',
                         [
-                          { 
-                            text: language === 'az' ? 'Bağla' : 'Закрыть'
-                          }
-                        ]
+                          {
+                            text: language === 'az' ? 'Bağla' : 'Закрыть',
+                          },
+                        ],
                       );
-                    }
-                  }
-                ]
+                    },
+                  },
+                ],
               );
             }}
           />
@@ -1182,11 +1182,11 @@ export default function SettingsScreen() {
 
         {/* About Section */}
         <AnimatedSection index={7}>
-          <SectionHeader 
-            title={language === 'az' ? 'HAQQINDA' : 'О ПРИЛОЖЕНИИ'} 
+          <SectionHeader
+            title={language === 'az' ? 'HAQQINDA' : 'О ПРИЛОЖЕНИИ'}
             icon={Info}
           />
-          
+
           <SettingItem
             icon={Info}
             title={language === 'az' ? 'Tətbiq haqqında' : 'О приложении'}

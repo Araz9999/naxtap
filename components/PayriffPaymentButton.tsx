@@ -38,16 +38,16 @@ export default function PayriffPaymentButton({
     onSuccess: async (data) => {
       try {
         logger.debug('Payment created:', data);
-        
+
         if (!data.paymentUrl) {
           Alert.alert('Xəta', 'Ödəniş linki alınmadı');
           onError?.('Payment URL not received');
           setLoading(false);
           return;
         }
-        
+
         const canOpen = await Linking.canOpenURL(data.paymentUrl);
-        
+
         if (canOpen) {
           if (Platform.OS === 'web') {
             window.location.href = data.paymentUrl;
@@ -80,48 +80,48 @@ export default function PayriffPaymentButton({
   const handlePayment = async () => {
     // Validation before starting
     if (disabled || loading) return;
-    
+
     // ===== CLIENT-SIDE VALIDATION =====
-    
+
     // 1. Amount validation
     if (!amount || typeof amount !== 'number' || isNaN(amount) || !isFinite(amount)) {
       Alert.alert('Xəta', 'Məbləğ düzgün deyil');
       onError?.('Invalid amount');
       return;
     }
-    
+
     if (amount <= 0) {
       Alert.alert('Xəta', 'Məbləğ 0-dan böyük olmalıdır');
       onError?.('Amount must be positive');
       return;
     }
-    
+
     if (amount > 100000) {
       Alert.alert('Xəta', 'Məbləğ maksimum limiti keçir (100,000 AZN)');
       onError?.('Amount exceeds limit');
       return;
     }
-    
+
     // 2. OrderId validation
     if (!orderId || typeof orderId !== 'string' || orderId.trim().length === 0) {
       Alert.alert('Xəta', 'Sifariş nömrəsi yoxdur');
       onError?.('Invalid order ID');
       return;
     }
-    
+
     // 3. Description validation
     if (!description || typeof description !== 'string' || description.trim().length === 0) {
       Alert.alert('Xəta', 'Açıqlama yoxdur');
       onError?.('Invalid description');
       return;
     }
-    
+
     if (description.length > 500) {
       Alert.alert('Xəta', 'Açıqlama çox uzundur (maks 500 simvol)');
       onError?.('Description too long');
       return;
     }
-    
+
     // ===== END VALIDATION =====
 
     setLoading(true);

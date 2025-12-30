@@ -6,7 +6,7 @@ export const deleteCardProcedure = protectedProcedure
   .input(
     z.object({
       cardId: z.string(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const userId = ctx.user.userId;

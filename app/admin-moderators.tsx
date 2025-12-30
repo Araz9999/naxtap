@@ -80,7 +80,7 @@ export default function AdminModeratorsScreen() {
       setNewPassword('');
       Alert.alert(
         language === 'az' ? 'Uğurlu' : 'Успешно',
-        language === 'az' ? 'Moderator yaradıldı.' : 'Модератор создан.'
+        language === 'az' ? 'Moderator yaradıldı.' : 'Модератор создан.',
       );
     },
     onError: (e: any) => {
@@ -111,8 +111,6 @@ export default function AdminModeratorsScreen() {
       Alert.alert(language === 'az' ? 'Xəta' : 'Ошибка', msg);
     },
   });
-
-  if (!canAccess) return null;
 
   const moderators = (moderatorsQuery.data as any[]) || [];
 
@@ -185,7 +183,7 @@ export default function AdminModeratorsScreen() {
       manage_moderators: 'Управление модераторами',
     };
     const map = language === 'az' ? az : ru;
-    return (Object.keys(az) as Array<keyof typeof az>).map((key) => ({
+    return (Object.keys(az) as (keyof typeof az)[]).map((key) => ({
       key,
       label: map[key],
     }));
@@ -200,7 +198,7 @@ export default function AdminModeratorsScreen() {
     if (selected?.role !== 'MODERATOR') {
       Alert.alert(
         language === 'az' ? 'Məlumat' : 'Инфо',
-        language === 'az' ? 'Admin üçün icazələr tətbiq edilmir.' : 'Для админа права не применяются.'
+        language === 'az' ? 'Admin üçün icazələr tətbiq edilmir.' : 'Для админа права не применяются.',
       );
       return;
     }
@@ -227,12 +225,14 @@ export default function AdminModeratorsScreen() {
         language === 'az' ? 'Xəta' : 'Ошибка',
         language === 'az'
           ? 'Ad, email və minimum 8 simvolluq şifrə tələb olunur.'
-          : 'Требуются имя, email и пароль минимум 8 символов.'
+          : 'Требуются имя, email и пароль минимум 8 символов.',
       );
       return;
     }
     createModerator.mutate({ email, name, password, phone: phone || undefined } as any);
   };
+
+  if (!canAccess) return null;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

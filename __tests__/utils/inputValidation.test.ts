@@ -239,20 +239,20 @@ describe('Input Validation Utils', () => {
         email: {
           value: 'user@example.com',
           required: true,
-          type: 'email'
+          type: 'email',
         },
         phone: {
           value: '+994501234567',
           required: true,
-          type: 'phone'
+          type: 'phone',
         },
         price: {
           value: '100',
           required: true,
           type: 'number',
           min: 0,
-          max: 1000
-        }
+          max: 1000,
+        },
       });
 
       expect(result.isValid).toBe(true);
@@ -264,24 +264,24 @@ describe('Input Validation Utils', () => {
         email: {
           value: 'invalid-email',
           required: true,
-          type: 'email'
+          type: 'email',
         },
         phone: {
           value: '123',
           required: true,
-          type: 'phone'
+          type: 'phone',
         },
         price: {
           value: '-10',
           required: true,
           type: 'number',
           min: 0,
-          max: 1000
+          max: 1000,
         },
         name: {
           value: '',
-          required: true
-        }
+          required: true,
+        },
       });
 
       expect(result.isValid).toBe(false);
@@ -297,8 +297,8 @@ describe('Input Validation Utils', () => {
         optionalEmail: {
           value: '',
           required: false,
-          type: 'email'
-        }
+          type: 'email',
+        },
       });
 
       expect(result.isValid).toBe(true);

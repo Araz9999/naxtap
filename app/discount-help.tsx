@@ -9,112 +9,112 @@ import { logger } from '@/utils/logger';
 export default function DiscountHelpScreen() {
   const router = useRouter();
   const { language } = useLanguageStore();
-  
+
   // ✅ Log screen open
   React.useEffect(() => {
     logger.info('[DiscountHelp] Screen opened', { language });
   }, []);
-  
+
   const features = [
     {
       icon: Tag,
       title: language === 'az' ? 'Tək Məhsula Endirim' : 'Скидка на отдельный товар',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'Hər hansı bir məhsula fərdi endirim tətbiq edin. Faiz və ya sabit məbləğ olaraq təyin edə bilərsiniz.'
         : 'Применяйте индивидуальную скидку к любому товару. Можете установить в процентах или фиксированной суммой.',
-      benefits: language === 'az' 
+      benefits: language === 'az'
         ? ['Məhsul satışını artırır', 'Müştəri marağını cəlb edir', 'Rəqabətdə üstünlük verir']
-        : ['Увеличивает продажи товара', 'Привлекает внимание покупателей', 'Дает преимущество в конкуренции']
+        : ['Увеличивает продажи товара', 'Привлекает внимание покупателей', 'Дает преимущество в конкуренции'],
     },
     {
       icon: Percent,
       title: language === 'az' ? 'Endirim Növləri' : 'Типы скидок',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'İki növ endirim mövcuddur: faiz endirimi (məs: 20%) və sabit məbləğ endirimi (məs: 50 AZN).'
         : 'Доступны два типа скидок: процентная скидка (напр: 20%) и скидка фиксированной суммой (напр: 50 AZN).',
-      benefits: language === 'az' 
+      benefits: language === 'az'
         ? ['Çevik qiymətləndirmə', 'Müxtəlif strategiyalar', 'Maksimum nəzarət']
-        : ['Гибкое ценообразование', 'Различные стратегии', 'Максимальный контроль']
+        : ['Гибкое ценообразование', 'Различные стратегии', 'Максимальный контроль'],
     },
     {
       icon: Calendar,
       title: language === 'az' ? 'Müddət Nəzarəti' : 'Контроль сроков',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'Endirimin başlama və bitmə tarixlərini təyin edin. Məhdud müddətli təkliflər yaradın.'
         : 'Устанавливайте даты начала и окончания скидки. Создавайте предложения ограниченного времени.',
-      benefits: language === 'az' 
+      benefits: language === 'az'
         ? ['Təcili hiss yaradır', 'Planlaşdırılmış kampaniyalar', 'Avtomatik idarəetmə']
-        : ['Создает ощущение срочности', 'Запланированные кампании', 'Автоматическое управление']
+        : ['Создает ощущение срочности', 'Запланированные кампании', 'Автоматическое управление'],
     },
     {
       icon: Users,
       title: language === 'az' ? 'İstifadə Limiti' : 'Лимит использования',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'Endirimin neçə dəfə istifadə oluna biləcəyini məhdudlaşdırın. Eksklüziv təkliflər yaradın.'
         : 'Ограничивайте количество использований скидки. Создавайте эксклюзивные предложения.',
-      benefits: language === 'az' 
+      benefits: language === 'az'
         ? ['Eksklüzivlik hissi', 'Nəzarətli xərclər', 'Strategik paylaşma']
-        : ['Ощущение эксклюзивности', 'Контролируемые расходы', 'Стратегическое распределение']
+        : ['Ощущение эксклюзивности', 'Контролируемые расходы', 'Стратегическое распределение'],
     },
     {
       icon: Gift,
       title: language === 'az' ? 'Promo Kodlar' : 'Промокоды',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'Hər endirim üçün xüsusi promo kodlar yaradın. Müştərilər bu kodları istifadə edərək endirim ala bilərlər.'
         : 'Создавайте специальные промокоды для каждой скидки. Покупатели могут использовать эти коды для получения скидки.',
-      benefits: language === 'az' 
+      benefits: language === 'az'
         ? ['Marketinq alətı', 'İzləmə imkanı', 'Müştəri sadiqliyi']
-        : ['Маркетинговый инструмент', 'Возможность отслеживания', 'Лояльность клиентов']
+        : ['Маркетинговый инструмент', 'Возможность отслеживания', 'Лояльность клиентов'],
     },
     {
       icon: TrendingUp,
       title: language === 'az' ? 'Satış Artımı' : 'Увеличение продаж',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'Endirimlər məhsullarınızın görünürlüyünü artırır və daha çox müştəri cəlb edir.'
         : 'Скидки повышают видимость ваших товаров и привлекают больше покупателей.',
-      benefits: language === 'az' 
+      benefits: language === 'az'
         ? ['Daha çox baxış', 'Artmış satış', 'Müştəri bazası genişlənməsi']
-        : ['Больше просмотров', 'Увеличенные продажи', 'Расширение клиентской базы']
-    }
+        : ['Больше просмотров', 'Увеличенные продажи', 'Расширение клиентской базы'],
+    },
   ];
-  
+
   const howToUse = [
     {
       step: 1,
       title: language === 'az' ? 'Məhsulu seçin' : 'Выберите товар',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'Mənim Elanlarım səhifəsindən mağaza məhsulunuzu seçin və "Endirim" düyməsinə basın.'
-        : 'На странице "Мои объявления" выберите товар из магазина и нажмите кнопку "Скидка".'
+        : 'На странице "Мои объявления" выберите товар из магазина и нажмите кнопку "Скидка".',
     },
     {
       step: 2,
       title: language === 'az' ? 'Endirim təyin edin' : 'Установите скидку',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'Endirim adı, təsviri və dəyərini daxil edin. Faiz və ya sabit məbləğ seçin.'
-        : 'Введите название скидки, описание и значение. Выберите процент или фиксированную сумму.'
+        : 'Введите название скидки, описание и значение. Выберите процент или фиксированную сумму.',
     },
     {
       step: 3,
       title: language === 'az' ? 'Əlavə tənzimləmələr' : 'Дополнительные настройки',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'İstəyə görə minimum alış məbləği, maksimum endirim və istifadə limiti təyin edin.'
-        : 'При желании установите минимальную сумму покупки, максимальную скидку и лимит использования.'
+        : 'При желании установите минимальную сумму покупки, максимальную скидку и лимит использования.',
     },
     {
       step: 4,
       title: language === 'az' ? 'Promo kod yaradın' : 'Создайте промокод',
-      description: language === 'az' 
+      description: language === 'az'
         ? 'Endirim yaradıldıqdan sonra promo kodlar yarada və müştərilərlə paylaşa bilərsiniz.'
-        : 'После создания скидки можете создавать промокоды и делиться ими с покупателями.'
-    }
+        : 'После создания скидки можете создавать промокоды и делиться ими с покупателями.',
+    },
   ];
-  
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => {
             logger.info('[DiscountHelp] Back button clicked');
             router.back();
@@ -126,7 +126,7 @@ export default function DiscountHelpScreen() {
           {language === 'az' ? 'Endirim Sistemi Kömək' : 'Помощь по системе скидок'}
         </Text>
       </View>
-      
+
       {/* Introduction */}
       <View style={styles.section}>
         <View style={styles.introCard}>
@@ -135,14 +135,14 @@ export default function DiscountHelpScreen() {
             {language === 'az' ? 'Güclü Endirim Sistemi' : 'Мощная система скидок'}
           </Text>
           <Text style={styles.introDescription}>
-            {language === 'az' 
+            {language === 'az'
               ? 'Məhsullarınıza fərdi endirimlər tətbiq edin, promo kodlar yaradın və satışlarınızı artırın. Tam nəzarət sizin əlinizdədir!'
               : 'Применяйте индивидуальные скидки к товарам, создавайте промокоды и увеличивайте продажи. Полный контроль в ваших руках!'
             }
           </Text>
         </View>
       </View>
-      
+
       {/* Features */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
@@ -168,7 +168,7 @@ export default function DiscountHelpScreen() {
           </View>
         ))}
       </View>
-      
+
       {/* How to Use */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
@@ -186,7 +186,7 @@ export default function DiscountHelpScreen() {
           </View>
         ))}
       </View>
-      
+
       {/* Tips */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
@@ -200,31 +200,31 @@ export default function DiscountHelpScreen() {
             </Text>
             <View style={styles.tipsList}>
               <Text style={styles.tipItem}>
-                • {language === 'az' 
+                • {language === 'az'
                   ? 'Məhdud müddətli endirimlər təcili hiss yaradır'
                   : 'Скидки ограниченного времени создают ощущение срочности'
                 }
               </Text>
               <Text style={styles.tipItem}>
-                • {language === 'az' 
+                • {language === 'az'
                   ? 'Minimum alış məbləği orta çeki artırır'
                   : 'Минимальная сумма покупки увеличивает средний чек'
                 }
               </Text>
               <Text style={styles.tipItem}>
-                • {language === 'az' 
+                • {language === 'az'
                   ? 'Promo kodları sosial mediada paylaşın'
                   : 'Делитесь промокодами в социальных сетях'
                 }
               </Text>
               <Text style={styles.tipItem}>
-                • {language === 'az' 
+                • {language === 'az'
                   ? 'Endirim dəyərini məhsulun qiymətinə uyğun seçin'
                   : 'Выбирайте размер скидки соответственно цене товара'
                 }
               </Text>
               <Text style={styles.tipItem}>
-                • {language === 'az' 
+                • {language === 'az'
                   ? 'Müntəzəm olaraq endirim performansını izləyin'
                   : 'Регулярно отслеживайте эффективность скидок'
                 }
@@ -233,7 +233,7 @@ export default function DiscountHelpScreen() {
           </View>
         </View>
       </View>
-      
+
       {/* CTA */}
       <View style={styles.section}>
         <View style={styles.ctaCard}>
@@ -241,12 +241,12 @@ export default function DiscountHelpScreen() {
             {language === 'az' ? 'İndi Başlayın!' : 'Начните сейчас!'}
           </Text>
           <Text style={styles.ctaDescription}>
-            {language === 'az' 
+            {language === 'az'
               ? 'Məhsullarınıza endirim tətbiq etmək üçün "Mənim Elanlarım" səhifəsinə keçin və mağaza məhsulunuzu seçin.'
               : 'Перейдите на страницу "Мои объявления" и выберите товар из магазина, чтобы применить скидку.'
             }
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.ctaButton}
             onPress={() => {
               logger.info('[DiscountHelp] CTA button clicked - navigating to my listings');

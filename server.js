@@ -23,11 +23,11 @@ app.use(
           // Add type="module" to script tags
           body = body.replace(
             /<script\s+src="([^"]+)"(?![^>]*type=)([^>]*)><\/script>/g,
-            '<script type="module" src="$1"$2></script>'
+            '<script type="module" src="$1"$2></script>',
           );
           body = body.replace(
             /<script\s+([^>]*)\s+src="([^"]+)"(?![^>]*type=)([^>]*)><\/script>/g,
-            '<script type="module" $1 src="$2"$3></script>'
+            '<script type="module" $1 src="$2"$3></script>',
           );
           res.setHeader('content-type', 'text/html');
           res.setHeader('content-length', Buffer.byteLength(body));
@@ -38,7 +38,7 @@ app.use(
         proxyRes.pipe(res);
       }
     },
-  })
+  }),
 );
 
 app.listen(PORT, () => {

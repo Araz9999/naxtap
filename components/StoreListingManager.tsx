@@ -6,7 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
-  Image
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -31,13 +31,13 @@ export default function StoreListingManager({ storeId, listings }: StoreListingM
   const handleDeleteListing = (listing: Listing) => {
     Alert.alert(
       language === 'az' ? 'Elanı Sil' : 'Удалить объявление',
-      language === 'az' 
+      language === 'az'
         ? 'Bu elanı müddətindən əvvəl silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.'
         : 'Вы уверены, что хотите удалить это объявление досрочно? Это действие нельзя отменить.',
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: language === 'az' ? 'Sil' : 'Удалить',
@@ -47,29 +47,29 @@ export default function StoreListingManager({ storeId, listings }: StoreListingM
             try {
               // Mark listing as deleted early
               await deleteListingEarly(storeId, listing.id);
-              
+
               // If listing belongs to a store, update store's deleted listings
               if (listing.storeId) {
                 deleteFromStore(listing.storeId, listing.id);
               }
-              
+
               Alert.alert(
                 language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                language === 'az' 
+                language === 'az'
                   ? 'Elan uğurla silindi. Limit sayınız müddət bitənə qədər dəyişməyəcək.'
-                  : 'Объявление успешно удалено. Ваш лимит не изменится до истечения срока.'
+                  : 'Объявление успешно удалено. Ваш лимит не изменится до истечения срока.',
               );
             } catch (error) {
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
-                language === 'az' ? 'Elan silinərkən xəta baş verdi' : 'Произошла ошибка при удалении объявления'
+                language === 'az' ? 'Elan silinərkən xəta baş verdi' : 'Произошла ошибка при удалении объявления',
               );
             } finally {
               setDeletingId(null);
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -77,7 +77,7 @@ export default function StoreListingManager({ storeId, listings }: StoreListingM
     const date = new Date(dateString);
     return date.toLocaleDateString(language === 'az' ? 'az-AZ' : 'ru-RU');
   };
-  
+
   const getPromotionIcon = (listing: Listing) => {
     if (listing.isVip) {
       return <Crown size={16} color="#FFD700" />;
@@ -92,11 +92,11 @@ export default function StoreListingManager({ storeId, listings }: StoreListingM
   const renderListingItem = ({ item }: { item: Listing }) => {
     const isDeleting = deletingId === item.id;
     const isDeleted = !!item.deletedAt;
-    
+
     return (
       <View style={[styles.listingCard, isDeleted && styles.deletedCard]}>
         <View style={styles.listingHeader}>
-          <Image 
+          <Image
             source={{ uri: item.images[0] || 'https://via.placeholder.com/80' }}
             style={styles.listingImage}
           />
@@ -134,10 +134,10 @@ export default function StoreListingManager({ storeId, listings }: StoreListingM
             )}
           </View>
         </View>
-        
+
         {!isDeleted && (
           <View style={styles.listingActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={() => router.push(`/listing/edit/${item.id}`)}
             >
@@ -146,8 +146,8 @@ export default function StoreListingManager({ storeId, listings }: StoreListingM
                 {language === 'az' ? 'Redaktə' : 'Редактировать'}
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.actionButton, styles.promoteButton]}
               onPress={() => router.push(`/listing/promote/${item.id}`)}
             >
@@ -156,15 +156,15 @@ export default function StoreListingManager({ storeId, listings }: StoreListingM
                 {language === 'az' ? 'Təşviq Et' : 'Продвинуть'}
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.actionButton, styles.deleteButton]}
               onPress={() => handleDeleteListing(item)}
               disabled={isDeleting}
             >
               <Trash2 size={16} color={Colors.error} />
               <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
-                {isDeleting 
+                {isDeleting
                   ? (language === 'az' ? 'Silinir...' : 'Удаление...')
                   : (language === 'az' ? 'Sil' : 'Удалить')
                 }
@@ -205,7 +205,7 @@ export default function StoreListingManager({ storeId, listings }: StoreListingM
             {language === 'az' ? 'Silinmiş Elanlar' : 'Удаленные объявления'} ({deletedListings.length})
           </Text>
           <Text style={styles.sectionDescription}>
-            {language === 'az' 
+            {language === 'az'
               ? 'Bu elanlar müddətindən əvvəl silinib, lakin limit sayınız müddət bitənə qədər dəyişməyəcək.'
               : 'Эти объявления были удалены досрочно, но ваш лимит не изменится до истечения срока.'
             }

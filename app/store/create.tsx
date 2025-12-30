@@ -7,7 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  Image
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -25,7 +25,7 @@ import {
   Trash2,
   Camera,
   Image as ImageIcon,
-  Settings
+  Settings,
 } from 'lucide-react-native';
 
 export default function CreateStoreScreen() {
@@ -48,184 +48,184 @@ export default function CreateStoreScreen() {
       phone: '',
       email: '',
       website: '',
-      whatsapp: ''
-    }
+      whatsapp: '',
+    },
   });
 
   const plans = getStorePlans();
   const userStores = getAllUserStores(currentUser?.id || '');
   const isFirstStore = userStores.length === 0;
   const discount = isFirstStore ? 0 : 0.25;
-  
+
   // ✅ Log screen access
   useEffect(() => {
-    storeLogger.info('[CreateStore] Screen opened:', { 
+    storeLogger.info('[CreateStore] Screen opened:', {
       hasExistingStore: !!userStore,
       storeId: userStore?.id,
       storeName: userStore?.name,
       currentStep,
-      isFirstStore
+      isFirstStore,
     });
   }, []);
-  
+
   const getPlanPrice = (planId: string) => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return 100;
     return isFirstStore ? plan.price : Math.round(plan.price * (1 - discount));
   };
-  
+
   const selectedPlanPrice = selectedPlan ? getPlanPrice(selectedPlan) : 0;
 
   const handleNext = () => {
-    storeLogger.info('[CreateStore] Navigation to next step:', { 
-      currentStep, 
+    storeLogger.info('[CreateStore] Navigation to next step:', {
+      currentStep,
       selectedPlan,
-      selectedPayment
+      selectedPayment,
     });
-    
+
     // Step 1: Package selection validation - CRITICAL CHECK
     if (currentStep === 1) {
       if (!selectedPlan || selectedPlan === '') {
         storeLogger.warn('[CreateStore] Step 1 validation failed: No plan selected');
         Alert.alert(
           language === 'az' ? '❌ Paket Seçilməyib!' : '❌ Пакет не выбран!',
-          language === 'az' 
+          language === 'az'
             ? 'Zəhmət olmasa əvvəlcə paket seçin. Paket seçmədən növbəti addıma keçə bilməzsiniz.'
-            : 'Пожалуйста, сначала выберите пакет. Без выбора пакета нельзя перейти к следующему шагу.'
+            : 'Пожалуйста, сначала выберите пакет. Без выбора пакета нельзя перейти к следующему шагу.',
         );
         return;
       }
-      storeLogger.info('[CreateStore] Step 1 validation passed:', { 
-        selectedPlan, 
-        price: getPlanPrice(selectedPlan)
+      storeLogger.info('[CreateStore] Step 1 validation passed:', {
+        selectedPlan,
+        price: getPlanPrice(selectedPlan),
       });
     }
-    
+
     // Step 2: Store information validation
     if (currentStep === 2) {
       // Validation: Store name
       if (!storeData.name.trim()) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Mağaza adı daxil edin' : 'Введите название магазина'
+          language === 'az' ? 'Mağaza adı daxil edin' : 'Введите название магазина',
         );
         return;
       }
-      
+
       if (storeData.name.trim().length < 3) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Mağaza adı ən azı 3 simvol olmalıdır' : 'Название магазина должно быть не менее 3 символов'
+          language === 'az' ? 'Mağaza adı ən azı 3 simvol olmalıdır' : 'Название магазина должно быть не менее 3 символов',
         );
         return;
       }
-      
+
       if (storeData.name.trim().length > 50) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Mağaza adı maksimum 50 simvol ola bilər' : 'Название магазина не должно превышать 50 символов'
+          language === 'az' ? 'Mağaza adı maksimum 50 simvol ola bilər' : 'Название магазина не должно превышать 50 символов',
         );
         return;
       }
-      
+
       // Validation: Category name
       if (!storeData.categoryName.trim()) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Kateqoriya adı daxil edin' : 'Введите название категории'
+          language === 'az' ? 'Kateqoriya adı daxil edin' : 'Введите название категории',
         );
         return;
       }
-      
+
       if (storeData.categoryName.trim().length < 3) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Kateqoriya adı ən azı 3 simvol olmalıdır' : 'Название категории должно быть не менее 3 символов'
+          language === 'az' ? 'Kateqoriya adı ən azı 3 simvol olmalıdır' : 'Название категории должно быть не менее 3 символов',
         );
         return;
       }
-      
+
       // Validation: Address
       if (storeData.address.trim() && storeData.address.trim().length < 5) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Ünvan ən azı 5 simvol olmalıdır' : 'Адрес должен быть не менее 5 символов'
+          language === 'az' ? 'Ünvan ən azı 5 simvol olmalıdır' : 'Адрес должен быть не менее 5 символов',
         );
         return;
       }
-      
+
       // Validation: Email format if provided
       if (storeData.contactInfo.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(storeData.contactInfo.email.trim())) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Düzgün email formatı daxil edin' : 'Введите корректный формат email'
+          language === 'az' ? 'Düzgün email formatı daxil edin' : 'Введите корректный формат email',
         );
         return;
       }
-      
+
       // Validation: Phone number if provided
       if (storeData.contactInfo.phone.trim() && storeData.contactInfo.phone.trim().length < 9) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Telefon nömrəsi ən azı 9 rəqəm olmalıdır' : 'Номер телефона должен содержать не менее 9 цифр'
+          language === 'az' ? 'Telefon nömrəsi ən azı 9 rəqəm olmalıdır' : 'Номер телефона должен содержать не менее 9 цифр',
         );
         return;
       }
-      
+
       // Validation: Website URL if provided
       if (storeData.contactInfo.website.trim() && !storeData.contactInfo.website.trim().match(/^https?:\/\/.+/)) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Vebsayt http:// və ya https:// ilə başlamalıdır' : 'Веб-сайт должен начинаться с http:// или https://'
+          language === 'az' ? 'Vebsayt http:// və ya https:// ilə başlamalıdır' : 'Веб-сайт должен начинаться с http:// или https://',
         );
         return;
       }
-      
+
       // ✅ Validate email if provided
       if (storeData.contactInfo.email && !validateEmail(storeData.contactInfo.email)) {
         storeLogger.warn('[CreateStore] Invalid email:', { email: storeData.contactInfo.email });
         Alert.alert(
           language === 'az' ? 'Email düzgün deyil' : 'Неверный email',
-          language === 'az' ? 'Zəhmət olmasa düzgün email daxil edin' : 'Пожалуйста, введите корректный email'
+          language === 'az' ? 'Zəhmət olmasa düzgün email daxil edin' : 'Пожалуйста, введите корректный email',
         );
         return;
       }
-      
+
       // ✅ Validate website if provided
       if (storeData.contactInfo.website && !validateWebsiteURL(storeData.contactInfo.website)) {
         storeLogger.warn('[CreateStore] Invalid website:', { website: storeData.contactInfo.website });
         Alert.alert(
           language === 'az' ? 'Veb sayt düzgün deyil' : 'Неверный веб-сайт',
-          language === 'az' ? 'Zəhmət olmasa düzgün URL daxil edin (https://example.com)' : 'Пожалуйста, введите корректный URL (https://example.com)'
+          language === 'az' ? 'Zəhmət olmasa düzgün URL daxil edin (https://example.com)' : 'Пожалуйста, введите корректный URL (https://example.com)',
         );
         return;
       }
-      
+
       // ✅ Validate phone if provided
       if (storeData.contactInfo.phone && !validateAzerbaijanPhone(storeData.contactInfo.phone)) {
         storeLogger.warn('[CreateStore] Invalid phone:', { phone: storeData.contactInfo.phone });
         Alert.alert(
           language === 'az' ? 'Telefon nömrəsi düzgün deyil' : 'Неверный номер телефона',
-          language === 'az' ? 'Zəhmət olmasa Azərbaycan telefon nömrəsi daxil edin (+994...)' : 'Пожалуйста, введите азербайджанский номер телефона (+994...)'
+          language === 'az' ? 'Zəhmət olmasa Azərbaycan telefon nömrəsi daxil edin (+994...)' : 'Пожалуйста, введите азербайджанский номер телефона (+994...)',
         );
         return;
       }
-      
+
       // ✅ Validate WhatsApp if provided
       if (storeData.contactInfo.whatsapp && !validateAzerbaijanPhone(storeData.contactInfo.whatsapp)) {
         storeLogger.warn('[CreateStore] Invalid WhatsApp:', { whatsapp: storeData.contactInfo.whatsapp });
         Alert.alert(
           language === 'az' ? 'WhatsApp nömrəsi düzgün deyil' : 'Неверный номер WhatsApp',
-          language === 'az' ? 'Zəhmət olmasa Azərbaycan telefon nömrəsi daxil edin (+994...)' : 'Пожалуйста, введите азербайджанский номер телефона (+994...)'
+          language === 'az' ? 'Zəhmət olmasa Azərbaycan telefon nömrəsi daxil edin (+994...)' : 'Пожалуйста, введите азербайджанский номер телефона (+994...)',
         );
         return;
       }
-      
+
       storeLogger.info('[CreateStore] Step 2 validation passed');
     }
-    
+
     // Skip payment validation - no payment required
-    
+
     // IMPORTANT: Only move to next step, NO PAYMENT HERE
     storeLogger.info('[CreateStore] Moving to next step:', { from: currentStep, to: currentStep + 1 });
     setCurrentStep(prev => prev + 1);
@@ -236,126 +236,126 @@ export default function CreateStoreScreen() {
     storeLogger.debug('isAuthenticated:', isAuthenticated);
     storeLogger.debug('currentUser:', currentUser?.id);
     storeLogger.debug('selectedPlan:', selectedPlan);
-    
+
     if (!isAuthenticated || !currentUser) {
       Alert.alert(
         language === 'az' ? 'Giriş Tələb Olunur' : 'Требуется вход',
-        language === 'az' ? 'Mağaza yaratmaq üçün hesabınıza daxil olun' : 'Войдите в аккаунт для создания магазина'
+        language === 'az' ? 'Mağaza yaratmaq üçün hesabınıza daxil olun' : 'Войдите в аккаунт для создания магазина',
       );
       return;
     }
-    
+
     // CRITICAL VALIDATION: Must have package selected
     if (!selectedPlan || selectedPlan === '') {
       Alert.alert(
         language === 'az' ? '❌ Paket Seçilməyib!' : '❌ Пакет не выбран!',
-        language === 'az' 
+        language === 'az'
           ? 'XƏTA: Mağaza yaratmaq üçün mütləq paket seçməlisiniz!\n\nZəhmət olmasa:\n1. Geri düyməsinə basın\n2. Paket seçin\n3. Yenidən cəhd edin'
-          : 'ОШИБКА: Для создания магазина обязательно нужно выбрать пакет!\n\nПожалуйста:\n1. Нажмите кнопку "Назад"\n2. Выберите пакет\n3. Попробуйте снова'
+          : 'ОШИБКА: Для создания магазина обязательно нужно выбрать пакет!\n\nПожалуйста:\n1. Нажмите кнопку "Назад"\n2. Выберите пакет\n3. Попробуйте снова',
       );
       return;
     }
-    
+
     // Get the selected plan details and calculate price
     const selectedPlanData = plans.find(p => p.id === selectedPlan);
     if (!selectedPlanData) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Seçilmiş paket tapılmadı' : 'Выбранный пакет не найден'
+        language === 'az' ? 'Seçilmiş paket tapılmadı' : 'Выбранный пакет не найден',
       );
       return;
     }
-    
+
     const finalPrice = getPlanPrice(selectedPlan);
     storeLogger.debug('💰 Final price calculated:', finalPrice, 'AZN');
-    
+
     // Import wallet functions
     const { walletBalance, spendFromWallet } = useUserStore.getState();
-    
+
     // Check if user has enough balance
     if (walletBalance < finalPrice) {
       Alert.alert(
         language === 'az' ? '💰 Kifayət qədər balans yoxdur' : '💰 Недостаточно средств',
-        language === 'az' 
+        language === 'az'
           ? `Mağaza yaratmaq üçün ${finalPrice} AZN lazımdır.\nCari balansınız: ${walletBalance.toFixed(2)} AZN\n\nZəhmət olmasa balansınızı artırın.`
-          : `Для создания магазина требуется ${finalPrice} AZN.\nВаш текущий баланс: ${walletBalance.toFixed(2)} AZN\n\nПожалуйста, пополните баланс.`
+          : `Для создания магазина требуется ${finalPrice} AZN.\nВаш текущий баланс: ${walletBalance.toFixed(2)} AZN\n\nПожалуйста, пополните баланс.`,
       );
       return;
     }
-    
+
     // Show payment confirmation dialog
     Alert.alert(
       language === 'az' ? '💳 Ödəniş Təsdiqi' : '💳 Подтверждение оплаты',
-      language === 'az' 
+      language === 'az'
         ? `Seçilmiş paket: ${selectedPlanData.name.az}\nQiymət: ${finalPrice} AZN\nMağaza adı: ${storeData.name}\nKateqoriya: ${storeData.categoryName}\n\nBalansınızdan ${finalPrice} AZN çıxılacaq. Davam etmək istəyirsiniz?`
         : `Выбранный пакет: ${selectedPlanData.name.ru}\nЦена: ${finalPrice} AZN\nНазвание магазина: ${storeData.name}\nКатегория: ${storeData.categoryName}\n\nС вашего баланса будет списано ${finalPrice} AZN. Продолжить?`,
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: language === 'az' ? '💳 Ödə və Yarat' : '💳 Оплатить и создать',
           onPress: async () => {
             storeLogger.debug('💳 Processing payment and creating store...');
-            
+
             try {
               // First, process payment
               const paymentSuccess = spendFromWallet(finalPrice);
               if (!paymentSuccess) {
                 Alert.alert(
                   language === 'az' ? 'Ödəniş Xətası' : 'Ошибка оплаты',
-                  language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Произошла ошибка при оплате'
+                  language === 'az' ? 'Ödəniş zamanı xəta baş verdi' : 'Произошла ошибка при оплате',
                 );
                 return;
               }
-              
+
               storeLogger.debug('✅ Payment processed successfully');
-              
+
               // Then create the store
               await activateStore(currentUser.id, selectedPlan, storeData);
-              
+
               storeLogger.debug('✅ Store created successfully');
-              
+
               Alert.alert(
                 language === 'az' ? '🎉 Mağaza Yaradıldı!' : '🎉 Магазин создан!',
-                language === 'az' 
+                language === 'az'
                   ? `Ödəniş uğurlu! Mağazanız yaradıldı.\n\n💳 Ödənilən məbləğ: ${finalPrice} AZN\n📦 Seçilmiş paket: ${selectedPlanData.name.az}\n🏪 Mağaza adı: ${storeData.name}`
                   : `Оплата успешна! Ваш магазин создан.\n\n💳 Списано: ${finalPrice} AZN\n📦 Выбранный пакет: ${selectedPlanData.name.ru}\n🏪 Название: ${storeData.name}`,
-                [{ text: 'OK', onPress: () => router.back() }]
+                [{ text: 'OK', onPress: () => router.back() }],
               );
             } catch (error) {
               storeLogger.error('❌ Store creation error:', error);
-              
+
               // ✅ Better error messages
               const errorMessage = error instanceof Error ? error.message : '';
               const isMultiStoreError = errorMessage.includes('already has an active store');
-              
+
               Alert.alert(
                 language === 'az' ? 'Yaratma Xətası' : 'Ошибка создания',
                 isMultiStoreError
-                  ? (language === 'az' 
-                      ? 'Sizin artıq aktiv mağazanız var. Əlavə mağaza yaratmaq üçün əvvəlcə mövcud mağazanızı idarə edin.'
-                      : 'У вас уже есть активный магазин. Для создания дополнительного магазина управляйте существующим.')
-                  : (language === 'az' ? 'Mağaza yaradılarkən xəta baş verdi' : 'Произошла ошибка при создании магазина')
+                  ? (language === 'az'
+                    ? 'Sizin artıq aktiv mağazanız var. Əlavə mağaza yaratmaq üçün əvvəlcə mövcud mağazanızı idarə edin.'
+                    : 'У вас уже есть активный магазин. Для создания дополнительного магазина управляйте существующим.')
+                  : (language === 'az' ? 'Mağaza yaradılarkən xəta baş verdi' : 'Произошла ошибка при создании магазина'),
               );
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
   const handleDeleteStore = () => {
     if (!userStore) return;
-    
+
     Alert.alert(
       language === 'az' ? 'Mağazanı Sil' : 'Удалить магазин',
       language === 'az' ? 'Bu mağazanı silmək istədiyinizə əminsiniz? Bu əməliyyat geri alına bilməz.' : 'Вы уверены, что хотите удалить этот магазин? Это действие нельзя отменить.',
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: language === 'az' ? 'Sil' : 'Удалить',
@@ -365,18 +365,18 @@ export default function CreateStoreScreen() {
               await deleteStore(userStore.id);
               Alert.alert(
                 language === 'az' ? 'Uğurlu!' : 'Успешно!',
-                language === 'az' ? 'Mağaza uğurla silindi' : 'Магазин успешно удален'
+                language === 'az' ? 'Mağaza uğurla silindi' : 'Магазин успешно удален',
               );
               setCurrentStep(1);
             } catch (error) {
               Alert.alert(
                 language === 'az' ? 'Xəta' : 'Ошибка',
-                language === 'az' ? 'Mağaza silinərkən xəta baş verdi' : 'Произошла ошибка при удалении магазина'
+                language === 'az' ? 'Mağaza silinərkən xəta baş verdi' : 'Произошла ошибка при удалении магазина',
               );
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -386,14 +386,14 @@ export default function CreateStoreScreen() {
         <View key={step} style={styles.stepContainer}>
           <View style={[
             styles.stepCircle,
-            currentStep >= step && styles.stepCircleActive
+            currentStep >= step && styles.stepCircleActive,
           ]}>
             {currentStep > step ? (
               <Check size={16} color="white" />
             ) : (
               <Text style={[
                 styles.stepNumber,
-                currentStep >= step && styles.stepNumberActive
+                currentStep >= step && styles.stepNumberActive,
               ]}>
                 {step}
               </Text>
@@ -402,7 +402,7 @@ export default function CreateStoreScreen() {
           {step < 3 && (
             <View style={[
               styles.stepLine,
-              currentStep > step && styles.stepLineActive
+              currentStep > step && styles.stepLineActive,
             ]} />
           )}
         </View>
@@ -416,21 +416,21 @@ export default function CreateStoreScreen() {
         {language === 'az' ? 'Paket Seçin' : 'Выберите пакет'}
       </Text>
       <Text style={styles.stepDescription}>
-        {language === 'az' 
+        {language === 'az'
           ? `Mağazanız üçün uyğun paketi seçin. ${isFirstStore ? 'İlk mağaza yaratmaq' : 'Əlavə mağaza yaratmaq (25% endirim)'}`
           : `Выберите подходящий пакет для вашего магазина. ${isFirstStore ? 'Создание первого магазина' : 'Создание дополнительного магазина (скидка 25%)'}`}
       </Text>
-      
+
       {!selectedPlan && (
         <View style={styles.warningCard}>
           <Text style={styles.warningText}>
-            {language === 'az' 
+            {language === 'az'
               ? '⚠️ Zəhmət olmasa əvvəlcə paket seçin. Paket seçmədən ödəniş edə bilməzsiniz.'
               : '⚠️ Пожалуйста, сначала выберите пакет. Без выбора пакета оплата невозможна.'}
           </Text>
         </View>
       )}
-      
+
       {selectedPlan && (
         <View style={styles.selectedPackageInfo}>
           <Text style={styles.selectedPackageText}>
@@ -441,21 +441,21 @@ export default function CreateStoreScreen() {
           </Text>
         </View>
       )}
-      
+
       {plans.map((plan) => (
         <TouchableOpacity
           key={plan.id}
           style={[
             styles.planCard,
-            selectedPlan === plan.id && styles.planCardSelected
+            selectedPlan === plan.id && styles.planCardSelected,
           ]}
           onPress={() => {
-            storeLogger.info('[CreateStore] Plan selected:', { 
-              planId: plan.id, 
+            storeLogger.info('[CreateStore] Plan selected:', {
+              planId: plan.id,
               planName: plan.name.az,
               price: getPlanPrice(plan.id),
               maxAds: plan.maxAds,
-              isFirstStore
+              isFirstStore,
             });
             setSelectedPlan(plan.id);
           }}
@@ -500,17 +500,17 @@ export default function CreateStoreScreen() {
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: language === 'az' ? 'Kameradan' : 'Камера',
-          onPress: () => pickProfileImageFromCamera()
+          onPress: () => pickProfileImageFromCamera(),
         },
         {
           text: language === 'az' ? 'Qalereya' : 'Галерея',
-          onPress: () => pickProfileImageFromGallery()
-        }
-      ]
+          onPress: () => pickProfileImageFromGallery(),
+        },
+      ],
     );
   };
 
@@ -521,17 +521,17 @@ export default function CreateStoreScreen() {
       [
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: language === 'az' ? 'Kameradan' : 'Камера',
-          onPress: () => pickCoverImageFromCamera()
+          onPress: () => pickCoverImageFromCamera(),
         },
         {
           text: language === 'az' ? 'Qalereya' : 'Галерея',
-          onPress: () => pickCoverImageFromGallery()
-        }
-      ]
+          onPress: () => pickCoverImageFromGallery(),
+        },
+      ],
     );
   };
 
@@ -542,7 +542,7 @@ export default function CreateStoreScreen() {
       if (status !== 'granted') {
         Alert.alert(
           language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-          language === 'az' ? 'Kamera istifadə etmək üçün icazə verin' : 'Предоставьте разрешение для использования камеры'
+          language === 'az' ? 'Kamera istifadə etmək üçün icazə verin' : 'Предоставьте разрешение для использования камеры',
         );
         return;
       }
@@ -558,30 +558,30 @@ export default function CreateStoreScreen() {
       storeLogger.debug('📸 Camera result:', result);
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // ✅ Check file size (max 5MB)
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert(
             language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
-            language === 'az' 
-              ? 'Zəhmət olmasa 5MB-dan kiçik şəkil çəkin' 
-              : 'Пожалуйста, сделайте изображение меньше 5MB'
+            language === 'az'
+              ? 'Zəhmət olmasa 5MB-dan kiçik şəkil çəkin'
+              : 'Пожалуйста, сделайте изображение меньше 5MB',
           );
           return;
         }
-        
+
         storeLogger.debug('✅ Profile image selected:', asset.uri);
         setStoreData(prev => ({ ...prev, logo: asset.uri }));
         Alert.alert(
           language === 'az' ? 'Uğurlu!' : 'Успешно!',
-          language === 'az' ? 'Profil şəkli əlavə edildi' : 'Изображение профиля добавлено'
+          language === 'az' ? 'Profil şəkli əlavə edildi' : 'Изображение профиля добавлено',
         );
       }
     } catch (error) {
       storeLogger.error('❌ Camera error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil çəkərkən xəta baş verdi' : 'Произошла ошибка при съемке'
+        language === 'az' ? 'Şəkil çəkərkən xəta baş verdi' : 'Произошла ошибка при съемке',
       );
     }
   };
@@ -593,7 +593,7 @@ export default function CreateStoreScreen() {
       if (status !== 'granted') {
         Alert.alert(
           language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-          language === 'az' ? 'Qalereya daxil olmaq üçün icazə verin' : 'Предоставьте разрешение для доступа к галерее'
+          language === 'az' ? 'Qalereya daxil olmaq üçün icazə verin' : 'Предоставьте разрешение для доступа к галерее',
         );
         return;
       }
@@ -609,30 +609,30 @@ export default function CreateStoreScreen() {
       storeLogger.debug('🖼️ Gallery result:', result);
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // ✅ Check file size (max 5MB)
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert(
             language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
-            language === 'az' 
-              ? 'Zəhmət olmasa 5MB-dan kiçik şəkil seçin' 
-              : 'Пожалуйста, выберите изображение меньше 5MB'
+            language === 'az'
+              ? 'Zəhmət olmasa 5MB-dan kiçik şəkil seçin'
+              : 'Пожалуйста, выберите изображение меньше 5MB',
           );
           return;
         }
-        
+
         storeLogger.debug('✅ Profile image selected from gallery:', asset.uri);
         setStoreData(prev => ({ ...prev, logo: asset.uri }));
         Alert.alert(
           language === 'az' ? 'Uğurlu!' : 'Успешно!',
-          language === 'az' ? 'Profil şəkli əlavə edildi' : 'Изображение профиля добавлено'
+          language === 'az' ? 'Profil şəkli əlavə edildi' : 'Изображение профиля добавлено',
         );
       }
     } catch (error) {
       storeLogger.error('❌ Gallery error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Qalereya açarkən xəta baş verdi' : 'Произошла ошибка при открытии галереи'
+        language === 'az' ? 'Qalereya açarkən xəta baş verdi' : 'Произошла ошибка при открытии галереи',
       );
     }
   };
@@ -644,7 +644,7 @@ export default function CreateStoreScreen() {
       if (status !== 'granted') {
         Alert.alert(
           language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-          language === 'az' ? 'Kamera istifadə etmək üçün icazə verin' : 'Предоставьте разрешение для использования камеры'
+          language === 'az' ? 'Kamera istifadə etmək üçün icazə verin' : 'Предоставьте разрешение для использования камеры',
         );
         return;
       }
@@ -660,30 +660,30 @@ export default function CreateStoreScreen() {
       storeLogger.debug('📸 Camera result for cover:', result);
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // ✅ Check file size (max 5MB)
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert(
             language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
-            language === 'az' 
-              ? 'Zəhmət olmasa 5MB-dan kiçik şəkil çəkin' 
-              : 'Пожалуйста, сделайте изображение меньше 5MB'
+            language === 'az'
+              ? 'Zəhmət olmasa 5MB-dan kiçik şəkil çəkin'
+              : 'Пожалуйста, сделайте изображение меньше 5MB',
           );
           return;
         }
-        
+
         storeLogger.debug('✅ Cover image selected:', asset.uri);
         setStoreData(prev => ({ ...prev, coverImage: asset.uri }));
         Alert.alert(
           language === 'az' ? 'Uğurlu!' : 'Успешно!',
-          language === 'az' ? 'Arxa fon şəkli əlavə edildi' : 'Фоновое изображение добавлено'
+          language === 'az' ? 'Arxa fon şəkli əlavə edildi' : 'Фоновое изображение добавлено',
         );
       }
     } catch (error) {
       storeLogger.error('❌ Camera error for cover:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil çəkərkən xəta baş verdi' : 'Произошла ошибка при съемке'
+        language === 'az' ? 'Şəkil çəkərkən xəta baş verdi' : 'Произошла ошибка при съемке',
       );
     }
   };
@@ -695,7 +695,7 @@ export default function CreateStoreScreen() {
       if (status !== 'granted') {
         Alert.alert(
           language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-          language === 'az' ? 'Qalereya daxil olmaq üçün icazə verin' : 'Предоставьте разрешение для доступа к галерее'
+          language === 'az' ? 'Qalereya daxil olmaq üçün icazə verin' : 'Предоставьте разрешение для доступа к галерее',
         );
         return;
       }
@@ -711,30 +711,30 @@ export default function CreateStoreScreen() {
       storeLogger.debug('🖼️ Gallery result for cover:', result);
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // ✅ Check file size (max 5MB)
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert(
             language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
-            language === 'az' 
-              ? 'Zəhmət olmasa 5MB-dan kiçik şəkil seçin' 
-              : 'Пожалуйста, выберите изображение меньше 5MB'
+            language === 'az'
+              ? 'Zəhmət olmasa 5MB-dan kiçik şəkil seçin'
+              : 'Пожалуйста, выберите изображение меньше 5MB',
           );
           return;
         }
-        
+
         storeLogger.debug('✅ Cover image selected from gallery:', asset.uri);
         setStoreData(prev => ({ ...prev, coverImage: asset.uri }));
         Alert.alert(
           language === 'az' ? 'Uğurlu!' : 'Успешно!',
-          language === 'az' ? 'Arxa fon şəkli əlavə edildi' : 'Фоновое изображение добавлено'
+          language === 'az' ? 'Arxa fon şəkli əlavə edildi' : 'Фоновое изображение добавлено',
         );
       }
     } catch (error) {
       storeLogger.error('❌ Gallery error for cover:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Qalereya açarkən xəta baş verdi' : 'Произошла ошибка при открытии галереи'
+        language === 'az' ? 'Qalereya açarkən xəta baş verdi' : 'Произошла ошибка при открытии галереи',
       );
     }
   };
@@ -744,23 +744,23 @@ export default function CreateStoreScreen() {
       <Text style={styles.stepTitle}>
         {language === 'az' ? 'Mağaza Məlumatları' : 'Информация о магазине'}
       </Text>
-      
+
       {/* Store Images Section */}
       <Text style={styles.sectionTitle}>
         {language === 'az' ? 'Mağaza Şəkilləri' : 'Изображения магазина'}
       </Text>
-      
+
       <View style={styles.imageUploadSection}>
         <View style={styles.imageUploadGroup}>
           <Text style={styles.inputLabel}>
             {language === 'az' ? 'Profil Şəkli' : 'Изображение профиля'}
           </Text>
-          
+
           {storeData.logo ? (
             <View style={styles.imagePreviewContainer}>
               <Image source={{ uri: storeData.logo }} style={styles.profileImagePreview} />
               <View style={styles.imageActions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.changeImageButton}
                   onPress={handleProfileImagePicker}
                 >
@@ -769,7 +769,7 @@ export default function CreateStoreScreen() {
                     {language === 'az' ? 'Dəyişdir' : 'Изменить'}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => setStoreData(prev => ({ ...prev, logo: '' }))}
                 >
@@ -780,7 +780,7 @@ export default function CreateStoreScreen() {
               </View>
             </View>
           ) : (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.imageUploadButton}
               onPress={handleProfileImagePicker}
             >
@@ -791,17 +791,17 @@ export default function CreateStoreScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
+
         <View style={styles.imageUploadGroup}>
           <Text style={styles.inputLabel}>
             {language === 'az' ? 'Arxa Fon Şəkli' : 'Фоновое изображение'}
           </Text>
-          
+
           {storeData.coverImage ? (
             <View style={styles.imagePreviewContainer}>
               <Image source={{ uri: storeData.coverImage }} style={styles.coverImagePreview} />
               <View style={styles.imageActions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.changeImageButton}
                   onPress={handleCoverImagePicker}
                 >
@@ -810,7 +810,7 @@ export default function CreateStoreScreen() {
                     {language === 'az' ? 'Dəyişdir' : 'Изменить'}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => setStoreData(prev => ({ ...prev, coverImage: '' }))}
                 >
@@ -821,7 +821,7 @@ export default function CreateStoreScreen() {
               </View>
             </View>
           ) : (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.imageUploadButton}
               onPress={handleCoverImagePicker}
             >
@@ -833,11 +833,11 @@ export default function CreateStoreScreen() {
           )}
         </View>
       </View>
-      
+
       <Text style={styles.sectionTitle}>
         {language === 'az' ? 'Əsas Məlumatlar' : 'Основная информация'}
       </Text>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>
           {language === 'az' ? 'Mağaza Adı *' : 'Название магазина *'}
@@ -855,7 +855,7 @@ export default function CreateStoreScreen() {
           maxLength={50}
         />
       </View>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>
           {language === 'az' ? 'Kateqoriya Adı *' : 'Название категории *'}
@@ -873,7 +873,7 @@ export default function CreateStoreScreen() {
           maxLength={50}
         />
       </View>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>
           {language === 'az' ? 'Ünvan' : 'Адрес'}
@@ -886,7 +886,7 @@ export default function CreateStoreScreen() {
           placeholderTextColor={Colors.textSecondary}
         />
       </View>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>
           {language === 'az' ? 'Təsvir' : 'Описание'}
@@ -910,11 +910,11 @@ export default function CreateStoreScreen() {
           {storeData.description.length}/500
         </Text>
       </View>
-      
+
       <Text style={styles.sectionTitle}>
         {language === 'az' ? 'Əlaqə Məlumatları' : 'Контактная информация'}
       </Text>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>
           {language === 'az' ? 'Telefon' : 'Телефон'}
@@ -927,7 +927,7 @@ export default function CreateStoreScreen() {
             const sanitized = text.replace(/[^0-9+\s]/g, '');
             setStoreData(prev => ({
               ...prev,
-              contactInfo: { ...prev.contactInfo, phone: sanitized }
+              contactInfo: { ...prev.contactInfo, phone: sanitized },
             }));
           }}
           placeholder="+994 XX XXX XX XX"
@@ -935,7 +935,7 @@ export default function CreateStoreScreen() {
           keyboardType="phone-pad"
         />
       </View>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Email</Text>
         <TextInput
@@ -943,14 +943,14 @@ export default function CreateStoreScreen() {
           value={storeData.contactInfo.email}
           onChangeText={(text) => setStoreData(prev => ({
             ...prev,
-            contactInfo: { ...prev.contactInfo, email: text }
+            contactInfo: { ...prev.contactInfo, email: text },
           }))}
           placeholder="example@email.com"
           placeholderTextColor={Colors.textSecondary}
           keyboardType="email-address"
         />
       </View>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>WhatsApp</Text>
         <TextInput
@@ -961,7 +961,7 @@ export default function CreateStoreScreen() {
             const sanitized = text.replace(/[^0-9+\s]/g, '');
             setStoreData(prev => ({
               ...prev,
-              contactInfo: { ...prev.contactInfo, whatsapp: sanitized }
+              contactInfo: { ...prev.contactInfo, whatsapp: sanitized },
             }));
           }}
           placeholder="+994 XX XXX XX XX"
@@ -969,7 +969,7 @@ export default function CreateStoreScreen() {
           keyboardType="phone-pad"
         />
       </View>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>
           {language === 'az' ? 'Veb sayt' : 'Веб-сайт'}
@@ -979,7 +979,7 @@ export default function CreateStoreScreen() {
           value={storeData.contactInfo.website}
           onChangeText={(text) => setStoreData(prev => ({
             ...prev,
-            contactInfo: { ...prev.contactInfo, website: text }
+            contactInfo: { ...prev.contactInfo, website: text },
           }))}
           placeholder="https://example.com"
           placeholderTextColor={Colors.textSecondary}
@@ -993,7 +993,7 @@ export default function CreateStoreScreen() {
     const { mobile, digital, bank } = {
       mobile: paymentMethods.filter(method => method.category === 'mobile'),
       digital: paymentMethods.filter(method => method.category === 'digital'),
-      bank: paymentMethods.filter(method => method.category === 'bank')
+      bank: paymentMethods.filter(method => method.category === 'bank'),
     };
 
     return (
@@ -1001,7 +1001,7 @@ export default function CreateStoreScreen() {
         <Text style={styles.stepTitle}>
           {language === 'az' ? 'Ödəniş Üsulu' : 'Способ оплаты'}
         </Text>
-        
+
         <Text style={styles.sectionTitle}>
           {language === 'az' ? 'Mobil Operatorlar' : 'Мобильные операторы'}
         </Text>
@@ -1010,7 +1010,7 @@ export default function CreateStoreScreen() {
             key={method.id}
             style={[
               styles.paymentMethod,
-              selectedPayment === method.id && styles.paymentMethodSelected
+              selectedPayment === method.id && styles.paymentMethodSelected,
             ]}
             onPress={() => setSelectedPayment(method.id)}
           >
@@ -1024,7 +1024,7 @@ export default function CreateStoreScreen() {
             )}
           </TouchableOpacity>
         ))}
-        
+
         <Text style={styles.sectionTitle}>
           {language === 'az' ? 'Rəqəmsal Ödəniş' : 'Цифровые платежи'}
         </Text>
@@ -1033,7 +1033,7 @@ export default function CreateStoreScreen() {
             key={method.id}
             style={[
               styles.paymentMethod,
-              selectedPayment === method.id && styles.paymentMethodSelected
+              selectedPayment === method.id && styles.paymentMethodSelected,
             ]}
             onPress={() => setSelectedPayment(method.id)}
           >
@@ -1047,7 +1047,7 @@ export default function CreateStoreScreen() {
             )}
           </TouchableOpacity>
         ))}
-        
+
         <Text style={styles.sectionTitle}>
           {language === 'az' ? 'Bank Kartları' : 'Банковские карты'}
         </Text>
@@ -1056,7 +1056,7 @@ export default function CreateStoreScreen() {
             key={method.id}
             style={[
               styles.paymentMethod,
-              selectedPayment === method.id && styles.paymentMethodSelected
+              selectedPayment === method.id && styles.paymentMethodSelected,
             ]}
             onPress={() => setSelectedPayment(method.id)}
           >
@@ -1077,13 +1077,13 @@ export default function CreateStoreScreen() {
   const renderConfirmation = () => {
     const selectedPlanData = plans.find(p => p.id === selectedPlan);
     const selectedPaymentData = paymentMethods.find(p => p.id === selectedPayment);
-    
+
     return (
       <View style={styles.stepContent}>
         <Text style={styles.stepTitle}>
           {language === 'az' ? 'Təsdiq' : 'Подтверждение'}
         </Text>
-        
+
         <View style={styles.confirmationCard}>
           <Text style={styles.confirmationTitle}>
             {language === 'az' ? 'Mağaza Məlumatları' : 'Информация о магазине'}
@@ -1125,7 +1125,7 @@ export default function CreateStoreScreen() {
             </Text>
           )}
         </View>
-        
+
         <View style={styles.confirmationCard}>
           <Text style={styles.confirmationTitle}>
             {language === 'az' ? 'Seçilmiş Paket' : 'Выбранный пакет'}
@@ -1157,13 +1157,13 @@ export default function CreateStoreScreen() {
             <Text style={styles.confirmationLabel}>
               {language === 'az' ? 'Mağaza növü: ' : 'Тип магазина: '}
             </Text>
-            {isFirstStore 
+            {isFirstStore
               ? (language === 'az' ? 'İlk mağaza' : 'Первый магазин')
               : (language === 'az' ? 'Əlavə mağaza' : 'Дополнительный магазин')
             }
           </Text>
         </View>
-        
+
         <View style={styles.confirmationCard}>
           <Text style={styles.confirmationTitle}>
             {language === 'az' ? 'Ödəniş Üsulu' : 'Способ оплаты'}
@@ -1178,13 +1178,13 @@ export default function CreateStoreScreen() {
 
   const renderMyStoreSection = () => {
     if (!userStore) return null;
-    
+
     return (
       <View style={styles.myStoreSection}>
         <Text style={styles.myStoreTitle}>
           {language === 'az' ? 'Mənim Mağazam' : 'Мой магазин'}
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.myStoreCard}
           onPress={() => router.push(`/store/${userStore.id}`)}
         >
@@ -1216,7 +1216,7 @@ export default function CreateStoreScreen() {
             </View>
           </View>
           <View style={styles.myStoreActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={() => router.push(`/store/add-listing/${userStore.id}`)}
             >
@@ -1224,7 +1224,7 @@ export default function CreateStoreScreen() {
                 {language === 'az' ? 'Elan Əlavə Et' : 'Добавить объявление'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.actionButton, styles.secondaryButton]}
               onPress={() => router.push(`/store/promote/${userStore.id}`)}
             >
@@ -1234,21 +1234,21 @@ export default function CreateStoreScreen() {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
-        
+
         {/* Store Settings Section */}
         <View style={styles.storeSettingsSection}>
           <Text style={styles.settingsSectionTitle}>
             {language === 'az' ? 'Mağaza Tənzimləmələri' : 'Настройки магазина'}
           </Text>
-          
+
 
           {/* Analytics */}
           <View style={styles.settingsGroup}>
             <Text style={styles.settingsGroupTitle}>
               {language === 'az' ? 'Analitika və Hesabatlar' : 'Аналитика и отчеты'}
             </Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.settingItem}
               onPress={() => router.push('/store-analytics')}
             >
@@ -1265,14 +1265,14 @@ export default function CreateStoreScreen() {
               </View>
             </TouchableOpacity>
           </View>
-          
+
           {/* Reviews */}
           <View style={styles.settingsGroup}>
             <Text style={styles.settingsGroupTitle}>
               {language === 'az' ? 'Reytinq və Rəylər' : 'Рейтинг и отзывы'}
             </Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.settingItem}
               onPress={() => router.push('/store-reviews')}
             >
@@ -1289,14 +1289,14 @@ export default function CreateStoreScreen() {
               </View>
             </TouchableOpacity>
           </View>
-          
+
           {/* Payment */}
           <View style={styles.settingsGroup}>
             <Text style={styles.settingsGroupTitle}>
               {language === 'az' ? 'Abunəlik və Ödəniş' : 'Подписка и оплата'}
             </Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.settingItem}
               onPress={() => router.push('/payment-history')}
             >
@@ -1313,14 +1313,14 @@ export default function CreateStoreScreen() {
               </View>
             </TouchableOpacity>
           </View>
-          
+
           {/* Dangerous Actions */}
           <View style={styles.settingsGroup}>
             <Text style={styles.settingsGroupTitle}>
               {language === 'az' ? 'Təhlükəli Əməliyyatlar' : 'Опасные операции'}
             </Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.deleteStoreButton}
               onPress={handleDeleteStore}
             >
@@ -1331,9 +1331,9 @@ export default function CreateStoreScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         <View style={styles.createStoreButtonContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.createNewStoreButton}
             onPress={() => setCurrentStep(1)}
           >
@@ -1341,9 +1341,9 @@ export default function CreateStoreScreen() {
               {language === 'az' ? 'Yeni Mağaza Yarat' : 'Создать новый магазин'}
             </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={() => router.push('/store-settings')} 
+
+          <TouchableOpacity
+            onPress={() => router.push('/store-settings')}
             style={styles.settingsButton}
           >
             <Settings size={20} color={Colors.primary} />
@@ -1369,16 +1369,16 @@ export default function CreateStoreScreen() {
         </View>
         <View style={styles.placeholder} />
       </View>
-      
+
       {currentStep > 0 && renderStepIndicator()}
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {currentStep === 0 && renderMyStoreSection()}
         {currentStep === 1 && renderPlanSelection()}
         {currentStep === 2 && renderStoreInfo()}
         {currentStep === 3 && renderConfirmation()}
       </ScrollView>
-      
+
       {currentStep > 0 && (
         <View style={styles.footer}>
           {currentStep > 1 && (
@@ -1391,16 +1391,16 @@ export default function CreateStoreScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          
+
           <TouchableOpacity
             style={[
               styles.nextButton,
-              (currentStep === 1 && !selectedPlan) && styles.nextButtonDisabled
+              (currentStep === 1 && !selectedPlan) && styles.nextButtonDisabled,
             ]}
             onPress={() => {
               storeLogger.debug('Next/Create button pressed, currentStep:', currentStep);
               storeLogger.debug('selectedPlan:', selectedPlan, 'selectedPayment:', selectedPayment);
-              
+
               // CRITICAL: Only create store on final step (step 3)
               if (currentStep === 3) {
                 storeLogger.debug('🔥 FINAL STEP: Creating store');
@@ -1414,7 +1414,7 @@ export default function CreateStoreScreen() {
           >
             <Text style={[
               styles.nextButtonText,
-              (currentStep === 1 && !selectedPlan) && styles.nextButtonTextDisabled
+              (currentStep === 1 && !selectedPlan) && styles.nextButtonTextDisabled,
             ]}>
               {currentStep === 3
                 ? (language === 'az' ? 'Mağaza Yarat' : 'Создать магазин')

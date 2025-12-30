@@ -15,7 +15,7 @@ export const resendPhoneOTPProcedure = publicProcedure
   .mutation(async ({ input }) => {
     try {
       const phone = input.phone.trim().replace(/\s+/g, '');
-      
+
       if (!validatePhone(phone)) {
         throw new Error('Yanlış telefon nömrəsi formatı');
       }
@@ -30,22 +30,22 @@ export const resendPhoneOTPProcedure = publicProcedure
         throw new Error(
           throttle.reason === 'cooldown'
             ? `Zəhmət olmasa yenidən göndərmək üçün ${seconds} saniyə gözləyin.`
-            : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`
+            : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`,
         );
       }
-      
+
       // Generate new OTP
       const otp = generatePhoneOTP();
       const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-      
+
       // Store OTP
       phoneOtpStore.set(phone, { code: otp, expiresAt, phone });
-      
+
       // Send SMS
       await smsService.sendOTP(phone, otp, 'verification');
-      
+
       logger.info(`[Phone Registration] OTP resent to ${phone}`);
-      
+
       return {
         success: true,
         message: 'OTP yenidən göndərildi',

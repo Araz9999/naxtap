@@ -14,18 +14,18 @@ async function callTRPC(procedure, input, token = null) {
   const headers = {
     'Content-Type': 'application/json',
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
   try {
-    // tRPC HTTP format: POST /api/trpc/{procedure} 
+    // tRPC HTTP format: POST /api/trpc/{procedure}
     // Body should be serialized with superjson (since backend uses superjson transformer)
     const serialized = superjson.serialize(input);
     const body = JSON.stringify(serialized);
     console.log(`   📤 Calling ${procedure}...`);
-    
+
     const response = await fetch(`${BASE_URL}/api/trpc/${procedure}`, {
       method: 'POST',
       headers,
@@ -46,9 +46,9 @@ async function callTRPC(procedure, input, token = null) {
     const data = await response.json();
     return { response, data };
   } catch (error) {
-    return { 
-      response: { ok: false, status: 0 }, 
-      data: { error: error.message, stack: error.stack } 
+    return {
+      response: { ok: false, status: 0 },
+      data: { error: error.message, stack: error.stack },
     };
   }
 }

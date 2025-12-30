@@ -35,7 +35,7 @@ import {
   Info,
   Percent,
   Megaphone,
-  Tag
+  Tag,
 } from 'lucide-react-native';
 import ListingCard from '@/components/ListingCard';
 import StoreListingManager from '@/components/StoreListingManager';
@@ -53,53 +53,53 @@ export default function StoreDetailScreen() {
   const { listings } = useListingStore();
   const { currentUser } = useUserStore();
   const { addRating, getRatingsForTarget, getRatingStats, loadRatings } = useRatingStore();
-  
+
   const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'listings' | 'ratings'>('listings');
-  
+
   const store = stores.find(s => s.id === id);
-  
+
   // ✅ Simplified filter logic
   const storeListings = listings.filter((listing) => {
     if (listing.deletedAt) return false;
     if (!store) return false;
-    
+
     // Match by storeId or by owner (fallback for listings without store)
-    return listing.storeId === store.id || 
+    return listing.storeId === store.id ||
            (!listing.storeId && listing.userId === store.userId);
   });
-  
+
   // ✅ Log only if needed
   if (__DEV__ && storeListings.length === 0 && listings.length > 0) {
     storeLogger.warn('[StoreDetail] No listings found for store', {
       storeId: store?.id,
-      totalListings: listings.length
+      totalListings: listings.length,
     });
   }
   const isFollowing = currentUser && store ? isFollowingStore(currentUser.id, store.id) : false;
   const isOwner = currentUser && store ? currentUser.id === store.userId : false;
   const storeUsage = store ? getStoreUsage(store.id) : { used: 0, max: 0, remaining: 0, deleted: 0 };
-  
+
   // Get ratings data from store
   const storeRatings = store ? getRatingsForTarget(store.id, 'store') : [];
   const ratingStats = store ? getRatingStats(store.id, 'store') : { averageRating: 0, totalRatings: 0, ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
-  
+
   // Load ratings on component mount
   React.useEffect(() => {
     loadRatings();
   }, [loadRatings]);
-  
+
   const handleFollowToggle = async () => {
     if (!currentUser) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İzləmək üçün daxil olun' : 'Войдите для подписки'
+        language === 'az' ? 'İzləmək üçün daxil olun' : 'Войдите для подписки',
       );
       return;
     }
-    
+
     if (!store) return;
-    
+
     try {
       if (isFollowing) {
         await unfollowStore(currentUser.id, store.id);
@@ -110,66 +110,66 @@ export default function StoreDetailScreen() {
       storeLogger.error('Failed to toggle follow:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Əməliyyat zamanı xəta baş verdi' : 'Ошибка при выполнении операции'
+        language === 'az' ? 'Əməliyyat zamanı xəta baş verdi' : 'Ошибка при выполнении операции',
       );
     }
   };
-  
+
   const handleRatingSubmit = async (rating: number, comment?: string) => {
     if (!currentUser) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Reyting vermək üçün daxil olun' : 'Войдите для оценки'
+        language === 'az' ? 'Reyting vermək üçün daxil olun' : 'Войдите для оценки',
       );
       return;
     }
-    
+
     if (!store) return;
-    
+
     // Validation: Rating range
     if (rating < 1 || rating > 5) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Reyting 1-5 arasında olmalıdır' : 'Оценка должна быть от 1 до 5'
+        language === 'az' ? 'Reyting 1-5 arasında olmalıdır' : 'Оценка должна быть от 1 до 5',
       );
       return;
     }
-    
+
     // Validation: Comment length if provided
     if (comment && comment.trim().length > 500) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şərh maksimum 500 simvol ola bilər' : 'Комментарий не должен превышать 500 символов'
+        language === 'az' ? 'Şərh maksimum 500 simvol ola bilər' : 'Комментарий не должен превышать 500 символов',
       );
       return;
     }
-    
+
     try {
       await addRating({
         userId: currentUser.id,
         targetId: store.id,
         targetType: 'store',
         rating,
-        comment: comment?.trim()
+        comment: comment?.trim(),
       });
-      
+
       Alert.alert(
         language === 'az' ? 'Uğurlu' : 'Успешно',
-        language === 'az' ? 'Reyting əlavə edildi' : 'Оценка добавлена'
+        language === 'az' ? 'Reyting əlavə edildi' : 'Оценка добавлена',
       );
     } catch (error) {
       storeLogger.error('Failed to submit rating:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Reyting əlavə edilərkən xəta baş verdi' : 'Ошибка при добавлении оценки'
+        language === 'az' ? 'Reyting əlavə edilərkən xəta baş verdi' : 'Ошибка при добавлении оценки',
       );
     }
   };
-  
+
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}`);
   };
-  
+
   if (!store) {
     return (
       <View style={styles.container}>
@@ -179,13 +179,13 @@ export default function StoreDetailScreen() {
       </View>
     );
   }
-  
+
   const handleContact = async (type: 'phone' | 'email' | 'whatsapp', value: string) => {
     // ✅ Validate value
     if (!value || !value.trim()) {
       return; // Silently ignore if no value
     }
-    
+
     let url = '';
     switch (type) {
       case 'phone':
@@ -198,20 +198,20 @@ export default function StoreDetailScreen() {
         url = `whatsapp://send?phone=${value.replace(/\s/g, '')}`;
         break;
     }
-    
+
     try {
       // ✅ Check if URL can be opened
       const canOpen = await Linking.canOpenURL(url);
       if (!canOpen) {
         return; // Silently ignore if app not available
       }
-      
+
       await Linking.openURL(url);
     } catch (error) {
       storeLogger.error('[StoreDetail] Failed to open contact', { type, error });
     }
   };
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -221,7 +221,7 @@ export default function StoreDetailScreen() {
         <Text style={styles.headerTitle}>{store.name}</Text>
         <View style={styles.placeholder} />
       </View>
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Store Cover */}
         <View style={styles.coverContainer}>
@@ -232,7 +232,7 @@ export default function StoreDetailScreen() {
               <Package size={48} color={Colors.textSecondary} />
             </View>
           )}
-          
+
           <View style={styles.storeInfo}>
             <View style={styles.storeHeader}>
               {store.logo ? (
@@ -292,7 +292,7 @@ export default function StoreDetailScreen() {
                   </View>
                 </View>
                 <View style={styles.storeStats}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.ratingContainer}
                     onPress={() => setActiveTab('ratings')}
                   >
@@ -322,7 +322,7 @@ export default function StoreDetailScreen() {
                     </>
                   )}
                 </View>
-                
+
                 {/* Rate Store Button */}
                 {currentUser && !isOwner && (
                   <TouchableOpacity
@@ -337,26 +337,26 @@ export default function StoreDetailScreen() {
                 )}
               </View>
             </View>
-            
+
             {store.description && (
               <Text style={styles.storeDescription}>{store.description}</Text>
             )}
           </View>
         </View>
-        
+
         {/* Contact Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {language === 'az' ? 'Əlaqə Məlumatları' : 'Контактная информация'}
           </Text>
-          
+
           {store.address && (
             <View style={styles.contactItem}>
               <MapPin size={20} color={Colors.primary} />
               <Text style={styles.contactText}>{store.address}</Text>
             </View>
           )}
-          
+
           {store.contactInfo.phone && (
             <TouchableOpacity
               style={styles.contactItem}
@@ -366,7 +366,7 @@ export default function StoreDetailScreen() {
               <Text style={styles.contactText}>{store.contactInfo.phone}</Text>
             </TouchableOpacity>
           )}
-          
+
           {store.contactInfo.email && (
             <TouchableOpacity
               style={styles.contactItem}
@@ -376,7 +376,7 @@ export default function StoreDetailScreen() {
               <Text style={styles.contactText}>{store.contactInfo.email}</Text>
             </TouchableOpacity>
           )}
-          
+
           {store.contactInfo.whatsapp && (
             <TouchableOpacity
               style={styles.contactItem}
@@ -386,7 +386,7 @@ export default function StoreDetailScreen() {
               <Text style={styles.contactText}>{store.contactInfo.whatsapp}</Text>
             </TouchableOpacity>
           )}
-          
+
           {store.contactInfo.website && (
             <TouchableOpacity
               style={styles.contactItem}
@@ -397,7 +397,7 @@ export default function StoreDetailScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
+
         {/* Tabs */}
         <View style={styles.section}>
           <View style={styles.tabContainer}>
@@ -426,7 +426,7 @@ export default function StoreDetailScreen() {
               </View>
             </TouchableOpacity>
           </View>
-          
+
           {activeTab === 'listings' && (
             <>
               <View style={styles.sectionHeader}>
@@ -435,7 +435,7 @@ export default function StoreDetailScreen() {
                 </Text>
                 {isOwner && (
                   <View style={styles.ownerButtonsContainer}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.addListingButton}
                       onPress={() => router.push(`/store/add-listing/${store.id}`)}
                     >
@@ -447,123 +447,123 @@ export default function StoreDetailScreen() {
                   </View>
                 )}
               </View>
-          
-          {/* Store Management Actions */}
-          {isOwner && (
-            <View style={styles.managementSection}>
-              <Text style={styles.managementTitle}>
-                {language === 'az' ? 'Mağaza İdarəetməsi' : 'Управление магазином'}
-              </Text>
-              
-              {/* Main Discount & Campaign Management Button */}
-              <TouchableOpacity
-                style={styles.mainManagementButton}
-                onPress={() => router.push('/store-discount-manager')}
-              >
-                <View style={styles.mainButtonContent}>
-                  <View style={styles.mainButtonIcon}>
-                    <Tag size={24} color="white" />
-                  </View>
-                  <View style={styles.mainButtonTextContainer}>
-                    <Text style={styles.mainButtonTitle}>
-                      {language === 'az' ? 'Endirim və Kampaniya Mərkəzi' : 'Центр скидок и кампаний'}
-                    </Text>
-                    <Text style={styles.mainButtonSubtitle}>
-                      {language === 'az' 
-                        ? 'Məhsullarınıza endirim tətbiq edin, kampaniyalar yaradın və satışları artırın'
-                        : 'Применяйте скидки к товарам, создавайте кампании и увеличивайте продажи'
-                      }
-                    </Text>
-                  </View>
-                  <View style={styles.mainButtonArrow}>
-                    <ArrowLeft size={20} color="white" style={{ transform: [{ rotate: '180deg' }] }} />
-                  </View>
-                </View>
-              </TouchableOpacity>
-              
-              <View style={styles.managementButtons}>
-                <TouchableOpacity
-                  style={styles.managementButton}
-                  onPress={() => router.push('/store/discount/create')}
-                >
-                  <View style={styles.managementButtonIcon}>
-                    <Percent size={20} color={Colors.primary} />
-                  </View>
-                  <Text style={styles.managementButtonText}>
-                    {language === 'az' ? 'Endirim Yarat' : 'Создать скидку'}
+
+              {/* Store Management Actions */}
+              {isOwner && (
+                <View style={styles.managementSection}>
+                  <Text style={styles.managementTitle}>
+                    {language === 'az' ? 'Mağaza İdarəetməsi' : 'Управление магазином'}
                   </Text>
-                  <Text style={styles.managementButtonDescription}>
-                    {language === 'az' ? 'Tək məhsula endirim' : 'Скидка на товар'}
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.managementButton}
-                  onPress={() => router.push('/store/campaign/create')}
-                >
-                  <View style={styles.managementButtonIcon}>
-                    <Megaphone size={20} color={Colors.secondary} />
-                  </View>
-                  <Text style={styles.managementButtonText}>
-                    {language === 'az' ? 'Kampaniya Yarat' : 'Создать кампанию'}
-                  </Text>
-                  <Text style={styles.managementButtonDescription}>
-                    {language === 'az' ? 'Toplu endirim kampaniyası' : 'Массовая кампания'}
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.managementButton}
-                  onPress={() => router.push('/store-promotion')}
-                >
-                  <View style={styles.managementButtonIcon}>
-                    <BarChart3 size={20} color={Colors.warning} />
-                  </View>
-                  <Text style={styles.managementButtonText}>
-                    {language === 'az' ? 'Reklam və Təşviq' : 'Реклама и продвижение'}
-                  </Text>
-                  <Text style={styles.managementButtonDescription}>
-                    {language === 'az' ? 'Mağazanı tanıt' : 'Продвигай магазин'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          
-          {isOwner && (
-            <View style={styles.storeStatsCard}>
-              <View style={styles.statItem}>
-                <BarChart3 size={20} color={Colors.primary} />
-                <View style={styles.statInfo}>
-                  <Text style={styles.statValue}>{storeUsage.used}/{storeUsage.max}</Text>
-                  <Text style={styles.statLabel}>
-                    {language === 'az' ? 'İstifadə edilmiş' : 'Использовано'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.statItem}>
-                <Package size={20} color={Colors.secondary} />
-                <View style={styles.statInfo}>
-                  <Text style={styles.statValue}>{storeUsage.remaining}</Text>
-                  <Text style={styles.statLabel}>
-                    {language === 'az' ? 'Qalan limit' : 'Остается'}
-                  </Text>
-                </View>
-              </View>
-              {storeUsage.deleted > 0 && (
-                <View style={styles.statItem}>
-                  <Package size={20} color={Colors.error} />
-                  <View style={styles.statInfo}>
-                    <Text style={styles.statValue}>{storeUsage.deleted}</Text>
-                    <Text style={styles.statLabel}>
-                      {language === 'az' ? 'Silinmiş' : 'Удалено'}
-                    </Text>
+
+                  {/* Main Discount & Campaign Management Button */}
+                  <TouchableOpacity
+                    style={styles.mainManagementButton}
+                    onPress={() => router.push('/store-discount-manager')}
+                  >
+                    <View style={styles.mainButtonContent}>
+                      <View style={styles.mainButtonIcon}>
+                        <Tag size={24} color="white" />
+                      </View>
+                      <View style={styles.mainButtonTextContainer}>
+                        <Text style={styles.mainButtonTitle}>
+                          {language === 'az' ? 'Endirim və Kampaniya Mərkəzi' : 'Центр скидок и кампаний'}
+                        </Text>
+                        <Text style={styles.mainButtonSubtitle}>
+                          {language === 'az'
+                            ? 'Məhsullarınıza endirim tətbiq edin, kampaniyalar yaradın və satışları artırın'
+                            : 'Применяйте скидки к товарам, создавайте кампании и увеличивайте продажи'
+                          }
+                        </Text>
+                      </View>
+                      <View style={styles.mainButtonArrow}>
+                        <ArrowLeft size={20} color="white" style={{ transform: [{ rotate: '180deg' }] }} />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+
+                  <View style={styles.managementButtons}>
+                    <TouchableOpacity
+                      style={styles.managementButton}
+                      onPress={() => router.push('/store/discount/create')}
+                    >
+                      <View style={styles.managementButtonIcon}>
+                        <Percent size={20} color={Colors.primary} />
+                      </View>
+                      <Text style={styles.managementButtonText}>
+                        {language === 'az' ? 'Endirim Yarat' : 'Создать скидку'}
+                      </Text>
+                      <Text style={styles.managementButtonDescription}>
+                        {language === 'az' ? 'Tək məhsula endirim' : 'Скидка на товар'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.managementButton}
+                      onPress={() => router.push('/store/campaign/create')}
+                    >
+                      <View style={styles.managementButtonIcon}>
+                        <Megaphone size={20} color={Colors.secondary} />
+                      </View>
+                      <Text style={styles.managementButtonText}>
+                        {language === 'az' ? 'Kampaniya Yarat' : 'Создать кампанию'}
+                      </Text>
+                      <Text style={styles.managementButtonDescription}>
+                        {language === 'az' ? 'Toplu endirim kampaniyası' : 'Массовая кампания'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.managementButton}
+                      onPress={() => router.push('/store-promotion')}
+                    >
+                      <View style={styles.managementButtonIcon}>
+                        <BarChart3 size={20} color={Colors.warning} />
+                      </View>
+                      <Text style={styles.managementButtonText}>
+                        {language === 'az' ? 'Reklam və Təşviq' : 'Реклама и продвижение'}
+                      </Text>
+                      <Text style={styles.managementButtonDescription}>
+                        {language === 'az' ? 'Mağazanı tanıt' : 'Продвигай магазин'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               )}
-            </View>
-          )}
-          
+
+              {isOwner && (
+                <View style={styles.storeStatsCard}>
+                  <View style={styles.statItem}>
+                    <BarChart3 size={20} color={Colors.primary} />
+                    <View style={styles.statInfo}>
+                      <Text style={styles.statValue}>{storeUsage.used}/{storeUsage.max}</Text>
+                      <Text style={styles.statLabel}>
+                        {language === 'az' ? 'İstifadə edilmiş' : 'Использовано'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Package size={20} color={Colors.secondary} />
+                    <View style={styles.statInfo}>
+                      <Text style={styles.statValue}>{storeUsage.remaining}</Text>
+                      <Text style={styles.statLabel}>
+                        {language === 'az' ? 'Qalan limit' : 'Остается'}
+                      </Text>
+                    </View>
+                  </View>
+                  {storeUsage.deleted > 0 && (
+                    <View style={styles.statItem}>
+                      <Package size={20} color={Colors.error} />
+                      <View style={styles.statInfo}>
+                        <Text style={styles.statValue}>{storeUsage.deleted}</Text>
+                        <Text style={styles.statLabel}>
+                          {language === 'az' ? 'Silinmiş' : 'Удалено'}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+
               {isOwner ? (
                 <StoreListingManager storeId={store.id} listings={storeListings} />
               ) : (
@@ -586,7 +586,7 @@ export default function StoreDetailScreen() {
               )}
             </>
           )}
-          
+
           {activeTab === 'ratings' && (
             <>
               <View style={styles.sectionHeader}>
@@ -594,7 +594,7 @@ export default function StoreDetailScreen() {
                   {language === 'az' ? 'Reytinqlər və Şərhlər' : 'Отзывы и рейтинги'}
                 </Text>
               </View>
-              
+
               {/* Rating Summary */}
               {ratingStats.totalRatings > 0 && (
                 <View style={styles.ratingSummary}>
@@ -609,16 +609,16 @@ export default function StoreDetailScreen() {
                   </View>
                 </View>
               )}
-              
-              <RatingsList 
-                ratings={storeRatings} 
+
+              <RatingsList
+                ratings={storeRatings}
                 onUserPress={handleUserPress}
               />
             </>
           )}
         </View>
       </ScrollView>
-      
+
       <RatingModal
         visible={showRatingModal}
         onClose={() => setShowRatingModal(false)}

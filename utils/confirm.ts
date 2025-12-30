@@ -22,7 +22,7 @@ export async function confirm(message: string, title?: string): Promise<boolean>
         { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
         { text: 'OK', onPress: () => resolve(true) },
       ],
-      { cancelable: true, onDismiss: () => resolve(false) }
+      { cancelable: true, onDismiss: () => resolve(false) },
     );
   });
 }
@@ -50,7 +50,7 @@ export async function prompt(message: string, title?: string, defaultValue?: str
           { text: 'OK', onPress: (text) => resolve(text || null) },
         ],
         'plain-text',
-        defaultValue
+        defaultValue,
       );
     } else {
       Alert.alert(
@@ -60,7 +60,7 @@ export async function prompt(message: string, title?: string, defaultValue?: str
           { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
           { text: 'OK', onPress: () => resolve(defaultValue || '') },
         ],
-        { cancelable: true, onDismiss: () => resolve(null) }
+        { cancelable: true, onDismiss: () => resolve(null) },
       );
     }
   });

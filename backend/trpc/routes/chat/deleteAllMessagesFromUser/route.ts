@@ -8,7 +8,7 @@ export default protectedProcedure
   .input(
     z.object({
       userId: z.string().min(1),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const currentUserId = ctx.user.userId;

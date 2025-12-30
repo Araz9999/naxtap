@@ -18,7 +18,7 @@ export const updateModeratorPermissionsProcedure = adminProcedure
     z.object({
       userId: z.string(),
       permissions: z.array(permissionSchema),
-    })
+    }),
   )
   .mutation(async ({ input, ctx }) => {
     try {

@@ -6,7 +6,7 @@ export const getTransactionStatusProcedure = publicProcedure
   .input(
     z.object({
       transactionId: z.string().min(1).describe('Payriff transaction ID'),
-    })
+    }),
   )
   .query(async ({ input }) => {
     // Avoid logging transaction IDs in production

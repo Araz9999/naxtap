@@ -25,12 +25,12 @@ const IncomingCallModal = React.memo(function IncomingCallModal() {
 
   const caller = React.useMemo(
     () => incomingCall ? users.find(user => user.id === incomingCall.callerId) : undefined,
-    [incomingCall]
+    [incomingCall],
   );
-  
+
   const listing = React.useMemo(
     () => incomingCall ? listings.find(l => l.id === incomingCall.listingId) : undefined,
-    [incomingCall]
+    [incomingCall],
   );
 
   const handleAnswer = React.useCallback(() => {
@@ -43,7 +43,7 @@ const IncomingCallModal = React.memo(function IncomingCallModal() {
     if (!incomingCall) return;
     declineCall(incomingCall.id);
   }, [incomingCall, declineCall]);
-  
+
   if (!incomingCall) return null;
 
   return (
@@ -55,15 +55,15 @@ const IncomingCallModal = React.memo(function IncomingCallModal() {
     >
       <View style={styles.container}>
         <View style={styles.backgroundOverlay} />
-        
+
         <View style={styles.content}>
           <Text style={styles.incomingText}>
             {language === 'az' ? 'Gələn zəng' : 'Входящий звонок'}
           </Text>
-          
+
           <View style={styles.callerInfo}>
-            <Image 
-              source={{ uri: caller?.avatar }} 
+            <Image
+              source={{ uri: caller?.avatar }}
               style={styles.callerAvatar}
             />
             <Text style={styles.callerName}>{caller?.name}</Text>
@@ -71,13 +71,13 @@ const IncomingCallModal = React.memo(function IncomingCallModal() {
               {listing?.title ? (typeof listing.title === 'string' ? listing.title : listing.title[language]) : ''}
             </Text>
             <Text style={styles.callTypeText}>
-              {incomingCall.type === 'video' 
+              {incomingCall.type === 'video'
                 ? (language === 'az' ? 'Video zəng' : 'Видео звонок')
                 : (language === 'az' ? 'Səsli zəng' : 'Голосовой звонок')
               }
             </Text>
           </View>
-          
+
           <View style={styles.callActions}>
             <TouchableOpacity
               style={[styles.actionButton, styles.declineButton]}
@@ -86,7 +86,7 @@ const IncomingCallModal = React.memo(function IncomingCallModal() {
             >
               <PhoneOff size={28} color="#fff" />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.actionButton, styles.answerButton]}
               onPress={handleAnswer}
@@ -99,9 +99,9 @@ const IncomingCallModal = React.memo(function IncomingCallModal() {
               )}
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.privacyNote}>
-            {language === 'az' 
+            {language === 'az'
               ? 'Bu istifadəçi telefon nömrəsini gizlədib. Zəng tətbiq üzərindən həyata keçirilir.'
               : 'Этот пользователь скрыл номер телефона. Звонок осуществляется через приложение.'
             }

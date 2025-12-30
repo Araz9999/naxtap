@@ -8,14 +8,14 @@ export default publicProcedure
   }))
   .mutation(({ input }) => {
     const conversation = liveChatDb.conversations.getById(input.conversationId);
-    
+
     if (conversation && conversation.supportAgentId) {
       liveChatDb.agents.decrementActiveChats(conversation.supportAgentId);
     }
-    
+
     const updated = liveChatDb.conversations.update(input.conversationId, {
       status: 'closed',
     });
-    
+
     return updated;
   });
