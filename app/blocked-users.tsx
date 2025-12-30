@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { useUserStore } from '@/store/userStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { getColors } from '@/constants/colors';
-import { users } from '@/mocks/users';
+import { trpcClient } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
 
 // --- STYLES (Defined once at the top) ---
@@ -114,8 +114,26 @@ export default function BlockedUsersScreen() {
   const colors = getColors(themeMode, colorTheme);
 
   const [isUnblocking, setIsUnblocking] = useState<string | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // ... (useEffect and texts object remain the same) ...
+  // Load all users dynamically
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        const allUsers = await trpcClient.user.getAllUsers.query();
+        setUsers(allUsers);
+      } catch (error) {
+        logger.error('[BlockedUsersScreen] Failed to load users:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
   React.useEffect(() => {
     if (!isAuthenticated || !currentUser) {
       logger.error('[BlockedUsersScreen] User not authenticated');
@@ -160,7 +178,7 @@ export default function BlockedUsersScreen() {
       return [];
     }
     return users.filter(user => user && typeof user.id === 'string' && blockedUsers.includes(user.id));
-  }, [blockedUsers]);
+  }, [blockedUsers, users]);
 
   // ... (handleUnblock function remains the same) ...
   const handleUnblock = async (userId: string, userName: string) => {

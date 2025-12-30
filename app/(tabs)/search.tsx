@@ -193,8 +193,8 @@ export default function SearchScreen() {
         Alert.alert(
           language === 'az' ? 'Şəkillə axtarış' : 'Поиск по изображению',
           language === 'az'
-            ? 'Şəkillə axtarış funksiyası hazırda demo rejimindədir'
-            : 'Функция поиска по изображению сейчас в демо-режиме',
+            ? 'Şəkillə axtarış funksiyası tezliklə aktiv olacaq'
+            : 'Функция поиска по изображению скоро будет доступна',
         );
       }
     } catch (error) {
@@ -242,8 +242,8 @@ export default function SearchScreen() {
         Alert.alert(
           language === 'az' ? 'Şəkillə axtarış' : 'Поиск по изображению',
           language === 'az'
-            ? 'Şəkillə axtarış funksiyası hazırda demo rejimindədir'
-            : 'Функция поиска по изображению сейчас в демо-режиме',
+            ? 'Şəkillə axtarış funksiyası tezliklə aktiv olacaq'
+            : 'Функция поиска по изображению скоро будет доступна',
         );
       }
     } catch (error) {

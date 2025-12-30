@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,7 @@ import { Stack, router } from 'expo-router';
 import { useCallStore } from '@/store/callStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
-import { users } from '@/mocks/users';
-import { listings } from '@/mocks/listings';
+import { useListingStore } from '@/store/listingStore';
 import Colors from '@/constants/colors';
 import {
   Phone,
@@ -27,13 +26,38 @@ import {
   MoreVertical,
 } from 'lucide-react-native';
 import { Call } from '@/types/call';
-
+import { trpcClient } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
+
+// User cache for performance
+const userCache = new Map<string, any>();
+
 export default function CallHistoryScreen() {
   const { calls, markCallAsRead, initiateCall, deleteCall, clearAllCallHistory } = useCallStore();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
+  const { listings } = useListingStore();
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
+  const [users, setUsers] = useState<Map<string, any>>(new Map());
+
+  // Load users dynamically
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const allUsers = await trpcClient.user.getAllUsers.query();
+        const userMap = new Map();
+        allUsers.forEach((user: any) => {
+          userMap.set(user.id, user);
+          userCache.set(user.id, user);
+        });
+        setUsers(userMap);
+      } catch (error) {
+        logger.error('[CallHistory] Failed to load users:', error);
+      }
+    };
+
+    loadUsers();
+  }, []);
 
   logger.info('[CallHistory] Screen opened:', {
     userId: currentUser?.id,
@@ -162,7 +186,7 @@ export default function CallHistoryScreen() {
         return;
       }
 
-      const otherUser = users.find(u => u.id === otherUserId);
+      const otherUser = users.get(otherUserId);
 
       if (otherUser?.privacySettings?.hidePhoneNumber) {
         // Initiate app call with same type as previous call
@@ -274,7 +298,7 @@ export default function CallHistoryScreen() {
 
   const renderCallItem = ({ item }: { item: Call }) => {
     const otherUserId = item.callerId === currentUser?.id ? item.receiverId : item.callerId;
-    const otherUser = users.find(user => user.id === otherUserId);
+    const otherUser = users.get(otherUserId);
     const listing = listings.find(l => l.id === item.listingId);
     const isUnread = !item.isRead && item.receiverId === currentUser?.id;
     const isSwipedOpen = swipedItemId === item.id;

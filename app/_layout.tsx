@@ -7,8 +7,8 @@ import { useThemeStore } from '@/store/themeStore';
 import { useRatingStore } from '@/store/ratingStore';
 import { useCallStore } from '@/store/callStore';
 import { useUserStore } from '@/store/userStore';
-import { initListingStoreInterval, cleanupListingStoreInterval } from '@/store/listingStore';
-import { initStoreStoreInterval, cleanupStoreStoreInterval } from '@/store/storeStore';
+import { useListingStore, initListingStoreInterval, cleanupListingStoreInterval } from '@/store/listingStore';
+import { useStoreStore, initStoreStoreInterval, cleanupStoreStoreInterval } from '@/store/storeStore';
 import { getColors } from '@/constants/colors';
 import IncomingCallModal from '@/components/IncomingCallModal';
 import { LanguageProvider } from '@/store/languageStore';
@@ -77,9 +77,40 @@ function RootLayoutNav() {
   const { loadRatings } = useRatingStore();
   const { initializeSounds, pollIncomingCalls } = useCallStore();
   const { currentUser } = useUserStore();
+  const { fetchListings } = useListingStore();
+  const { fetchStores, fetchUserStore } = useStoreStore();
 
   // Memoize colors to prevent recalculation
   const colors = useMemo(() => getColors(themeMode, colorTheme), [themeMode, colorTheme]);
+
+  // Initialize application data on startup
+  useEffect(() => {
+    const initializeAppData = async () => {
+      try {
+        logger.info('[App] Initializing application data...');
+        
+        // Load all listings
+        await fetchListings();
+        logger.info('[App] Listings loaded successfully');
+        
+        // Load all stores
+        await fetchStores();
+        logger.info('[App] Stores loaded successfully');
+        
+        // Load user's store if authenticated
+        if (currentUser) {
+          await fetchUserStore(currentUser.id);
+          logger.info('[App] User store loaded successfully');
+        }
+        
+        logger.info('[App] Application data initialized successfully');
+      } catch (error) {
+        logger.error('[App] Failed to initialize application data:', error);
+      }
+    };
+
+    initializeAppData();
+  }, [fetchListings, fetchStores, fetchUserStore, currentUser]);
 
   // Load ratings on app start (only once)
   useEffect(() => {

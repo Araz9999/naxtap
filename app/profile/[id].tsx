@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
 import { useRatingStore } from '@/store/ratingStore';
 import { useCallStore } from '@/store/callStore';
-import { users } from '@/mocks/users';
-import { listings } from '@/mocks/listings';
+import { useListingStore } from '@/store/listingStore';
 import ListingCard from '@/components/ListingCard';
 import Colors from '@/constants/colors';
 import { Star, MessageCircle, Phone, MessageSquare, MoreVertical } from 'lucide-react-native';
@@ -16,26 +15,58 @@ import RatingModal from '@/components/RatingModal';
 import RatingsList from '@/components/RatingsList';
 import { RatingWithUser } from '@/types/rating';
 import UserActionModal from '@/components/UserActionModal';
-
+import { trpcClient } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
+
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
   const { addRating, getRatingsForTarget, getRatingStats, loadRatings } = useRatingStore();
   const { initiateCall } = useCallStore();
+  const { listings } = useListingStore();
   const router = useRouter();
 
   const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
   const [showUserActionModal, setShowUserActionModal] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'listings' | 'ratings'>('listings');
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Load user from API
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        setLoading(true);
+        const userData = await trpcClient.user.getUser.query({ id: id as string });
+        setUser(userData);
+      } catch (error) {
+        logger.error('[ProfileScreen] Failed to load user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (id) {
+      loadUser();
+    }
+  }, [id]);
 
   // Load ratings on component mount
   React.useEffect(() => {
     loadRatings();
   }, [loadRatings]);
 
-  const user = users.find(u => u.id === id);
+  if (loading) {
+    return (
+      <View style={styles.notFound}>
+        <Text style={styles.notFoundText}>
+          {language === 'az' ? 'Yüklənir...' : 'Загрузка...'}
+        </Text>
+      </View>
+    );
+  }
+
   if (!user) {
     return (
       <View style={styles.notFound}>

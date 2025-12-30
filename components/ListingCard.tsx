@@ -12,11 +12,14 @@ import { useThemeStore } from '@/store/themeStore';
 import { useMessageStore } from '@/store/messageStore';
 import { useDiscountStore } from '@/store/discountStore';
 import { getColors } from '@/constants/colors';
-import { users } from '@/mocks/users';
 import CountdownTimer from '@/components/CountdownTimer';
 import type { Language } from '@/store/languageStore';
-
+import { trpcClient } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
+
+// User cache for performance
+const userCache = new Map<string, any>();
+
 // Stable, top-level modal component to avoid remounts while typing
 interface MessageModalProps {
   visible: boolean;
@@ -28,6 +31,7 @@ interface MessageModalProps {
   listing: Listing;
   language: Language;
   colors: Record<string, string>;
+  seller: any;
 }
 
 const MessageModal = React.memo(function MessageModal({
@@ -40,8 +44,8 @@ const MessageModal = React.memo(function MessageModal({
   listing,
   language,
   colors,
+  seller,
 }: MessageModalProps) {
-  const seller = users.find(user => user.id === listing.userId);
 
   return (
     <Modal
@@ -163,6 +167,32 @@ const ListingCard = React.memo(function ListingCard({
   const { themeMode, colorTheme, fontSize, showPriceInTitle, compactMode } = useThemeStore();
   const { getOrCreateConversation, addMessage } = useMessageStore();
   const { getActiveDiscountsForListing, getActiveCampaignsForListing } = useDiscountStore();
+
+  // State for seller
+  const [seller, setSeller] = useState<any>(null);
+
+  // Load seller data
+  useEffect(() => {
+    const loadSeller = async () => {
+      if (!listing.userId) return;
+      
+      // Check cache first
+      if (userCache.has(listing.userId)) {
+        setSeller(userCache.get(listing.userId));
+        return;
+      }
+
+      try {
+        const userData = await trpcClient.user.getUser.query({ id: listing.userId });
+        userCache.set(listing.userId, userData);
+        setSeller(userData);
+      } catch (error) {
+        logger.error('[ListingCard] Failed to load seller:', error);
+      }
+    };
+
+    loadSeller();
+  }, [listing.userId]);
 
   // Memoize expensive calculations
   const colors = useMemo(() => getColors(themeMode, colorTheme), [themeMode, colorTheme]);
@@ -1181,6 +1211,7 @@ const ListingCard = React.memo(function ListingCard({
         listing={listing}
         language={language}
         colors={colors}
+        seller={seller}
       />
     </Animated.View>
   );

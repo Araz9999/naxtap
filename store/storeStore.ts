@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import { Store, StorePlan, storePlans, StoreFollower, StoreNotification, StoreStatus } from '@/types/store';
-import { mockStores } from '@/mocks/stores';
 import type { Listing } from '@/types/listing';
-
 import { logger } from '@/utils/logger';
+import { trpcClient } from '@/lib/trpc';
 
 let storeStatusInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -52,6 +51,8 @@ interface StoreState {
   error: string | null;
 
   // Actions
+  fetchStores: () => Promise<void>;
+  fetchUserStore: (userId: string) => Promise<void>;
   createStore: (storeData: Omit<Store, 'id' | 'createdAt' | 'expiresAt' | 'adsUsed' | 'deletedListings' | 'isActive' | 'status' | 'gracePeriodEndsAt' | 'deactivatedAt' | 'archivedAt' | 'lastPaymentReminder' | 'followers' | 'rating' | 'totalRatings'>) => Promise<void>;
   checkStoreStatus: (storeId: string) => StoreStatus;
   updateStoreStatus: (storeId: string) => Promise<void>;
@@ -117,7 +118,7 @@ interface StoreState {
 }
 
 export const useStoreStore = create<StoreState>((set, get) => ({
-  stores: mockStores,
+  stores: [],
   userStore: null,
   activeStoreId: null,
   userStoreSettings: {},
@@ -125,6 +126,40 @@ export const useStoreStore = create<StoreState>((set, get) => ({
   notifications: [],
   isLoading: false,
   error: null,
+
+  fetchStores: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      const stores = await trpcClient.store.getAll.query();
+      set({ 
+        stores: stores as Store[], 
+        isLoading: false 
+      });
+    } catch (error) {
+      logger.error('[StoreStore] Failed to fetch stores:', error);
+      set({ 
+        error: 'Failed to load stores',
+        isLoading: false 
+      });
+    }
+  },
+
+  fetchUserStore: async (userId: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const store = await trpcClient.store.getByUserId.query({ userId });
+      set({ 
+        userStore: store as Store | null, 
+        isLoading: false 
+      });
+    } catch (error) {
+      logger.error('[StoreStore] Failed to fetch user store:', error);
+      set({ 
+        error: 'Failed to load user store',
+        isLoading: false 
+      });
+    }
+  },
 
   createStore: async (storeData) => {
     set({ isLoading: true, error: null });
@@ -144,30 +179,28 @@ export const useStoreStore = create<StoreState>((set, get) => ({
         throw new Error('User already has an active store. Multiple stores require additional purchase.');
       }
 
-      // BUG FIX: Generate unique ID with random component
-      const newStore: Store = {
-        ...storeData,
-        id: `store-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + storeData.plan.duration * 24 * 60 * 60 * 1000).toISOString(),
-        adsUsed: 0,
-        deletedListings: [],
-        isActive: true,
-        status: 'active',
-        gracePeriodEndsAt: undefined,
-        deactivatedAt: undefined,
-        archivedAt: undefined,
-        lastPaymentReminder: undefined,
-        followers: [],
-        rating: 0,
-        totalRatings: 0,
-      };
+      // Create store via API
+      const newStore = await trpcClient.store.create.mutate({
+        name: storeData.name,
+        categoryName: storeData.categoryName,
+        address: storeData.address,
+        contactInfo: storeData.contactInfo,
+        description: storeData.description,
+        logo: storeData.logo,
+        coverImage: storeData.coverImage,
+        planId: storeData.plan.id,
+        maxAds: storeData.plan.maxAds,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      });
 
       set(state => ({
-        stores: [...state.stores, newStore],
+        stores: [...state.stores, newStore as Store],
         isLoading: false,
       }));
-    } catch {
+      
+      logger.info('[StoreStore] Store created successfully:', newStore);
+    } catch (error) {
+      logger.error('[StoreStore] Failed to create store:', error);
       set({ error: 'Failed to create store', isLoading: false });
     }
   },

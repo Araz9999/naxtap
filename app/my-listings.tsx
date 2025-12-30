@@ -6,14 +6,13 @@ import { useUserStore } from '@/store/userStore';
 import { useListingStore } from '@/store/listingStore';
 import ListingCard from '@/components/ListingCard';
 import Colors from '@/constants/colors';
-import { users } from '@/mocks/users';
 import { Clock, AlertCircle, Edit, Trash2, TrendingUp, Eye, RefreshCw, Archive, Settings, Bell, DollarSign, Tag, Percent, Gift } from 'lucide-react-native';
 import { Listing } from '@/types/listing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { trpcClient } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
 
-// ✅ Helper function for price calculation with proper precision
+// Helper function for price calculation with proper precision
 const calculatePrice = (basePrice: number, discount: number): number => {
   return Math.round(basePrice * discount * 100) / 100;
 };
@@ -21,7 +20,7 @@ const calculatePrice = (basePrice: number, discount: number): number => {
 export default function MyListingsScreen() {
   const router = useRouter();
   const { language } = useLanguageStore();
-  const { isAuthenticated, canAfford, spendFromBalance, getTotalBalance } = useUserStore();
+  const { currentUser, isAuthenticated, canAfford, spendFromBalance, getTotalBalance } = useUserStore();
   const { listings, deleteListing, updateListing, getExpiringListings, getArchivedListings } = useListingStore();
   const [refreshing, setRefreshing] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
@@ -30,19 +29,16 @@ export default function MyListingsScreen() {
   const [archivedListings, setArchivedListings] = useState<Listing[]>([]);
   const [showArchived, setShowArchived] = useState(false);
 
-  // ✅ Memoize current user
-  const currentUser = useMemo(() => users[0], []);
-
-  // ✅ Memoize user listings to prevent infinite loops
+  // Memoize user listings to prevent infinite loops
   const userListings = useMemo(() => listings.filter(listing => {
-    if (listing.userId !== currentUser.id) return false;
+    if (!currentUser || listing.userId !== currentUser.id) return false;
 
     // Include personal listings (not in stores)
     if (!listing.storeId) return true;
 
     // Include promoted listings from stores
     return listing.isPremium || listing.isFeatured || listing.isVip || (listing.purchasedViews && listing.purchasedViews > 0);
-  }), [listings]);
+  }), [listings, currentUser]);
 
   // Check for expiring listings (3 days or less)
   // ✅ Memoized for performance

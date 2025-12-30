@@ -56,6 +56,7 @@ import { getModeratorsProcedure } from './routes/admin/getModerators/route';
 import { createModeratorProcedure } from './routes/admin/createModerator/route';
 import { updateModeratorPermissionsProcedure } from './routes/admin/updateModeratorPermissions/route';
 import { updateMeProcedure } from './routes/user/updateMe/route';
+import { getUserProcedure as userGetUserProcedure, getAllUsersProcedure } from './routes/user/getUser/route';
 import { createTicketProcedure } from './routes/support/createTicket/route';
 import { getMyTicketsProcedure } from './routes/support/getMyTickets/route';
 import { getTicketsProcedure } from './routes/support/getTickets/route';
@@ -68,6 +69,21 @@ import { createCallProcedure } from './routes/call/create/route';
 import { getIncomingCallsProcedure } from './routes/call/getIncoming/route';
 import { answerCallProcedure } from './routes/call/answer/route';
 import { declineCallProcedure } from './routes/call/decline/route';
+// Listing routes
+import { getAllListingsProcedure } from './routes/listing/getAll/route';
+import { getListingByIdProcedure } from './routes/listing/getById/route';
+import { createListingProcedure } from './routes/listing/create/route';
+import { updateListingProcedure } from './routes/listing/update/route';
+import { deleteListingProcedure } from './routes/listing/delete/route';
+import { archiveListingProcedure, reactivateListingProcedure } from './routes/listing/archive/route';
+import { promoteListingProcedure, incrementViewsProcedure } from './routes/listing/promote/route';
+// Store routes
+import { getAllStoresProcedure } from './routes/store/getAll/route';
+import { getStoreByIdProcedure, getStoreByUserIdProcedure } from './routes/store/getById/route';
+import { createStoreProcedure } from './routes/store/create/route';
+import { updateStoreProcedure } from './routes/store/update/route';
+import { deleteStoreProcedure } from './routes/store/delete/route';
+import { followStoreProcedure, unfollowStoreProcedure, getFollowedStoresProcedure, isFollowingStoreProcedure } from './routes/store/follow/route';
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -149,6 +165,8 @@ export const appRouter = createTRPCRouter({
   }),
   user: createTRPCRouter({
     updateMe: updateMeProcedure,
+    getUser: userGetUserProcedure,
+    getAllUsers: getAllUsersProcedure,
   }),
   call: createTRPCRouter({
     create: createCallProcedure,
@@ -158,6 +176,29 @@ export const appRouter = createTRPCRouter({
     getToken: getCallTokenProcedure,
     startRecording: startCallRecordingProcedure,
     stopRecording: stopCallRecordingProcedure,
+  }),
+  listing: createTRPCRouter({
+    getAll: getAllListingsProcedure,
+    getById: getListingByIdProcedure,
+    create: createListingProcedure,
+    update: updateListingProcedure,
+    delete: deleteListingProcedure,
+    archive: archiveListingProcedure,
+    reactivate: reactivateListingProcedure,
+    promote: promoteListingProcedure,
+    incrementViews: incrementViewsProcedure,
+  }),
+  store: createTRPCRouter({
+    getAll: getAllStoresProcedure,
+    getById: getStoreByIdProcedure,
+    getByUserId: getStoreByUserIdProcedure,
+    create: createStoreProcedure,
+    update: updateStoreProcedure,
+    delete: deleteStoreProcedure,
+    follow: followStoreProcedure,
+    unfollow: unfollowStoreProcedure,
+    getFollowed: getFollowedStoresProcedure,
+    isFollowing: isFollowingStoreProcedure,
   }),
 });
 
