@@ -8,7 +8,7 @@ import {
   Image,
   TextInput,
   Dimensions,
-  Alert
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -24,7 +24,7 @@ import {
   ArrowLeft,
   Users,
   Heart,
-  HeartOff
+  HeartOff,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -36,47 +36,47 @@ export default function StoresScreen() {
   const { stores, followStore, unfollowStore, isFollowingStore } = useStoreStore();
   const { currentUser } = useUserStore();
   const [searchQuery, setSearchQuery] = useState<string>('');
-  
+
   // ✅ Log screen access
   useEffect(() => {
-    logger.info('[Stores] Screen opened:', { 
+    logger.info('[Stores] Screen opened:', {
       totalStores: stores.length,
-      activeStores: stores.filter(s => s.isActive).length
+      activeStores: stores.filter(s => s.isActive).length,
     });
   }, []);
-  
+
   const activeStores = stores.filter(store => store.isActive);
-  const filteredStores = activeStores.filter(store => 
+  const filteredStores = activeStores.filter(store =>
     store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    store.categoryName.toLowerCase().includes(searchQuery.toLowerCase())
+    store.categoryName.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-  
+
   const handleStorePress = (storeId: string) => {
     logger.info('[Stores] Store pressed:', { storeId });
     router.push(`/store/${storeId}`);
   };
-  
+
   const handleFollowToggle = async (storeId: string) => {
     if (!currentUser) {
       logger.warn('[Stores] Follow attempt without user');
       return;
     }
-    
+
     // ✅ Get store
     const store = stores.find(s => s.id === storeId);
     if (!store) {
       logger.error('[Stores] Store not found for follow:', { storeId });
       return;
     }
-    
+
     const isFollowing = isFollowingStore(currentUser.id, storeId);
-    logger.info('[Stores] Follow toggle initiated:', { 
-      storeId, 
+    logger.info('[Stores] Follow toggle initiated:', {
+      storeId,
       storeName: store.name,
       isFollowing,
-      action: isFollowing ? 'unfollow' : 'follow'
+      action: isFollowing ? 'unfollow' : 'follow',
     });
-    
+
     if (isFollowing) {
       try {
         await unfollowStore(currentUser.id, storeId);
@@ -90,11 +90,11 @@ export default function StoresScreen() {
         logger.warn('[Stores] Cannot follow inactive store:', { storeId, status: store.status });
         Alert.alert(
           language === 'az' ? 'Mağaza aktiv deyil' : 'Магазин неактивен',
-          language === 'az' ? 'Bu mağaza hal-hazırda aktiv deyil' : 'Этот магазин в данный момент неактивен'
+          language === 'az' ? 'Bu mağaza hal-hazırda aktiv deyil' : 'Этот магазин в данный момент неактивен',
         );
         return;
       }
-      
+
       try {
         await followStore(currentUser.id, storeId);
         logger.info('[Stores] Store followed successfully:', { storeId });
@@ -103,7 +103,7 @@ export default function StoresScreen() {
       }
     }
   };
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -115,7 +115,7 @@ export default function StoresScreen() {
         </Text>
         <View style={styles.placeholder} />
       </View>
-      
+
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Search size={20} color={Colors.textSecondary} />
@@ -133,14 +133,14 @@ export default function StoresScreen() {
           />
         </View>
       </View>
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {filteredStores.length > 0 ? (
           <View style={styles.storesGrid}>
             {filteredStores.map((store) => {
               const isFollowing = currentUser ? isFollowingStore(currentUser.id, store.id) : false;
               const averageRating = store.totalRatings > 0 ? store.rating / Math.max(store.totalRatings, 1) : 0;
-              
+
               return (
                 <View key={store.id} style={styles.storeCard}>
                   <TouchableOpacity
@@ -156,7 +156,7 @@ export default function StoresScreen() {
                         </View>
                       )}
                     </View>
-                    
+
                     <View style={styles.storeInfo}>
                       <Text style={styles.storeName} numberOfLines={2}>
                         {store.name}
@@ -164,7 +164,7 @@ export default function StoresScreen() {
                       <Text style={styles.storeCategory} numberOfLines={1}>
                         {store.categoryName}
                       </Text>
-                      
+
                       <View style={styles.storeStats}>
                         <View style={styles.statItem}>
                           <Star size={12} color={Colors.secondary} fill={Colors.secondary} />
@@ -176,13 +176,13 @@ export default function StoresScreen() {
                           <Text style={styles.statText}>{store.followers.length}</Text>
                         </View>
                       </View>
-                      
+
                       <Text style={styles.adsCount}>
                         {store.adsUsed} {language === 'az' ? 'elan' : 'объявлений'}
                       </Text>
                     </View>
                   </TouchableOpacity>
-                  
+
                   {currentUser && (
                     <TouchableOpacity
                       style={styles.followButton}
@@ -195,7 +195,7 @@ export default function StoresScreen() {
                       )}
                     </TouchableOpacity>
                   )}
-                  
+
                   <View style={styles.premiumBadge}>
                     <Text style={styles.premiumText}>
                       {language === 'az' ? 'Mağaza' : 'Магазин'}
@@ -209,7 +209,7 @@ export default function StoresScreen() {
           <View style={styles.emptyState}>
             <Package size={64} color={Colors.textSecondary} />
             <Text style={styles.emptyTitle}>
-              {searchQuery 
+              {searchQuery
                 ? (language === 'az' ? 'Mağaza tapılmadı' : 'Магазины не найдены')
                 : (language === 'az' ? 'Hələ mağaza yoxdur' : 'Пока нет магазинов')
               }

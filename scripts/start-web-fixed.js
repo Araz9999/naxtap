@@ -7,17 +7,17 @@ const METRO_PORT = 8081;
 const PROXY_PORT = 3000;
 const BACKEND_PORT = 3001; // Backend API runs on port 3001
 
-  // Start Metro bundler (without opening browser)
-  console.log('Starting Metro bundler...');
-  const metro = spawn('npx', ['expo', 'start', '--web', '--port', METRO_PORT.toString(), '--clear', '--no-dev'], {
+// Start Metro bundler (without opening browser)
+console.log('Starting Metro bundler...');
+const metro = spawn('npx', ['expo', 'start', '--web', '--port', METRO_PORT.toString(), '--clear', '--no-dev'], {
   stdio: 'inherit',
   shell: true,
-      env: {
-        ...process.env,
-        BROWSER: 'none', // Prevent auto-opening browser
-        EXPO_PUBLIC_RORK_API_BASE_URL: `http://localhost:${PROXY_PORT}`, // Use proxy port (proxy forwards to backend)
-        EXPO_PUBLIC_BACKEND_URL: `http://localhost:${PROXY_PORT}`, // Use proxy port
-      },
+  env: {
+    ...process.env,
+    BROWSER: 'none', // Prevent auto-opening browser
+    EXPO_PUBLIC_RORK_API_BASE_URL: `http://localhost:${PROXY_PORT}`, // Use proxy port (proxy forwards to backend)
+    EXPO_PUBLIC_BACKEND_URL: `http://localhost:${PROXY_PORT}`, // Use proxy port
+  },
 });
 
 // Wait a bit for Metro to start, then start proxy
@@ -93,7 +93,7 @@ setTimeout(() => {
                 const attrs = before ? before.trim() : '';
                 const afterAttrs = after ? after.trim() : '';
                 return `<script type="module" ${attrs} src="${src}" ${afterAttrs}></script>`;
-              }
+              },
             );
 
             // Also handle simple script tags
@@ -102,7 +102,7 @@ setTimeout(() => {
               (match, src, attrs) => {
                 if (match.includes('type=')) return match;
                 return `<script type="module" src="${src}"${attrs}></script>`;
-              }
+              },
             );
 
             console.log(`✅ Patched HTML with type="module" for ${req.url}`);
@@ -115,7 +115,7 @@ setTimeout(() => {
           proxyRes.pipe(res);
         }
       },
-    })
+    }),
   );
 
   app.listen(PROXY_PORT, () => {

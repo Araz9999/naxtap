@@ -82,7 +82,7 @@ export const storePlans: StorePlan[] = [
     id: 'basic',
     name: {
       az: 'Əsas Paket',
-      ru: 'Базовый пакет'
+      ru: 'Базовый пакет',
     },
     price: 100,
     maxAds: 200,
@@ -90,23 +90,23 @@ export const storePlans: StorePlan[] = [
     features: [
       {
         az: '200-ə qədər elan',
-        ru: 'До 200 объявлений'
+        ru: 'До 200 объявлений',
       },
       {
         az: 'Mağaza profili',
-        ru: 'Профиль магазина'
+        ru: 'Профиль магазина',
       },
       {
         az: 'Əlaqə məlumatları',
-        ru: 'Контактная информация'
-      }
-    ]
+        ru: 'Контактная информация',
+      },
+    ],
   },
   {
     id: 'premium',
     name: {
       az: 'Premium Paket',
-      ru: 'Премиум пакет'
+      ru: 'Премиум пакет',
     },
     price: 150,
     maxAds: 350,
@@ -114,27 +114,27 @@ export const storePlans: StorePlan[] = [
     features: [
       {
         az: '350-ə qədər elan',
-        ru: 'До 350 объявлений'
+        ru: 'До 350 объявлений',
       },
       {
         az: 'Mağaza profili',
-        ru: 'Профиль магазина'
+        ru: 'Профиль магазина',
       },
       {
         az: 'Əlaqə məlumatları',
-        ru: 'Контактная информация'
+        ru: 'Контактная информация',
       },
       {
         az: 'Prioritet dəstək',
-        ru: 'Приоритетная поддержка'
-      }
-    ]
+        ru: 'Приоритетная поддержка',
+      },
+    ],
   },
   {
     id: 'business',
     name: {
       az: 'Biznes Paket',
-      ru: 'Бизнес пакет'
+      ru: 'Бизнес пакет',
     },
     price: 200,
     maxAds: 500,
@@ -142,24 +142,24 @@ export const storePlans: StorePlan[] = [
     features: [
       {
         az: '500-ə qədər elan',
-        ru: 'До 500 объявлений'
+        ru: 'До 500 объявлений',
       },
       {
         az: 'Mağaza profili',
-        ru: 'Профиль магазина'
+        ru: 'Профиль магазина',
       },
       {
         az: 'Əlaqə məlumatları',
-        ru: 'Контактная информация'
+        ru: 'Контактная информация',
       },
       {
         az: 'Prioritet dəstək',
-        ru: 'Приоритетная поддержка'
+        ru: 'Приоритетная поддержка',
       },
       {
         az: 'Analitika',
-        ru: 'Аналитика'
-      }
-    ]
-  }
+        ru: 'Аналитика',
+      },
+    ],
+  },
 ];

@@ -97,8 +97,6 @@ export default function AdminUsersScreen() {
     },
   });
 
-  if (!canAccess) return null;
-
   const pageData = usersQuery.data?.users || [];
   const pagination = usersQuery.data?.pagination;
   const totalPages = pagination?.totalPages || 1;
@@ -150,6 +148,8 @@ export default function AdminUsersScreen() {
     if (Number.isNaN(d.getTime())) return '-';
     return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
+
+  if (!canAccess) return null;
 
   const RoleChip = ({ value, title }: { value: RoleFilter; title: string }) => {
     const active = role === value;
@@ -508,7 +508,7 @@ export default function AdminUsersScreen() {
                         { text: language === 'az' ? 'Moderator' : 'Модератор', onPress: () => updateUser.mutate({ userId: selected?.id, role: 'MODERATOR' } as any) },
                         { text: language === 'az' ? 'Admin' : 'Админ', onPress: () => updateUser.mutate({ userId: selected?.id, role: 'ADMIN' } as any) },
                         { text: language === 'az' ? 'Ləğv et' : 'Отмена', style: 'cancel' },
-                      ]
+                      ],
                     );
                   }}
                 >
@@ -536,7 +536,7 @@ export default function AdminUsersScreen() {
                             closeDetails();
                           },
                         },
-                      ]
+                      ],
                     );
                   }}
                 >

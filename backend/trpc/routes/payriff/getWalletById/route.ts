@@ -1,5 +1,5 @@
-import { publicProcedure } from "../../../create-context";
-import { z } from "zod";
+import { publicProcedure } from '../../../create-context';
+import { z } from 'zod';
 import config from '../../../../config';
 import { PayriffResponse, isPayriffSuccess, getPayriffErrorMessage } from '../../../../constants/payriffCodes';
 
@@ -8,7 +8,7 @@ export const getWalletByIdProcedure = publicProcedure
   .input(
     z.object({
       id: z.number(),
-    })
+    }),
   )
   .query(async ({ input }) => {
     try {

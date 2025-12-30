@@ -1,6 +1,6 @@
 import { LocalizedText } from './category';
 
-export type ReportType = 
+export type ReportType =
   | 'spam'
   | 'inappropriate_content'
   | 'fake_listing'
@@ -46,7 +46,7 @@ export interface ModerationAction {
   isActive: boolean;
 }
 
-export type ModerationActionType = 
+export type ModerationActionType =
   | 'warning'
   | 'temporary_ban'
   | 'permanent_ban'
@@ -60,6 +60,11 @@ export interface ModerationStats {
   pendingReports: number;
   resolvedReports: number;
   dismissedReports: number;
+  // Ticket stats (backend may include these)
+  totalTickets?: number;
+  openTickets?: number;
+  inProgressTickets?: number;
+  resolvedTickets?: number;
   averageResolutionTime: number; // In hours
   reportsByType: Record<ReportType, number>;
   reportsByPriority: Record<ReportPriority, number>;
@@ -87,7 +92,7 @@ export interface SupportTicket {
   attachments?: string[];
 }
 
-export type SupportCategory = 
+export type SupportCategory =
   | 'technical'
   | 'billing'
   | 'account'

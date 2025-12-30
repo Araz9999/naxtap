@@ -13,7 +13,7 @@
 //       writable: false,
 //       configurable: false
 //     });
-    
+
 //     // Also define it on global
 //     if (typeof global !== 'undefined') {
 //       Object.defineProperty(global, 'import', {

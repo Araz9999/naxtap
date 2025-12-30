@@ -21,23 +21,23 @@ export type { AuthUser, LoginCredentials, RegisterData, AuthTokens } from './aut
 // Service initialization
 export const initializeServices = async () => {
   logger.debug('Initializing services...');
-  
+
   try {
     // Initialize authentication service first
     await authService.initialize();
     logger.debug('✓ Auth service initialized');
-    
+
     // Initialize analytics
     await analyticsService.initialize();
     logger.debug('✓ Analytics service initialized');
-    
+
     // Set auth token for API service if user is logged in
     const token = authService.getAccessToken();
     if (token) {
       apiService.setAuthToken(token);
       logger.debug('✓ API service configured with auth token');
     }
-    
+
     logger.debug('✓ All services initialized successfully');
   } catch (error) {
     logger.error('Failed to initialize services');
@@ -55,7 +55,7 @@ export const checkServicesHealth = () => {
     storage: storageService.isConfigured(),
     auth: authService.isConfigured(),
   };
-  
+
   logger.debug('Services health check:', {
     ...services,
     // Avoid printing secrets; only booleans here

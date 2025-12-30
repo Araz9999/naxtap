@@ -11,13 +11,14 @@ import { initiateSocialLogin, showSocialLoginError } from '@/utils/socialAuth';
 import { logger } from '@/utils/logger';
 import { validateEmail, validateAzerbaijanPhone, sanitizeTextInput } from '@/utils/inputValidation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { User, UserRole } from '@/types/user';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { t, language } = useTranslation();
   const { login } = useUserStore();
 
-  
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('+994 ');
@@ -29,7 +30,7 @@ export default function RegisterScreen() {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSocial, setLoadingSocial] = useState<string | null>(null);
-  
+
   const registerMutation = trpc.auth.register.useMutation();
 
   // Native HTML button for web to ensure clicks always work
@@ -69,10 +70,10 @@ export default function RegisterScreen() {
       e.preventDefault();
       e.stopPropagation();
 
-       // Debug: confirm click is firing
-       console.log('[Register] Native web register button clicked');
-       // Simple visible feedback so we know click works at all
-       window.alert('Register button clicked. Now running validation...');
+      // Debug: confirm click is firing
+      console.log('[Register] Native web register button clicked');
+      // Simple visible feedback so we know click works at all
+      window.alert('Register button clicked. Now running validation...');
 
       if (!agreeToTerms) {
         const title = language === 'az' ? 'Xəta' : 'Ошибка';
@@ -99,34 +100,34 @@ export default function RegisterScreen() {
     if (!name || !name.trim()) {
       return { isValid: false, error: language === 'az' ? 'Ad daxil edin' : 'Введите имя' };
     }
-    
+
     if (name.trim().length < 2) {
       return { isValid: false, error: language === 'az' ? 'Ad ən az 2 simvol olmalıdır' : 'Имя должно содержать минимум 2 символа' };
     }
-    
+
     if (!email || !email.trim()) {
       return { isValid: false, error: language === 'az' ? 'Email daxil edin' : 'Введите email' };
     }
-    
+
     if (!validateEmail(email)) {
       return { isValid: false, error: language === 'az' ? 'Düzgün email daxil edin' : 'Введите корректный email' };
     }
-    
+
     if (!phone || phone.trim() === '+994' || phone.trim() === '+994 ') {
       return { isValid: false, error: language === 'az' ? 'Telefon nömrəsi daxil edin' : 'Введите номер телефона' };
     }
-    
+
     if (!validateAzerbaijanPhone(phone)) {
       const cleaned = phone.replace(/[^0-9+]/g, '');
       const digitsAfter994 = cleaned.replace('+994', '').replace('994', '');
-      return { 
-        isValid: false, 
-        error: language === 'az' 
-          ? `Düzgün telefon nömrəsi daxil edin. Format: +994XXXXXXXXX (9 rəqəm). Sizin: ${phone} (${digitsAfter994.length} rəqəm)` 
-          : `Введите корректный номер телефона. Формат: +994XXXXXXXXX (9 цифр). Ваш: ${phone} (${digitsAfter994.length} цифр)`
+      return {
+        isValid: false,
+        error: language === 'az'
+          ? `Düzgün telefon nömrəsi daxil edin. Format: +994XXXXXXXXX (9 rəqəm). Sizin: ${phone} (${digitsAfter994.length} rəqəm)`
+          : `Введите корректный номер телефона. Формат: +994XXXXXXXXX (9 цифр). Ваш: ${phone} (${digitsAfter994.length} цифр)`,
       };
     }
-    
+
     if (!password) {
       return {
         isValid: false,
@@ -144,22 +145,22 @@ export default function RegisterScreen() {
             : 'Пароль должен содержать минимум 8 символов',
       };
     }
-    
+
     if (!confirmPassword) {
       return { isValid: false, error: language === 'az' ? 'Şifrəni təsdiqləyin' : 'Подтвердите пароль' };
     }
-    
+
     if (password !== confirmPassword) {
       return { isValid: false, error: language === 'az' ? 'Şifrələr uyğun gəlmir' : 'Пароли не совпадают' };
     }
-    
+
     if (!agreeToTerms) {
       return { isValid: false, error: language === 'az' ? 'İstifadə şərtlərini qəbul edin' : 'Примите условия использования' };
     }
-    
+
     return { isValid: true };
   };
-  
+
   const handleRegister = async () => {
     try {
       if (isLoading) {
@@ -198,78 +199,83 @@ export default function RegisterScreen() {
           phone: phone.trim(),
         });
 
-      // ✅ Save tokens so user can access protected routes (edit profile, etc.)
-      if (result?.tokens) {
-        await AsyncStorage.setItem('auth_tokens', JSON.stringify(result.tokens));
-      }
-      
-      // ✅ Create complete user object
-      const mockUser = {
-        ...result.user,
-        phone: result.user.phone || '',
-        avatar: profileImage || result.user.avatar || '',
-        rating: 0,
-        totalRatings: 0,
-        memberSince: new Date().toISOString(),
-        location: { az: '', ru: '', en: '' },
-        privacySettings: {
-          hidePhoneNumber: false,
-          allowDirectContact: true,
-          onlyAppMessaging: false,
-        },
-        analytics: {
-          lastOnline: new Date().toISOString(),
-          messageResponseRate: 0,
-          averageResponseTime: 0,
-          totalMessages: 0,
-          totalResponses: 0,
-          isOnline: true,
-        },
-      };
-      
-      // ✅ Always login user and redirect (email sending is optional)
-      console.log('[Register] Logging in user and redirecting...');
-      login(mockUser);
+        // ✅ Save tokens so user can access protected routes (edit profile, etc.)
+        if (result?.tokens) {
+          await AsyncStorage.setItem('auth_tokens', JSON.stringify(result.tokens));
+        }
 
-      // Show success message
-      const successMessage = result.emailSent
-        ? (language === 'az'
+        // ✅ Create complete user object
+        const normalizedRole = (String(result.user.role || 'USER')).toLowerCase() as UserRole;
+        const mockUser: User = {
+          id: String(result.user.id),
+          name: String(result.user.name || ''),
+          email: String(result.user.email || ''),
+          phone: typeof result.user.phone === 'string' ? result.user.phone : '',
+          avatar: profileImage || String(result.user.avatar || ''),
+          rating: 0,
+          totalRatings: 0,
+          memberSince: new Date().toISOString(),
+          location: { az: '', ru: '', en: '' },
+          balance: typeof (result.user as any).balance === 'number' ? (result.user as any).balance : 0,
+          role: normalizedRole,
+          privacySettings: {
+            hidePhoneNumber: false,
+            allowDirectContact: true,
+            onlyAppMessaging: false,
+          },
+          analytics: {
+            lastOnline: new Date().toISOString(),
+            messageResponseRate: 0,
+            averageResponseTime: 0,
+            totalMessages: 0,
+            totalResponses: 0,
+            isOnline: true,
+          },
+        };
+
+        // ✅ Always login user and redirect (email sending is optional)
+        console.log('[Register] Logging in user and redirecting...');
+        login(mockUser);
+
+        // Show success message
+        const successMessage = result.emailSent
+          ? (language === 'az'
             ? 'Qeydiyyat uğurla tamamlandı! Email ünvanınıza təsdiq linki göndərildi.'
             : 'Регистрация успешно завершена! Ссылка для подтверждения отправлена на ваш email.')
-        : (language === 'az'
+          : (language === 'az'
             ? 'Qeydiyyat uğurlu oldu! Email göndərilmədi, amma hesabınız aktivdir.'
             : 'Регистрация прошла успешно! Email не был отправлен, но ваш аккаунт активен.');
 
-      Alert.alert(
-        t('success') || 'Uğurlu',
-        successMessage,
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/'),
-          },
-        ]
-      );
+        Alert.alert(
+          t('success') || 'Uğurlu',
+          successMessage,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/'),
+            },
+          ],
+        );
 
-      // Auto-redirect after 3 seconds if user doesn't click OK
-      setTimeout(() => {
-        console.log('[Register] Auto-redirecting to home...');
-        router.replace('/');
-      }, 3000);
-    } catch (error: any) {
-      logger.error('Registration error:', error);
-      const title = language === 'az' ? 'Xəta' : 'Ошибка';
-      const message =
+        // Auto-redirect after 3 seconds if user doesn't click OK
+        setTimeout(() => {
+          console.log('[Register] Auto-redirecting to home...');
+          router.replace('/');
+        }, 3000);
+      } catch (error: any) {
+        logger.error('Registration error:', error);
+        const title = language === 'az' ? 'Xəta' : 'Ошибка';
+        const message =
         error?.message ||
         (language === 'az' ? 'Qeydiyyat zamanı xəta baş verdi' : 'Ошибка при регистрации');
 
-      Alert.alert(title, message);
-      if (Platform.OS === 'web') {
-        window.alert(`${title}: ${message}`);
+        Alert.alert(title, message);
+        if (Platform.OS === 'web') {
+          window.alert(`${title}: ${message}`);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
     } catch (outerError: any) {
       console.error('[Register] Outer error in handleRegister:', outerError);
       Alert.alert('Error', 'An unexpected error occurred during registration');
@@ -282,17 +288,17 @@ export default function RegisterScreen() {
       if (Platform.OS === 'web') {
         Alert.alert(
           t('error') || (language === 'az' ? 'Xəta' : 'Ошибка'),
-          language === 'az' ? 'Kamera veb versiyada dəstəklənmir' : 'Камера не поддерживается в веб-версии'
+          language === 'az' ? 'Kamera veb versiyada dəstəklənmir' : 'Камера не поддерживается в веб-версии',
         );
         return;
       }
 
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      
+
       if (status !== 'granted') {
         Alert.alert(
           t('permissionRequired') || (language === 'az' ? 'İcazə lazımdır' : 'Требуется разрешение'),
-          t('cameraPermissionRequired') || (language === 'az' ? 'Kamera icazəsi lazımdır' : 'Требуется разрешение камеры')
+          t('cameraPermissionRequired') || (language === 'az' ? 'Kamera icazəsi lazımdır' : 'Требуется разрешение камеры'),
         );
         return;
       }
@@ -310,7 +316,7 @@ export default function RegisterScreen() {
       logger.error('Camera error:', error);
       Alert.alert(
         t('error'),
-        language === 'az' ? 'Kamera açıla bilmədi' : 'Не удалось открыть камеру'
+        language === 'az' ? 'Kamera açıla bilmədi' : 'Не удалось открыть камеру',
       );
     }
   };
@@ -318,11 +324,11 @@ export default function RegisterScreen() {
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (status !== 'granted') {
         Alert.alert(
           t('permissionRequired'),
-          language === 'az' ? 'Qalereya icazəsi tələb olunur' : 'Требуется разрешение галереи'
+          language === 'az' ? 'Qalereya icazəsi tələb olunur' : 'Требуется разрешение галереи',
         );
         return;
       }
@@ -341,7 +347,7 @@ export default function RegisterScreen() {
       logger.error('Image picker error:', error);
       Alert.alert(
         t('error'),
-        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение'
+        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение',
       );
     }
   };
@@ -361,14 +367,14 @@ export default function RegisterScreen() {
   const handleSocialLogin = async (provider: 'google' | 'facebook' | 'vk') => {
     try {
       setLoadingSocial(provider);
-      
+
       const baseUrl =
         process.env.EXPO_PUBLIC_RORK_API_BASE_URL ||
         (Platform.OS === 'web' && typeof window !== 'undefined'
           ? window.location.origin
           : 'http://localhost:3001');
       const statusResponse = await fetch(`${baseUrl}/api/auth/status`);
-      
+
       if (statusResponse.ok) {
         const statusData = await statusResponse.json();
         if (!statusData.configured[provider]) {
@@ -377,7 +383,7 @@ export default function RegisterScreen() {
           return;
         }
       }
-      
+
       await initiateSocialLogin(
         provider,
         (result) => {
@@ -407,7 +413,7 @@ export default function RegisterScreen() {
                 isOnline: true,
               },
               balance: 0,
-              role: 'user'
+              role: 'user',
             });
             router.replace('/(tabs)');
           }
@@ -415,7 +421,7 @@ export default function RegisterScreen() {
         (error) => {
           setLoadingSocial(null);
           showSocialLoginError(provider, error);
-        }
+        },
       );
     } catch (error) {
       setLoadingSocial(null);
@@ -551,7 +557,6 @@ export default function RegisterScreen() {
         </TouchableOpacity>
 
 
-
         {/* Register Button */}
         {Platform.OS === 'web' ? (
           <View
@@ -571,7 +576,7 @@ export default function RegisterScreen() {
                   language === 'az' ? 'Xəta' : 'Ошибка',
                   language === 'az'
                     ? 'İstifadə şərtlərini qəbul edin'
-                    : 'Примите условия использования'
+                    : 'Примите условия использования',
                 );
                 return;
               }

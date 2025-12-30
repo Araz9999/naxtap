@@ -1,13 +1,13 @@
-import { createTRPCReact } from "@trpc/react-query";
-import { httpLink, loggerLink } from "@trpc/client";
+import { createTRPCReact } from '@trpc/react-query';
+import { httpLink, loggerLink } from '@trpc/client';
 // Adjust the import path if backend alias differs in production
-import type { AppRouter } from "@/backend/trpc/app-router";
-import superjson from "superjson";
+import type { AppRouter } from '@/backend/trpc/app-router';
+import superjson from 'superjson';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const trpc = createTRPCReact<AppRouter>();
 
-const stripTrailingSlash = (u: string) => u.replace(/\/+$/, "");
+const stripTrailingSlash = (u: string) => u.replace(/\/+$/, '');
 
 const getBaseUrl = () => {
   // Prefer explicit env vars (any of these will work)
@@ -54,9 +54,9 @@ export const trpcClient = trpc.createClient({
       async headers() {
         try {
           const now = Date.now();
-            if (cachedAuthHeader && (now - cacheTimestamp) < CACHE_DURATION) {
-              return cachedAuthHeader;
-            }
+          if (cachedAuthHeader && (now - cacheTimestamp) < CACHE_DURATION) {
+            return cachedAuthHeader;
+          }
           const raw = await AsyncStorage.getItem('auth_tokens');
           if (!raw) {
             cachedAuthHeader = {};

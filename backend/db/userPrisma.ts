@@ -10,14 +10,14 @@ export async function findUserByEmail(email: string) {
 export async function findUserByPhone(phone: string) {
   // Normalize phone number (remove spaces, dashes, etc.)
   const normalizedPhone = phone.replace(/[\s\-\(\)]/g, '').trim();
-  
+
   // Try exact match first
   let user = await prisma.user.findFirst({
     where: {
       phone: normalizedPhone,
     },
   });
-  
+
   // If not found, try with + prefix
   if (!user && !normalizedPhone.startsWith('+')) {
     user = await prisma.user.findFirst({
@@ -26,7 +26,7 @@ export async function findUserByPhone(phone: string) {
       },
     });
   }
-  
+
   // If not found, try without + prefix
   if (!user && normalizedPhone.startsWith('+')) {
     user = await prisma.user.findFirst({
@@ -35,7 +35,7 @@ export async function findUserByPhone(phone: string) {
       },
     });
   }
-  
+
   // If still not found, try partial match (last 9 digits for Azerbaijan)
   if (!user) {
     const digitsOnly = normalizedPhone.replace(/[^0-9]/g, '');
@@ -55,7 +55,7 @@ export async function findUserByPhone(phone: string) {
       }) || null;
     }
   }
-  
+
   return user;
 }
 

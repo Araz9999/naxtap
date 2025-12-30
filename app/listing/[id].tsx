@@ -20,6 +20,7 @@ import { SocialIcons } from '@/components/Icons';
 import CountdownTimer from '@/components/CountdownTimer';
 
 import { logger } from '@/utils/logger';
+import { getListingWebUrl } from '@/utils/shareLinks';
 const { width } = Dimensions.get('window');
 
 export default function ListingDetailScreen() {
@@ -30,31 +31,31 @@ export default function ListingDetailScreen() {
   const { incrementViewCount } = useListingStore();
   const { initiateCall } = useCallStore();
   const { getActiveDiscounts } = useDiscountStore();
-  
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [showUserActionModal, setShowUserActionModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  
+
   // Get listings from store instead of mock data
   const { listings } = useListingStore();
-  
+
   logger.debug('[ListingDetail] Looking for listing with ID:', id);
   logger.debug('[ListingDetail] Available listings count:', listings.length);
   logger.debug('[ListingDetail] Available listing IDs:', listings.map(l => l.id).slice(0, 10));
-  
+
   const listing = listings.find(item => item.id === id);
   logger.debug('[ListingDetail] Found listing:', listing ? 'Yes' : 'No');
-  
+
   // Get active discounts for this listing
-  const activeDiscounts = listing?.storeId ? getActiveDiscounts(listing.storeId).filter(discount => 
-    discount.applicableListings.includes(listing.id)
+  const activeDiscounts = listing?.storeId ? getActiveDiscounts(listing.storeId).filter(discount =>
+    discount.applicableListings.includes(listing.id),
   ) : [];
-  
+
   // Calculate discounted price - using same logic as ListingCard
   const calculateDiscountedPrice = () => {
     if (!listing) return null;
-    
+
     let originalPrice = listing.originalPrice ?? listing.price;
     let discountedPrice = listing.price;
     let discountPercentage = 0;
@@ -66,7 +67,7 @@ export default function ListingDetailScreen() {
       hasDiscount: listing.hasDiscount,
       originalPrice,
       currentPrice: listing.price,
-      discountPercentage: listing.discountPercentage
+      discountPercentage: listing.discountPercentage,
     });
 
     // Check for active store/campaign discounts first
@@ -75,10 +76,10 @@ export default function ListingDetailScreen() {
       discountType = discount.type === 'buy_x_get_y' ? 'percentage' : discount.type as 'percentage' | 'fixed_amount';
       discountValue = discount.value;
 
-      logger.debug(`[ListingDetail] Applying store discount:`, {
+      logger.debug('[ListingDetail] Applying store discount:', {
         type: discount.type,
         value: discount.value,
-        originalPrice
+        originalPrice,
       });
 
       if (discount.type === 'percentage' || discount.type === 'buy_x_get_y') {
@@ -145,16 +146,16 @@ export default function ListingDetailScreen() {
       discountType,
       discountValue: Math.round(discountValue),
       absoluteSavings: Math.round(absoluteSavings),
-      discount: { type: discountType, value: discountValue }
+      discount: { type: discountType, value: discountValue },
     } as const;
 
-    logger.debug(`[ListingDetail] Final discount calculation:`, result);
+    logger.debug('[ListingDetail] Final discount calculation:', result);
 
     return result;
   };
-  
+
   const priceInfo = listing ? calculateDiscountedPrice() : null;
-  
+
   // Increment view count when listing is viewed
   useEffect(() => {
     if (listing && id) {
@@ -175,19 +176,19 @@ export default function ListingDetailScreen() {
       </View>
     );
   }
-  
+
   const seller = users.find(user => user.id === listing.userId);
-  
+
   // ✅ Log warning if seller not found
   if (!seller) {
     logger.warn('Seller not found for listing:', listing.userId);
   }
-  
+
   const isFavorite = favorites.includes(listing.id);
-  
+
   const category = categories.find(c => c.id === listing.categoryId);
   const subcategory = category?.subcategories.find(s => s.id === listing.subcategoryId);
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(language === 'az' ? 'az-AZ' : 'ru-RU', {
@@ -196,34 +197,30 @@ export default function ListingDetailScreen() {
       day: 'numeric',
     });
   };
-  
+
   const handlePrevImage = () => {
     if (currentImageIndex > 0) {
       setCurrentImageIndex(currentImageIndex - 1);
     }
   };
-  
+
   const handleNextImage = () => {
     if (currentImageIndex < listing.images.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
     }
   };
-  
+
   const handleFavoriteToggle = () => {
     toggleFavorite(listing.id);
   };
-  
+
   const handleShare = () => {
     setShareModalVisible(true);
   };
 
   // ✅ Helper: Generate share URL (moved to avoid hardcoding)
   const getShareUrl = () => {
-    // TODO: Replace with your actual production URL
-    const baseUrl = __DEV__ 
-      ? 'https://dev.yourapp.com/listing' 
-      : 'https://yourapp.com/listing';
-    return `${baseUrl}/${listing?.id || ''}`;
+    return listing?.id ? getListingWebUrl(listing.id) : '';
   };
 
   const generateShareText = () => {
@@ -239,25 +236,25 @@ export default function ListingDetailScreen() {
         hasId: !!listing.id,
         hasTitle: !!listing.title,
         hasLocation: !!listing.location,
-        hasCurrency: !!listing.currency
+        hasCurrency: !!listing.currency,
       });
       return '';
     }
 
     const shareUrl = getShareUrl();
-    
+
     // ✅ Safe title access with fallback
     const title = listing.title[language] || listing.title.az || listing.title.en || 'Elan';
-    
+
     // ✅ Safe location access with fallback
     const location = listing.location[language] || listing.location.az || listing.location.en || '';
-    
+
     // Use discounted price if available, otherwise use regular price
-    const displayPrice = priceInfo && priceInfo.absoluteSavings >= 1 
+    const displayPrice = priceInfo && priceInfo.absoluteSavings >= 1
       ? `${priceInfo.discountedPrice.toFixed(2)} ${listing.currency} (${language === 'az' ? 'Endirimli qiymət' : 'Цена со скидкой'})`
       : `${listing.price.toFixed(2)} ${listing.currency}`;
-    
-    return language === 'az' 
+
+    return language === 'az'
       ? `${title}\n\n${displayPrice}\n${location}\n\n${shareUrl}`
       : `${title}\n\n${displayPrice}\n${location}\n\n${shareUrl}`;
   };
@@ -268,7 +265,7 @@ export default function ListingDetailScreen() {
       logger.error('[shareToSocialMedia] Listing is null');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Elan məlumatları tapılmadı' : 'Информация объявлении не найдена'
+        language === 'az' ? 'Elan məlumatları tapılmadı' : 'Информация объявлении не найдена',
       );
       setShareModalVisible(false);
       return;
@@ -279,7 +276,7 @@ export default function ListingDetailScreen() {
 
     try {
       const shareText = generateShareText();
-      
+
       // ✅ Validate generated text
       if (!shareText) {
         throw new Error('Failed to generate share text');
@@ -288,125 +285,125 @@ export default function ListingDetailScreen() {
       const encodedText = encodeURIComponent(shareText);
       const shareUrl = getShareUrl();
       const encodedUrl = encodeURIComponent(shareUrl);
-    
-    let url = '';
-    
-    switch (platform) {
-      case 'whatsapp':
-        url = `whatsapp://send?text=${encodedText}`;
-        break;
-      case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
-        break;
-      case 'instagram':
+
+      let url = '';
+
+      switch (platform) {
+        case 'whatsapp':
+          url = `whatsapp://send?text=${encodedText}`;
+          break;
+        case 'facebook':
+          url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+          break;
+        case 'instagram':
         // ✅ Instagram doesn't support direct URL sharing, so we'll copy to clipboard
-        try {
-          await Clipboard.setStringAsync(shareText);
-          Alert.alert(
-            language === 'az' ? 'Kopyalandı' : 'Скопировано',
-            language === 'az' 
-              ? 'Mətn panoya kopyalandı. Instagram tətbiqini açın və paylaşın.' 
-              : 'Текст скопирован. Откройте Instagram и поделитесь.'
-          );
-        } catch (clipboardError) {
-          logger.error('[shareToSocialMedia] Clipboard error:', clipboardError);
-          Alert.alert(
-            language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' 
-              ? 'Panoya kopyalana bilmədi. Lütfən Instagram tətbiqini açın.' 
-              : 'Не удалось скопировать. Откройте Instagram.'
-          );
-        }
-        setShareModalVisible(false);
-        setIsSharing(false);
-        return;
-      case 'telegram':
-        url = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
-        break;
-      case 'twitter':
-        url = `https://twitter.com/intent/tweet?text=${encodedText}`;
-        break;
-      case 'vk':
-        url = `https://vk.com/share.php?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language])}&description=${encodeURIComponent(listing.description[language])}`;
-        break;
-      case 'ok':
-        url = `https://connect.ok.ru/offer?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language])}&description=${encodeURIComponent(listing.description[language])}`;
-        break;
-      case 'tiktok':
-        // ✅ TikTok doesn't support direct URL sharing, copy to clipboard
-        try {
-          await Clipboard.setStringAsync(shareText);
-          Alert.alert(
-            'TikTok',
-            language === 'az' 
-              ? 'Mətn kopyalandı. TikTok tətbiqini açın və paylaşın.' 
-              : 'Текст скопирован. Откройте TikTok и поделитесь.'
-          );
-        } catch (clipboardError) {
-          logger.error('[shareToSocialMedia] TikTok clipboard error:', clipboardError);
-          Alert.alert(
-            'TikTok',
-            language === 'az' 
-              ? 'TikTok tətbiqini açın və məzmunu paylaşın' 
-              : 'Откройте приложение TikTok и поделитесь'
-          );
-        }
-        setShareModalVisible(false);
-        setIsSharing(false);
-        return;
-      case 'native':
-        // ✅ Use native sharing with better error handling
-        try {
-          if (await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(shareUrl, {
-              dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением',
-            });
-            logger.debug('[shareToSocialMedia] Native share successful');
-          } else {
-            logger.warn('[shareToSocialMedia] Native sharing not available');
+          try {
+            await Clipboard.setStringAsync(shareText);
+            Alert.alert(
+              language === 'az' ? 'Kopyalandı' : 'Скопировано',
+              language === 'az'
+                ? 'Mətn panoya kopyalandı. Instagram tətbiqini açın və paylaşın.'
+                : 'Текст скопирован. Откройте Instagram и поделитесь.',
+            );
+          } catch (clipboardError) {
+            logger.error('[shareToSocialMedia] Clipboard error:', clipboardError);
             Alert.alert(
               language === 'az' ? 'Xəta' : 'Ошибка',
-              language === 'az' ? 'Paylaşma funksiyası mövcud deyil' : 'Функция обмена недоступна'
+              language === 'az'
+                ? 'Panoya kopyalana bilmədi. Lütfən Instagram tətbiqini açın.'
+                : 'Не удалось скопировать. Откройте Instagram.',
             );
           }
-        } catch (nativeShareError) {
-          logger.error('[shareToSocialMedia] Native share error:', nativeShareError);
-          Alert.alert(
-            language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться'
-          );
-        }
-        setShareModalVisible(false);
-        setIsSharing(false);
-        return;
-      case 'copy':
+          setShareModalVisible(false);
+          setIsSharing(false);
+          return;
+        case 'telegram':
+          url = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
+          break;
+        case 'twitter':
+          url = `https://twitter.com/intent/tweet?text=${encodedText}`;
+          break;
+        case 'vk':
+          url = `https://vk.com/share.php?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language])}&description=${encodeURIComponent(listing.description[language])}`;
+          break;
+        case 'ok':
+          url = `https://connect.ok.ru/offer?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language])}&description=${encodeURIComponent(listing.description[language])}`;
+          break;
+        case 'tiktok':
+        // ✅ TikTok doesn't support direct URL sharing, copy to clipboard
+          try {
+            await Clipboard.setStringAsync(shareText);
+            Alert.alert(
+              'TikTok',
+              language === 'az'
+                ? 'Mətn kopyalandı. TikTok tətbiqini açın və paylaşın.'
+                : 'Текст скопирован. Откройте TikTok и поделитесь.',
+            );
+          } catch (clipboardError) {
+            logger.error('[shareToSocialMedia] TikTok clipboard error:', clipboardError);
+            Alert.alert(
+              'TikTok',
+              language === 'az'
+                ? 'TikTok tətbiqini açın və məzmunu paylaşın'
+                : 'Откройте приложение TikTok и поделитесь',
+            );
+          }
+          setShareModalVisible(false);
+          setIsSharing(false);
+          return;
+        case 'native':
+        // ✅ Use native sharing with better error handling
+          try {
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(shareUrl, {
+                dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением',
+              });
+              logger.debug('[shareToSocialMedia] Native share successful');
+            } else {
+              logger.warn('[shareToSocialMedia] Native sharing not available');
+              Alert.alert(
+                language === 'az' ? 'Xəta' : 'Ошибка',
+                language === 'az' ? 'Paylaşma funksiyası mövcud deyil' : 'Функция обмена недоступна',
+              );
+            }
+          } catch (nativeShareError) {
+            logger.error('[shareToSocialMedia] Native share error:', nativeShareError);
+            Alert.alert(
+              language === 'az' ? 'Xəta' : 'Ошибка',
+              language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться',
+            );
+          }
+          setShareModalVisible(false);
+          setIsSharing(false);
+          return;
+        case 'copy':
         // ✅ Universal clipboard for all platforms
-        try {
-          await Clipboard.setStringAsync(shareText);
-          logger.debug('[shareToSocialMedia] Text copied to clipboard');
-          Alert.alert(
-            language === 'az' ? 'Kopyalandı' : 'Скопировано',
-            language === 'az' ? 'Mətn və link panoya kopyalandı' : 'Текст и ссылка скопированы'
-          );
-        } catch (clipboardError) {
-          logger.error('[shareToSocialMedia] Clipboard error:', clipboardError);
-          Alert.alert(
-            language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Panoya kopyalana bilmədi' : 'Не удалось скопировать'
-          );
-        }
-        setShareModalVisible(false);
-        setIsSharing(false);
-        return;
-    }
-    
+          try {
+            await Clipboard.setStringAsync(shareText);
+            logger.debug('[shareToSocialMedia] Text copied to clipboard');
+            Alert.alert(
+              language === 'az' ? 'Kopyalandı' : 'Скопировано',
+              language === 'az' ? 'Mətn və link panoya kopyalandı' : 'Текст и ссылка скопированы',
+            );
+          } catch (clipboardError) {
+            logger.error('[shareToSocialMedia] Clipboard error:', clipboardError);
+            Alert.alert(
+              language === 'az' ? 'Xəta' : 'Ошибка',
+              language === 'az' ? 'Panoya kopyalana bilmədi' : 'Не удалось скопировать',
+            );
+          }
+          setShareModalVisible(false);
+          setIsSharing(false);
+          return;
+      }
+
       // ✅ Validate URL before opening
       if (!url) {
         throw new Error('Invalid URL generated');
       }
 
       logger.debug('[shareToSocialMedia] Opening URL:', url.substring(0, 50) + '...');
-      
+
       try {
         const supported = await Linking.canOpenURL(url);
         if (supported) {
@@ -419,36 +416,36 @@ export default function ListingDetailScreen() {
         }
       } catch (linkingError) {
         logger.error('[shareToSocialMedia] Linking error:', linkingError);
-        
+
         // Provide specific error messages based on platform
         let errorMessage = language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться';
-        
+
         if (platform === 'whatsapp') {
-          errorMessage = language === 'az' 
-            ? 'WhatsApp tətbiqi quraşdırılmayıb və ya açıla bilmir' 
+          errorMessage = language === 'az'
+            ? 'WhatsApp tətbiqi quraşdırılmayıb və ya açıla bilmir'
             : 'WhatsApp не установлен или не может быть открыт';
         } else if (platform === 'telegram') {
-          errorMessage = language === 'az' 
-            ? 'Telegram tətbiqi quraşdırılmayıb və ya açıla bilmir' 
+          errorMessage = language === 'az'
+            ? 'Telegram tətbiqi quraşdırılmayıb və ya açıla bilmir'
             : 'Telegram не установлен или не может быть открыт';
         }
-        
+
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          errorMessage
+          errorMessage,
         );
       }
     } catch (error) {
       logger.error('[shareToSocialMedia] General error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться'
+        language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться',
       );
     } finally {
       // ✅ Always reset loading state
       setIsSharing(false);
     }
-    
+
     setShareModalVisible(false);
   };
 
@@ -486,7 +483,7 @@ export default function ListingDetailScreen() {
                 <X size={24} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.shareOptions}>
               {/* ✅ Loading indicator */}
               {isSharing && (
@@ -497,7 +494,7 @@ export default function ListingDetailScreen() {
                   </Text>
                 </View>
               )}
-              
+
               <View style={[styles.shareGrid, isSharing && styles.shareGridDisabled]}>
                 {socialPlatforms.map((platform) => (
                   <TouchableOpacity
@@ -519,20 +516,20 @@ export default function ListingDetailScreen() {
       </Modal>
     );
   };
-  
+
   const handleContact = () => {
-    logger.info('[ListingDetail] handleContact called:', { 
-      listingId: listing.id, 
+    logger.info('[ListingDetail] handleContact called:', {
+      listingId: listing.id,
       sellerId: seller?.id,
-      isAuthenticated 
+      isAuthenticated,
     });
-    
+
     if (!isAuthenticated) {
       logger.warn('[ListingDetail] User not authenticated for contact');
       Alert.alert(
         language === 'az' ? 'Giriş tələb olunur' : 'Требуется вход',
-        language === 'az' 
-          ? 'Satıcı ilə əlaqə saxlamaq üçün hesabınıza daxil olmalısınız' 
+        language === 'az'
+          ? 'Satıcı ilə əlaqə saxlamaq üçün hesabınıza daxil olmalısınız'
           : 'Для связи с продавцом необходимо войти в аккаунт',
         [
           {
@@ -543,27 +540,27 @@ export default function ListingDetailScreen() {
             text: language === 'az' ? 'Daxil ol' : 'Войти',
             onPress: () => router.push('/auth/login'),
           },
-        ]
+        ],
       );
       return;
     }
-    
+
     // ✅ Validate seller exists
     if (!seller) {
       logger.error('[ListingDetail] No seller found for listing:', listing.id);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Satıcı məlumatları tapılmadı' : 'Информация о продавце не найдена'
+        language === 'az' ? 'Satıcı məlumatları tapılmadı' : 'Информация о продавце не найдена',
       );
       return;
     }
-    
+
     // Check if seller has hidden phone number
     if (seller?.privacySettings?.hidePhoneNumber) {
       logger.info('[ListingDetail] Seller has hidden phone number, showing in-app call option');
       Alert.alert(
         language === 'az' ? 'Telefon nömrəsi gizlədilmiş' : 'Номер телефона скрыт',
-        language === 'az' 
+        language === 'az'
           ? 'Bu istifadəçi telefon nömrəsini gizlədib. Tətbiq üzərindən əlaqə saxlaya bilərsiniz.'
           : 'Этот пользователь скрыл номер телефона. Вы можете связаться через приложение.',
         [
@@ -575,7 +572,7 @@ export default function ListingDetailScreen() {
                 if (!currentUser?.id) {
                   Alert.alert(
                     language === 'az' ? 'Xəta' : 'Ошибка',
-                    language === 'az' ? 'Zəng üçün giriş lazımdır' : 'Требуется вход для звонка'
+                    language === 'az' ? 'Zəng üçün giriş lazımdır' : 'Требуется вход для звонка',
                   );
                   return;
                 }
@@ -594,7 +591,7 @@ export default function ListingDetailScreen() {
                 if (!currentUser?.id) {
                   Alert.alert(
                     language === 'az' ? 'Xəta' : 'Ошибка',
-                    language === 'az' ? 'Video zəng üçün giriş lazımdır' : 'Требуется вход для видеозвонка'
+                    language === 'az' ? 'Video zəng üçün giriş lazımdır' : 'Требуется вход для видеозвонка',
                   );
                   return;
                 }
@@ -609,11 +606,11 @@ export default function ListingDetailScreen() {
             text: language === 'az' ? 'Ləğv et' : 'Отмена',
             style: 'cancel',
           },
-        ]
+        ],
       );
       return;
     }
-    
+
     Alert.alert(
       language === 'az' ? 'Əlaqə' : 'Контакт',
       seller?.phone || '',
@@ -632,9 +629,9 @@ export default function ListingDetailScreen() {
             if (seller?.phone) {
               const phoneNumber = seller.phone.replace(/[^0-9]/g, '');
               const message = encodeURIComponent(
-                language === 'az' 
+                language === 'az'
                   ? `Salam! "${listing.title[language]}" elanınızla maraqlanıram.`
-                  : `Здравствуйте! Меня интересует ваше объявление "${listing.title[language]}".`
+                  : `Здравствуйте! Меня интересует ваше объявление "${listing.title[language]}".`,
               );
               Linking.openURL(`whatsapp://send?phone=${phoneNumber}&text=${message}`);
             }
@@ -644,23 +641,23 @@ export default function ListingDetailScreen() {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
           style: 'cancel',
         },
-      ]
+      ],
     );
   };
-  
+
   const handleMessage = () => {
-    logger.info('[ListingDetail] handleMessage called:', { 
-      listingId: listing.id, 
+    logger.info('[ListingDetail] handleMessage called:', {
+      listingId: listing.id,
       sellerId: seller?.id,
-      isAuthenticated 
+      isAuthenticated,
     });
-    
+
     if (!isAuthenticated) {
       logger.warn('[ListingDetail] User not authenticated for messaging');
       Alert.alert(
         language === 'az' ? 'Giriş tələb olunur' : 'Требуется вход',
-        language === 'az' 
-          ? 'Mesaj göndərmək üçün hesabınıza daxil olmalısınız' 
+        language === 'az'
+          ? 'Mesaj göndərmək üçün hesabınıza daxil olmalısınız'
           : 'Для отправки сообщения необходимо войти в аккаунт',
         [
           {
@@ -671,32 +668,32 @@ export default function ListingDetailScreen() {
             text: language === 'az' ? 'Daxil ol' : 'Войти',
             onPress: () => router.push('/auth/login'),
           },
-        ]
+        ],
       );
       return;
     }
-    
+
     if (!seller) {
       logger.error('[ListingDetail] No seller found for listing:', listing.id);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Satıcı məlumatları tapılmadı' : 'Информация о продавце не найдена'
+        language === 'az' ? 'Satıcı məlumatları tapılmadı' : 'Информация о продавце не найдена',
       );
       return;
     }
-    
+
     // ✅ Check if seller allows messaging
     if (seller.privacySettings?.onlyAppMessaging === false && seller.privacySettings?.allowDirectContact === false) {
       logger.warn('[ListingDetail] Seller has disabled messaging:', seller.id);
       Alert.alert(
         language === 'az' ? 'Mesaj göndərilə bilməz' : 'Невозможно отправить сообщение',
-        language === 'az' 
-          ? 'Bu istifadəçi mesajları qəbul etmir' 
-          : 'Этот пользователь не принимает сообщения'
+        language === 'az'
+          ? 'Bu istifadəçi mesajları qəbul etmir'
+          : 'Этот пользователь не принимает сообщения',
       );
       return;
     }
-    
+
     // Navigate to conversation with the seller
     logger.info('[ListingDetail] Navigating to conversation:', seller.id);
     router.push(`/conversation/${seller.id}?listingId=${listing.id}&listingTitle=${encodeURIComponent(listing.title[language])}`);
@@ -708,7 +705,7 @@ export default function ListingDetailScreen() {
     const expiresAt = new Date(listing.expiresAt);
     const diffTime = Math.abs(expiresAt.getTime() - now.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return diffDays;
   };
 
@@ -722,7 +719,7 @@ export default function ListingDetailScreen() {
           style={styles.image}
           contentFit="cover"
         />
-        
+
         {listing.images.length > 1 && (
           <>
             {currentImageIndex > 0 && (
@@ -730,13 +727,13 @@ export default function ListingDetailScreen() {
                 <ChevronLeft size={24} color="white" />
               </TouchableOpacity>
             )}
-            
+
             {currentImageIndex < listing.images.length - 1 && (
               <TouchableOpacity style={[styles.imageNav, styles.nextButton]} onPress={handleNextImage}>
                 <ChevronRight size={24} color="white" />
               </TouchableOpacity>
             )}
-            
+
             <View style={styles.pagination}>
               {listing.images.map((_, index) => (
                 <View
@@ -750,36 +747,36 @@ export default function ListingDetailScreen() {
             </View>
           </>
         )}
-        
+
         <View style={styles.imageActions}>
           <TouchableOpacity style={styles.actionButton} onPress={handleFavoriteToggle}>
-            <Heart 
-              size={20} 
-              color="white" 
-              fill={isFavorite ? 'white' : 'transparent'} 
+            <Heart
+              size={20}
+              color="white"
+              fill={isFavorite ? 'white' : 'transparent'}
             />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
             <Share size={20} color="white" />
           </TouchableOpacity>
-          
+
           {seller && (
-            <TouchableOpacity 
-              style={styles.actionButton} 
+            <TouchableOpacity
+              style={styles.actionButton}
               onPress={() => setShowUserActionModal(true)}
             >
               <MoreVertical size={20} color="white" />
             </TouchableOpacity>
           )}
         </View>
-        
+
         {listing.isFeatured && (
           <View style={styles.adTypeBadge}>
             <Text style={styles.adTypeText}>VIP</Text>
           </View>
         )}
-        
+
         {listing.isPremium && !listing.isFeatured && (
           <View style={[styles.adTypeBadge, styles.premiumBadge]}>
             <Text style={styles.adTypeText}>
@@ -788,7 +785,7 @@ export default function ListingDetailScreen() {
           </View>
         )}
       </View>
-      
+
       <View style={styles.content}>
         <View style={styles.priceRow}>
           {priceInfo && priceInfo.absoluteSavings >= 1 ? (
@@ -818,7 +815,7 @@ export default function ListingDetailScreen() {
               <View style={styles.savingsInfo}>
                 <Text style={styles.savingsText}>
                   {language === 'az' ? 'Qənaət: ' : 'Экономия: '}
-                  {priceInfo.discountType === 'fixed_amount' 
+                  {priceInfo.discountType === 'fixed_amount'
                     ? `${priceInfo.absoluteSavings} ${listing.currency}`
                     : `${Math.round(priceInfo.discountPercentage)}%`
                   }
@@ -830,38 +827,38 @@ export default function ListingDetailScreen() {
               {listing.price} {listing.currency}
             </Text>
           )}
-          
+
           {daysRemaining <= 3 && (
             <View style={styles.expirationContainer}>
               <Clock size={16} color={Colors.error} />
               <Text style={styles.expirationText}>
-                {language === 'az' 
-                  ? `${daysRemaining} gün qalıb` 
+                {language === 'az'
+                  ? `${daysRemaining} gün qalıb`
                   : `Осталось ${daysRemaining} дн.`}
               </Text>
             </View>
           )}
         </View>
-        
+
         <Text style={styles.title}>{listing.title[language]}</Text>
-        
+
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
             <MapPin size={16} color={Colors.textSecondary} />
             <Text style={styles.infoText}>{listing.location[language]}</Text>
           </View>
-          
+
           <View style={styles.infoItem}>
             <Calendar size={16} color={Colors.textSecondary} />
             <Text style={styles.infoText}>{formatDate(listing.createdAt)}</Text>
           </View>
-          
+
           <View style={styles.infoItem}>
             <Eye size={16} color={Colors.textSecondary} />
             <Text style={styles.infoText}>{listing.views}</Text>
           </View>
         </View>
-        
+
         {(category && subcategory) && (
           <View style={styles.categoryContainer}>
             <Text style={styles.categoryLabel}>
@@ -872,7 +869,7 @@ export default function ListingDetailScreen() {
             </Text>
           </View>
         )}
-        
+
         {/* Active Discounts */}
         {activeDiscounts.length > 0 && (
           <View style={styles.discountsSection}>
@@ -888,13 +885,13 @@ export default function ListingDetailScreen() {
                 <Text style={styles.discountDescription}>{discount.description}</Text>
                 <View style={styles.discountDetails}>
                   <Text style={styles.discountValue}>
-                    {discount.type === 'percentage' 
+                    {discount.type === 'percentage'
                       ? `${discount.value}% ${language === 'az' ? 'endirim' : 'скидка'}`
                       : `${discount.value} ${listing.currency} ${language === 'az' ? 'endirim' : 'скидка'}`
                     }
                   </Text>
-                  <CountdownTimer 
-                    endDate={discount.endDate} 
+                  <CountdownTimer
+                    endDate={discount.endDate}
                     compact={true}
                     style={styles.discountTimer}
                   />
@@ -903,26 +900,26 @@ export default function ListingDetailScreen() {
             ))}
           </View>
         )}
-        
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {language === 'az' ? 'Təsvir' : 'Описание'}
           </Text>
           <Text style={styles.description}>{listing.description[language]}</Text>
         </View>
-        
+
         {seller && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               {language === 'az' ? 'Satıcı' : 'Продавец'}
             </Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.sellerContainer}
               onPress={() => router.push(`/profile/${seller.id}`)}
             >
               <Image source={{ uri: seller.avatar }} style={styles.sellerAvatar} />
-              
+
               <View style={styles.sellerInfo}>
                 <Text style={styles.sellerName}>{seller.name}</Text>
                 <Text style={styles.sellerLocation}>{seller.location[language]}</Text>
@@ -932,11 +929,11 @@ export default function ListingDetailScreen() {
           </View>
         )}
       </View>
-      
+
       <View style={styles.footer}>
         {(listing.contactPreference === 'phone' || listing.contactPreference === 'both') && (
-          <TouchableOpacity 
-            style={[styles.footerButton, styles.callButton]} 
+          <TouchableOpacity
+            style={[styles.footerButton, styles.callButton]}
             onPress={handleContact}
           >
             <Phone size={20} color="white" />
@@ -945,14 +942,14 @@ export default function ListingDetailScreen() {
             </Text>
           </TouchableOpacity>
         )}
-        
+
         {(listing.contactPreference === 'message' || listing.contactPreference === 'both') && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.footerButton, 
+              styles.footerButton,
               styles.messageButton,
-              listing.contactPreference === 'message' && styles.fullWidthButton
-            ]} 
+              listing.contactPreference === 'message' && styles.fullWidthButton,
+            ]}
             onPress={handleMessage}
           >
             <MessageCircle size={20} color="white" />
@@ -962,9 +959,9 @@ export default function ListingDetailScreen() {
           </TouchableOpacity>
         )}
       </View>
-      
+
       <ShareModal />
-      
+
       {/* User Action Modal */}
       {seller && (
         <UserActionModal

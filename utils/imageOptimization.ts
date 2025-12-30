@@ -15,8 +15,8 @@ export async function preloadImages(imageUris: string[]): Promise<void> {
       imageUris.map((uri) =>
         Image.prefetch(uri, {
           cachePolicy: 'memory-disk',
-        })
-      )
+        }),
+      ),
     );
   } catch (error) {
     if (__DEV__) {
@@ -34,12 +34,12 @@ export function getOptimizedImageSource(
     width?: number;
     height?: number;
     quality?: number;
-  }
+  },
 ): { uri: string; width?: number; height?: number } {
   // For remote images, you could add query parameters for image optimization services
   // Example: Cloudinary, Imgix, etc.
   const { width, height, quality = 80 } = options || {};
-  
+
   // If using an image CDN, append optimization parameters
   // This is a placeholder - adjust based on your CDN
   if (uri.includes('cdn.') || uri.includes('cloudinary.')) {
@@ -47,7 +47,7 @@ export function getOptimizedImageSource(
     if (width) params.append('w', width.toString());
     if (height) params.append('h', height.toString());
     params.append('q', quality.toString());
-    
+
     const separator = uri.includes('?') ? '&' : '?';
     return {
       uri: `${uri}${separator}${params.toString()}`,
@@ -55,7 +55,7 @@ export function getOptimizedImageSource(
       height,
     };
   }
-  
+
   return { uri, width, height };
 }
 
@@ -65,16 +65,16 @@ export function getOptimizedImageSource(
 export const imageConfig = {
   // Use memory-disk caching for better performance
   cachePolicy: 'memory-disk' as const,
-  
+
   // Fade in animation duration (ms)
   transition: 200,
-  
+
   // Priority for loading
   priority: 'normal' as const,
-  
+
   // Placeholder while loading
   placeholder: undefined,
-  
+
   // Content fit
   contentFit: 'cover' as const,
 };

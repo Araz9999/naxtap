@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   Alert,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import { useLanguageStore } from '@/store/languageStore';
 import { useStoreStore } from '@/store/storeStore';
@@ -22,7 +22,7 @@ import {
   XCircle,
   Zap,
   Package,
-  Shield
+  Shield,
 } from 'lucide-react-native';
 
 interface StoreExpirationManagerProps {
@@ -32,26 +32,26 @@ interface StoreExpirationManagerProps {
 
 export default function StoreExpirationManager({ storeId, showCompact = false }: StoreExpirationManagerProps) {
   const { language } = useLanguageStore();
-  const { 
-    getExpirationInfo, 
-    getExpiredStoreActions, 
+  const {
+    getExpirationInfo,
+    getExpiredStoreActions,
     sendExpirationNotification,
     renewStore,
     reactivateStore,
     getStorePlans,
-    getStoreListingConflicts
+    getStoreListingConflicts,
   } = useStoreStore();
   const [showDetailsModal, setShowDetailsModal] = useState<boolean>(false);
   const [showRenewModal, setShowRenewModal] = useState<boolean>(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('basic');
-  
+
   const expirationInfo = getExpirationInfo(storeId);
   const storeActions = getExpiredStoreActions(storeId);
   const storePlans = getStorePlans();
   const listingConflicts = getStoreListingConflicts(storeId);
-  
+
   if (!expirationInfo) return null;
-  
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <CheckCircle size={16} color={Colors.success} />;
@@ -61,7 +61,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
       default: return <Info size={16} color={Colors.textSecondary} />;
     }
   };
-  
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return Colors.success;
@@ -71,7 +71,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
       default: return Colors.textSecondary;
     }
   };
-  
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'active': return language === 'az' ? 'Aktiv' : 'Активен';
@@ -81,28 +81,28 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
       default: return language === 'az' ? 'Naməlum' : 'Неизвестно';
     }
   };
-  
+
   const handleRenewStore = async () => {
     if (!storeId) {
       logger.error('[StoreExpiration] No store ID provided');
       return;
     }
-    
+
     if (!selectedPlanId) {
       logger.error('[StoreExpiration] No plan selected');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Paket seçilməyib' : 'Пакет не выбран'
+        language === 'az' ? 'Paket seçilməyib' : 'Пакет не выбран',
       );
       return;
     }
-    
+
     logger.info('[StoreExpiration] Renewing store:', { storeId, planId: selectedPlanId, canReactivate: storeActions.canReactivate });
-    
+
     try {
       // Check if 20% discount should be applied (grace period)
       const applyDiscount = expirationInfo?.status === 'grace_period';
-      
+
       if (storeActions.canReactivate) {
         await reactivateStore(storeId, selectedPlanId);
         logger.info('[StoreExpiration] Store reactivated successfully');
@@ -110,50 +110,50 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
         await renewStore(storeId, selectedPlanId, applyDiscount);
       }
       setShowRenewModal(false);
-      
-      const discountMessage = applyDiscount 
-        ? (language === 'az' 
-            ? ' 20% endirim tətbiq edildi!' 
-            : ' Применена скидка 20%!')
+
+      const discountMessage = applyDiscount
+        ? (language === 'az'
+          ? ' 20% endirim tətbiq edildi!'
+          : ' Применена скидка 20%!')
         : '';
-      
+
       Alert.alert(
         language === 'az' ? 'Uğurlu!' : 'Успешно!',
-        (language === 'az' ? 'Mağaza yeniləndi' : 'Магазин обновлен') + discountMessage
+        (language === 'az' ? 'Mağaza yeniləndi' : 'Магазин обновлен') + discountMessage,
       );
     } catch (error) {
       logger.error('[StoreExpiration] Store renewal failed:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Yeniləmə zamanı xəta baş verdi' : 'Ошибка при обновлении'
+        language === 'az' ? 'Yeniləmə zamanı xəta baş verdi' : 'Ошибка при обновлении',
       );
     }
   };
-  
+
   const sendNotification = async (type: 'warning' | 'grace_period' | 'deactivated') => {
     if (!storeId) {
       logger.error('[StoreExpiration] No store ID for notification');
       return;
     }
-    
+
     logger.info('[StoreExpiration] Sending expiration notification:', { storeId, type });
-    
+
     try {
       await sendExpirationNotification(storeId, type);
       logger.info('[StoreExpiration] Notification sent successfully');
       Alert.alert(
         language === 'az' ? 'Bildiriş göndərildi' : 'Уведомление отправлено',
-        language === 'az' ? 'Xəbərdarlıq bildiriş göndərildi' : 'Предупреждение отправлено'
+        language === 'az' ? 'Xəbərdarlıq bildiriş göndərildi' : 'Предупреждение отправлено',
       );
     } catch (error) {
       logger.error('[StoreExpiration] Notification failed:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Bildiriş göndərilərkən xəta baş verdi' : 'Ошибка при отправке уведомления'
+        language === 'az' ? 'Bildiriş göndərilərkən xəta baş verdi' : 'Ошибка при отправке уведомления',
       );
     }
   };
-  
+
   if (showCompact) {
     return (
       <View style={styles.compactContainer}>
@@ -162,14 +162,14 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
           <Text style={[styles.compactStatus, { color: getStatusColor(expirationInfo.status) }]}>
             {getStatusText(expirationInfo.status)}
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setShowDetailsModal(true)}
             style={styles.compactInfoButton}
           >
             <Info size={14} color={Colors.primary} />
           </TouchableOpacity>
         </View>
-        
+
         {expirationInfo.status !== 'active' && (
           <Text style={styles.compactAction}>
             {storeActions.recommendedAction}
@@ -178,7 +178,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -188,8 +188,8 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
             {getStatusText(expirationInfo.status)}
           </Text>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           onPress={() => setShowDetailsModal(true)}
           style={styles.infoButton}
         >
@@ -199,7 +199,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
           </Text>
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.content}>
         <Text style={styles.nextAction}>{expirationInfo.nextAction}</Text>
         {expirationInfo.nextActionDate && (
@@ -207,15 +207,15 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
             {language === 'az' ? 'Tarix: ' : 'Дата: '}{expirationInfo.nextActionDate}
           </Text>
         )}
-        
+
         <Text style={styles.recommendation}>
           {storeActions.recommendedAction}
         </Text>
       </View>
-      
+
       <View style={styles.actions}>
         {storeActions.canRenew && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.renewButton]}
             onPress={() => setShowRenewModal(true)}
           >
@@ -225,9 +225,9 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
             </Text>
           </TouchableOpacity>
         )}
-        
+
         {storeActions.canReactivate && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.reactivateButton]}
             onPress={() => setShowRenewModal(true)}
           >
@@ -237,9 +237,9 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
             </Text>
           </TouchableOpacity>
         )}
-        
+
         {expirationInfo.status === 'grace_period' && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.notifyButton]}
             onPress={() => sendNotification('grace_period')}
           >
@@ -250,7 +250,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
           </TouchableOpacity>
         )}
       </View>
-      
+
       {/* Details Modal */}
       <Modal
         visible={showDetailsModal}
@@ -263,7 +263,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
             <Text style={styles.modalTitle}>
               {language === 'az' ? 'Mağaza vəziyyəti haqqında' : 'О состоянии магазина'}
             </Text>
-            
+
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               <View style={styles.detailSection}>
                 <Text style={styles.detailSectionTitle}>
@@ -276,7 +276,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   </Text>
                 </View>
               </View>
-              
+
               {expirationInfo.status === 'active' && (
                 <View style={styles.detailSection}>
                   <Text style={styles.detailSectionTitle}>
@@ -287,7 +287,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   </Text>
                 </View>
               )}
-              
+
               {expirationInfo.status === 'grace_period' && (
                 <View style={styles.detailSection}>
                   <Text style={styles.detailSectionTitle}>
@@ -298,7 +298,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   </Text>
                 </View>
               )}
-              
+
               {expirationInfo.status === 'deactivated' && (
                 <View style={styles.detailSection}>
                   <Text style={styles.detailSectionTitle}>
@@ -309,7 +309,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   </Text>
                 </View>
               )}
-              
+
               <View style={styles.detailSection}>
                 <Text style={styles.detailSectionTitle}>
                   {language === 'az' ? 'Növbəti addım' : 'Следующий шаг'}
@@ -321,7 +321,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   </Text>
                 )}
               </View>
-              
+
               <View style={styles.detailSection}>
                 <Text style={styles.detailSectionTitle}>
                   {language === 'az' ? 'Tövsiyə' : 'Рекомендация'}
@@ -330,7 +330,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   {storeActions.recommendedAction}
                 </Text>
               </View>
-              
+
               {listingConflicts && listingConflicts.length > 0 && (
                 <View style={styles.conflictSection}>
                   <View style={styles.conflictHeader}>
@@ -339,40 +339,40 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                       {language === 'az' ? 'Məhsul müddəti konflikti' : 'Конфликт сроков товаров'}
                     </Text>
                   </View>
-                  
+
                   <Text style={styles.conflictDescription}>
-                    {language === 'az' 
+                    {language === 'az'
                       ? `${listingConflicts.length} məhsulun müddəti mağaza müddətindən uzundur. Bu məhsullar mağaza bağlandıqdan sonra da aktiv qalacaq.`
                       : `У ${listingConflicts.length} товаров срок действия дольше срока магазина. Эти товары останутся активными после закрытия магазина.`
                     }
                   </Text>
-                  
+
                   <View style={styles.conflictOptions}>
                     <Text style={styles.conflictOptionsTitle}>
                       {language === 'az' ? 'Seçimlər:' : 'Варианты:'}
                     </Text>
-                    
+
                     <View style={styles.conflictOption}>
                       <Shield size={14} color={Colors.primary} />
                       <Text style={styles.conflictOptionText}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? 'Mağazanı yeniləyin ki, bütün məhsullar aktiv qalsın'
                           : 'Обновите магазин, чтобы все товары остались активными'
                         }
                       </Text>
                     </View>
-                    
+
                     <View style={styles.conflictOption}>
                       <Package size={14} color={Colors.textSecondary} />
                       <Text style={styles.conflictOptionText}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? 'Məhsullar müstəqil olaraq aktiv qalacaq, lakin mağaza bağlı olacaq'
                           : 'Товары останутся активными независимо, но магазин будет закрыт'
                         }
                       </Text>
                     </View>
                   </View>
-                  
+
                   <View style={styles.conflictListings}>
                     <Text style={styles.conflictListingsTitle}>
                       {language === 'az' ? 'Təsir edilən məhsullar:' : 'Затронутые товары:'}
@@ -381,7 +381,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                       <View key={index} style={styles.conflictListing}>
                         <Text style={styles.conflictListingTitle}>{conflict.title}</Text>
                         <Text style={styles.conflictListingDays}>
-                          {language === 'az' 
+                          {language === 'az'
                             ? `${conflict.remainingDays} gün qalıb`
                             : `${conflict.remainingDays} дней осталось`
                           }
@@ -390,7 +390,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                     ))}
                     {listingConflicts.length > 3 && (
                       <Text style={styles.conflictMoreText}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? `və daha ${listingConflicts.length - 3} məhsul...`
                           : `и еще ${listingConflicts.length - 3} товаров...`
                         }
@@ -399,12 +399,12 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   </View>
                 </View>
               )}
-              
+
               <View style={styles.stepsSection}>
                 <Text style={styles.stepsSectionTitle}>
                   {language === 'az' ? 'Mağaza müddəti prosesi' : 'Процесс истечения магазина'}
                 </Text>
-                
+
                 <View style={styles.stepsList}>
                   <View style={styles.stepItem}>
                     <View style={[styles.stepNumber, { backgroundColor: Colors.success }]}>
@@ -415,13 +415,13 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                         {language === 'az' ? 'Aktiv mağaza' : 'Активный магазин'}
                       </Text>
                       <Text style={styles.stepDescription}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? 'Mağaza normal işləyir, bütün funksiyalar mövcuddur'
                           : 'Магазин работает нормально, все функции доступны'}
                       </Text>
                     </View>
                   </View>
-                  
+
                   <View style={styles.stepItem}>
                     <View style={[styles.stepNumber, { backgroundColor: Colors.secondary }]}>
                       <Text style={styles.stepNumberText}>2</Text>
@@ -431,13 +431,13 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                         {language === 'az' ? 'Güzəşt müddəti (7 gün)' : 'Льготный период (7 дней)'}
                       </Text>
                       <Text style={styles.stepDescription}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? 'Mağaza hələ aktiv, lakin yeniləmə xəbərdarlığı göstərilir'
                           : 'Магазин еще активен, но показывается предупреждение об обновлении'}
                       </Text>
                     </View>
                   </View>
-                  
+
                   <View style={styles.stepItem}>
                     <View style={[styles.stepNumber, { backgroundColor: Colors.error }]}>
                       <Text style={styles.stepNumberText}>3</Text>
@@ -447,13 +447,13 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                         {language === 'az' ? 'Deaktivasiya' : 'Деактивация'}
                       </Text>
                       <Text style={styles.stepDescription}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? 'Mağaza və elanlar gizlədilir, müştərilər görə bilməz'
                           : 'Магазин и объявления скрываются, клиенты не могут их видеть'}
                       </Text>
                     </View>
                   </View>
-                  
+
                   <View style={styles.stepItem}>
                     <View style={[styles.stepNumber, { backgroundColor: Colors.textSecondary }]}>
                       <Text style={styles.stepNumberText}>4</Text>
@@ -463,7 +463,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                         {language === 'az' ? 'Arxivləmə (90 gün sonra)' : 'Архивирование (через 90 дней)'}
                       </Text>
                       <Text style={styles.stepDescription}>
-                        {language === 'az' 
+                        {language === 'az'
                           ? 'Mağaza arxivə köçürülür, məlumatlar qorunur, reaktivasiya mümkündür'
                           : 'Магазин перемещается в архив, данные сохраняются, реактивация возможна'}
                       </Text>
@@ -472,9 +472,9 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                 </View>
               </View>
             </ScrollView>
-            
+
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setShowDetailsModal(false)}
               >
@@ -482,9 +482,9 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   {language === 'az' ? 'Bağla' : 'Закрыть'}
                 </Text>
               </TouchableOpacity>
-              
+
               {(storeActions.canRenew || storeActions.canReactivate) && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.modalActionButton}
                   onPress={() => {
                     setShowDetailsModal(false);
@@ -492,7 +492,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   }}
                 >
                   <Text style={styles.modalActionButtonText}>
-                    {storeActions.canReactivate 
+                    {storeActions.canReactivate
                       ? (language === 'az' ? 'Reaktiv et' : 'Реактивировать')
                       : (language === 'az' ? 'Yenilə' : 'Обновить')
                     }
@@ -503,7 +503,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
           </View>
         </View>
       </Modal>
-      
+
       {/* Renew/Reactivate Modal */}
       <Modal
         visible={showRenewModal}
@@ -514,74 +514,74 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {storeActions.canReactivate 
+              {storeActions.canReactivate
                 ? (language === 'az' ? 'Mağazanı reaktiv et' : 'Реактивировать магазин')
                 : (language === 'az' ? 'Mağazanı yenilə' : 'Обновить магазин')
               }
             </Text>
-            
+
             {/* Show 20% discount badge if in grace period */}
             {expirationInfo?.status === 'grace_period' && (
               <View style={styles.discountBanner}>
                 <Text style={styles.discountBannerText}>
-                  🎉 {language === 'az' 
-                    ? '20% ENDİRİM! Güzəşt müddəti ərzində yenilədikdə' 
+                  🎉 {language === 'az'
+                    ? '20% ENDİRİM! Güzəşt müddəti ərzində yenilədikdə'
                     : 'СКИДКА 20%! При продлении в льготный период'}
                 </Text>
               </View>
             )}
-            
+
             <View style={styles.planOptions}>
               {storePlans.map((plan) => {
                 const isDiscounted = expirationInfo?.status === 'grace_period';
                 const originalPrice = plan.price;
                 const discountedPrice = isDiscounted ? plan.price * 0.8 : plan.price;
-                
+
                 return (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     key={plan.id}
                     style={[
                       styles.planOption,
-                      selectedPlanId === plan.id && styles.selectedPlanOption
+                      selectedPlanId === plan.id && styles.selectedPlanOption,
                     ]}
                     onPress={() => setSelectedPlanId(plan.id)}
                   >
                     <View style={styles.planOptionInfo}>
                       <Text style={[
                         styles.planOptionTitle,
-                        selectedPlanId === plan.id && styles.selectedPlanOptionText
+                        selectedPlanId === plan.id && styles.selectedPlanOptionText,
                       ]}>{plan.name[language]}</Text>
-                      
+
                       {isDiscounted ? (
                         <View style={styles.priceContainer}>
                           <Text style={[
                             styles.planOptionPriceOld,
-                            selectedPlanId === plan.id && styles.selectedPlanOptionText
+                            selectedPlanId === plan.id && styles.selectedPlanOptionText,
                           ]}>{originalPrice} AZN</Text>
                           <Text style={[
                             styles.planOptionPriceDiscounted,
-                            selectedPlanId === plan.id && styles.selectedPlanOptionTextBold
+                            selectedPlanId === plan.id && styles.selectedPlanOptionTextBold,
                           ]}>{discountedPrice.toFixed(2)} AZN</Text>
                         </View>
                       ) : (
                         <Text style={[
                           styles.planOptionPrice,
-                          selectedPlanId === plan.id && styles.selectedPlanOptionText
+                          selectedPlanId === plan.id && styles.selectedPlanOptionText,
                         ]}>{plan.price} AZN</Text>
                       )}
-                      
+
                       <Text style={[
                         styles.planOptionFeatures,
-                        selectedPlanId === plan.id && styles.selectedPlanOptionText
+                        selectedPlanId === plan.id && styles.selectedPlanOptionText,
                       ]}>{plan.maxAds} elan, {plan.duration} gün</Text>
                     </View>
                   </TouchableOpacity>
                 );
               })}
             </View>
-            
+
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setShowRenewModal(false)}
               >
@@ -589,7 +589,7 @@ export default function StoreExpirationManager({ storeId, showCompact = false }:
                   {language === 'az' ? 'Ləğv et' : 'Отмена'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalActionButton}
                 onPress={handleRenewStore}
               >

@@ -55,9 +55,9 @@ export default function RatingModal({
     if (!currentUser) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
-          ? 'Reyting vermək üçün daxil olun' 
-          : 'Войдите, чтобы оставить отзыв'
+        language === 'az'
+          ? 'Reyting vermək üçün daxil olun'
+          : 'Войдите, чтобы оставить отзыв',
       );
       return;
     }
@@ -65,9 +65,9 @@ export default function RatingModal({
     if (rating === 0) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
-          ? 'Zəhmət olmasa reyting seçin' 
-          : 'Пожалуйста, выберите рейтинг'
+        language === 'az'
+          ? 'Zəhmət olmasa reyting seçin'
+          : 'Пожалуйста, выберите рейтинг',
       );
       return;
     }
@@ -75,7 +75,7 @@ export default function RatingModal({
     if (validation && !validation.canRate) {
       Alert.alert(
         language === 'az' ? 'Reyting verilə bilməz' : 'Нельзя оставить отзыв',
-        validation.reason || 'Unknown error'
+        validation.reason || 'Unknown error',
       );
       return;
     }
@@ -88,7 +88,7 @@ export default function RatingModal({
     } catch (error) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        error instanceof Error ? error.message : 'Unknown error'
+        error instanceof Error ? error.message : 'Unknown error',
       );
     }
   };
@@ -135,7 +135,7 @@ export default function RatingModal({
               <View style={[styles.infoContainer, { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}>
                 <Shield size={16} color={colors.primary} />
                 <Text style={[styles.infoText, { color: colors.primary }]}>
-                  {language === 'az' 
+                  {language === 'az'
                     ? 'Saxta reytinglərin qarşısını almaq üçün hər hədəfə yalnız 1 dəfə reyting verə bilərsiniz'
                     : 'Для предотвращения фальшивых отзывов можно оставить только 1 отзыв на цель'
                   }

@@ -48,7 +48,7 @@ export default function LiveChatHeader({ agentName, agentStatus, onClose }: Live
       >
         <ArrowLeft size={24} color="#000" />
       </TouchableOpacity>
-      
+
       <View style={styles.info}>
         <Text style={styles.name}>{agentName || t('liveSupport')}</Text>
         {agentStatus && (

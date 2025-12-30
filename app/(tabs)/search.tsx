@@ -13,18 +13,18 @@ import { logger } from '@/utils/logger';
 import { sanitizeNumericInput } from '@/utils/inputValidation';
 export default function SearchScreen() {
   const { language } = useLanguageStore();
-  const { 
-    selectedCategory, 
+  const {
+    selectedCategory,
     selectedSubcategory,
     priceRange,
     sortBy,
-    setSelectedCategory, 
+    setSelectedCategory,
     setSelectedSubcategory,
     setPriceRange,
     setSortBy,
-    resetFilters
+    resetFilters,
   } = useListingStore();
-  
+
   const [showFilters, setShowFilters] = useState(false);
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [minPrice, setMinPrice] = useState(priceRange.min?.toString() || '');
@@ -65,76 +65,76 @@ export default function SearchScreen() {
     // ✅ Trim whitespace from inputs
     const trimmedMin = minPrice?.trim() || '';
     const trimmedMax = maxPrice?.trim() || '';
-    
+
     // ✅ Parse and validate
     const minVal = trimmedMin ? parseFloat(trimmedMin) : null;
     const maxVal = trimmedMax ? parseFloat(trimmedMax) : null;
-    
+
     // ✅ Validate min price
     if (minVal !== null) {
       if (isNaN(minVal) || !isFinite(minVal)) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Minimum qiymət düzgün deyil' : 'Минимальная цена некорректна'
+          language === 'az' ? 'Minimum qiymət düzgün deyil' : 'Минимальная цена некорректна',
         );
         return;
       }
-      
+
       if (minVal < 0) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Minimum qiymət mənfi ola bilməz' : 'Минимальная цена не может быть отрицательной'
+          language === 'az' ? 'Minimum qiymət mənfi ola bilməz' : 'Минимальная цена не может быть отрицательной',
         );
         return;
       }
-      
+
       if (minVal > 1000000) { // ✅ Max 1 million AZN
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Minimum qiymət çox yüksəkdir (max 1,000,000 AZN)' : 'Минимальная цена слишком высока (макс 1,000,000 AZN)'
+          language === 'az' ? 'Minimum qiymət çox yüksəkdir (max 1,000,000 AZN)' : 'Минимальная цена слишком высока (макс 1,000,000 AZN)',
         );
         return;
       }
     }
-    
+
     // ✅ Validate max price
     if (maxVal !== null) {
       if (isNaN(maxVal) || !isFinite(maxVal)) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Maksimum qiymət düzgün deyil' : 'Максимальная цена некорректна'
+          language === 'az' ? 'Maksimum qiymət düzgün deyil' : 'Максимальная цена некорректна',
         );
         return;
       }
-      
+
       if (maxVal < 0) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Maksimum qiymət mənfi ola bilməz' : 'Максимальная цена не может быть отрицательной'
+          language === 'az' ? 'Maksimum qiymət mənfi ola bilməz' : 'Максимальная цена не может быть отрицательной',
         );
         return;
       }
-      
+
       if (maxVal > 1000000) { // ✅ Max 1 million AZN
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Maksimum qiymət çox yüksəkdir (max 1,000,000 AZN)' : 'Максимальная цена слишком высока (макс 1,000,000 AZN)'
+          language === 'az' ? 'Maksimum qiymət çox yüksəkdir (max 1,000,000 AZN)' : 'Максимальная цена слишком высока (макс 1,000,000 AZN)',
         );
         return;
       }
     }
-    
+
     // ✅ Validate min is not greater than max
     if (minVal !== null && maxVal !== null && minVal > maxVal) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
-          ? 'Minimum qiymət maksimumdan böyük ola bilməz' 
-          : 'Минимальная цена не может быть больше максимальной'
+        language === 'az'
+          ? 'Minimum qiymət maksimumdan böyük ola bilməz'
+          : 'Минимальная цена не может быть больше максимальной',
       );
       return;
     }
-    
+
     setPriceRange(minVal, maxVal);
   };
 
@@ -170,9 +170,9 @@ export default function SearchScreen() {
         if (status !== 'granted') {
           Alert.alert(
             language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-            language === 'az' 
-              ? 'Qalereya daxil olmaq üçün icazə lazımdır' 
-              : 'Для доступа к галерее требуется разрешение'
+            language === 'az'
+              ? 'Qalereya daxil olmaq üçün icazə lazımdır'
+              : 'Для доступа к галерее требуется разрешение',
           );
           return;
         }
@@ -192,16 +192,16 @@ export default function SearchScreen() {
         // Since we don't have a backend, we'll just show an alert
         Alert.alert(
           language === 'az' ? 'Şəkillə axtarış' : 'Поиск по изображению',
-          language === 'az' 
-            ? 'Şəkillə axtarış funksiyası hazırda demo rejimindədir' 
-            : 'Функция поиска по изображению сейчас в демо-режиме'
+          language === 'az'
+            ? 'Şəkillə axtarış funksiyası hazırda demo rejimindədir'
+            : 'Функция поиска по изображению сейчас в демо-режиме',
         );
       }
     } catch (error) {
       logger.error('Error picking image:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение'
+        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение',
       );
     }
   };
@@ -210,9 +210,9 @@ export default function SearchScreen() {
     if (Platform.OS === 'web') {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
-          ? 'Kamera ilə axtarış veb versiyada mövcud deyil' 
-          : 'Поиск с помощью камеры недоступен в веб-версии'
+        language === 'az'
+          ? 'Kamera ilə axtarış veb versiyada mövcud deyil'
+          : 'Поиск с помощью камеры недоступен в веб-версии',
       );
       return;
     }
@@ -222,9 +222,9 @@ export default function SearchScreen() {
       if (status !== 'granted') {
         Alert.alert(
           language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-          language === 'az' 
-            ? 'Kameradan istifadə etmək üçün icazə lazımdır' 
-            : 'Для использования камеры требуется разрешение'
+          language === 'az'
+            ? 'Kameradan istifadə etmək üçün icazə lazımdır'
+            : 'Для использования камеры требуется разрешение',
         );
         return;
       }
@@ -241,16 +241,16 @@ export default function SearchScreen() {
         // In a real app, we would send this image to a backend for processing
         Alert.alert(
           language === 'az' ? 'Şəkillə axtarış' : 'Поиск по изображению',
-          language === 'az' 
-            ? 'Şəkillə axtarış funksiyası hazırda demo rejimindədir' 
-            : 'Функция поиска по изображению сейчас в демо-режиме'
+          language === 'az'
+            ? 'Şəkillə axtarış funksiyası hazırda demo rejimindədir'
+            : 'Функция поиска по изображению сейчас в демо-режиме',
         );
       }
     } catch (error) {
       logger.error('Error using camera:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil çəkilə bilmədi' : 'Не удалось сделать фото'
+        language === 'az' ? 'Şəkil çəkilə bilmədi' : 'Не удалось сделать фото',
       );
     }
   };
@@ -259,185 +259,185 @@ export default function SearchScreen() {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <SearchBar />
-        
+
         <View style={styles.imageSearchContainer}>
-        <TouchableOpacity style={styles.imageSearchButton} onPress={pickImage}>
-          <ImageIcon size={20} color={Colors.primary} />
-          <Text style={styles.imageSearchText}>
-            {language === 'az' ? 'Şəkillə axtar' : 'Поиск по фото'}
-          </Text>
-        </TouchableOpacity>
-        
-        {Platform.OS !== 'web' && (
-          <TouchableOpacity style={styles.imageSearchButton} onPress={handleCameraSearch}>
-            <Camera size={20} color={Colors.primary} />
+          <TouchableOpacity style={styles.imageSearchButton} onPress={pickImage}>
+            <ImageIcon size={20} color={Colors.primary} />
             <Text style={styles.imageSearchText}>
-              {language === 'az' ? 'Kamera ilə axtar' : 'Поиск камерой'}
+              {language === 'az' ? 'Şəkillə axtar' : 'Поиск по фото'}
             </Text>
           </TouchableOpacity>
-        )}
-        </View>
-        
-        <View style={styles.filterBar}>
-        <TouchableOpacity style={styles.filterToggle} onPress={toggleFilters}>
-          <Filter size={20} color={Colors.primary} />
-          <Text style={styles.filterToggleText}>
-            {language === 'az' ? 'Filtrlər' : 'Фильтры'}
-          </Text>
-          {showFilters ? (
-            <ChevronUp size={20} color={Colors.primary} />
-          ) : (
-            <ChevronDown size={20} color={Colors.primary} />
-          )}
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.sortToggle} onPress={toggleSortOptions}>
-          <ArrowUpDown size={20} color={Colors.primary} />
-          <Text style={styles.sortToggleText}>
-            {getSortLabel()}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      
-      {showSortOptions && (
-        <View style={styles.sortOptions}>
-          <TouchableOpacity 
-            style={[styles.sortOption, sortBy === 'date' && styles.selectedSortOption]} 
-            onPress={() => handleSortSelect('date')}
-          >
-            <Text style={[styles.sortOptionText, sortBy === 'date' && styles.selectedSortOptionText]}>
-              {language === 'az' ? 'Tarix' : 'Дата'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.sortOption, sortBy === 'price-asc' && styles.selectedSortOption]} 
-            onPress={() => handleSortSelect('price-asc')}
-          >
-            <Text style={[styles.sortOptionText, sortBy === 'price-asc' && styles.selectedSortOptionText]}>
-              {language === 'az' ? 'Qiymət: artana doğru' : 'Цена: по возрастанию'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.sortOption, sortBy === 'price-desc' && styles.selectedSortOption]} 
-            onPress={() => handleSortSelect('price-desc')}
-          >
-            <Text style={[styles.sortOptionText, sortBy === 'price-desc' && styles.selectedSortOptionText]}>
-              {language === 'az' ? 'Qiymət: azalana doğru' : 'Цена: по убыванию'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      
-      {showFilters && (
-        <View style={styles.filtersContainer}>
-          <ScrollView style={styles.filtersScroll}>
-            <View style={styles.filterSection}>
-              <Text style={styles.filterTitle}>
-                {language === 'az' ? 'Kateqoriyalar' : 'Категории'}
+
+          {Platform.OS !== 'web' && (
+            <TouchableOpacity style={styles.imageSearchButton} onPress={handleCameraSearch}>
+              <Camera size={20} color={Colors.primary} />
+              <Text style={styles.imageSearchText}>
+                {language === 'az' ? 'Kamera ilə axtar' : 'Поиск камерой'}
               </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.filterOptions}>
-                  {categories.map(category => (
-                    <TouchableOpacity
-                      key={category.id}
-                      style={[
-                        styles.filterOption,
-                        selectedCategory === category.id && styles.selectedOption
-                      ]}
-                      onPress={() => handleCategorySelect(category.id)}
-                    >
-                      <Text 
-                        style={[
-                          styles.filterOptionText,
-                          selectedCategory === category.id && styles.selectedOptionText
-                        ]}
-                      >
-                        {category.name[language]}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-            
-            {selectedCategoryData && (
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.filterBar}>
+          <TouchableOpacity style={styles.filterToggle} onPress={toggleFilters}>
+            <Filter size={20} color={Colors.primary} />
+            <Text style={styles.filterToggleText}>
+              {language === 'az' ? 'Filtrlər' : 'Фильтры'}
+            </Text>
+            {showFilters ? (
+              <ChevronUp size={20} color={Colors.primary} />
+            ) : (
+              <ChevronDown size={20} color={Colors.primary} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.sortToggle} onPress={toggleSortOptions}>
+            <ArrowUpDown size={20} color={Colors.primary} />
+            <Text style={styles.sortToggleText}>
+              {getSortLabel()}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {showSortOptions && (
+          <View style={styles.sortOptions}>
+            <TouchableOpacity
+              style={[styles.sortOption, sortBy === 'date' && styles.selectedSortOption]}
+              onPress={() => handleSortSelect('date')}
+            >
+              <Text style={[styles.sortOptionText, sortBy === 'date' && styles.selectedSortOptionText]}>
+                {language === 'az' ? 'Tarix' : 'Дата'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortOption, sortBy === 'price-asc' && styles.selectedSortOption]}
+              onPress={() => handleSortSelect('price-asc')}
+            >
+              <Text style={[styles.sortOptionText, sortBy === 'price-asc' && styles.selectedSortOptionText]}>
+                {language === 'az' ? 'Qiymət: artana doğru' : 'Цена: по возрастанию'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortOption, sortBy === 'price-desc' && styles.selectedSortOption]}
+              onPress={() => handleSortSelect('price-desc')}
+            >
+              <Text style={[styles.sortOptionText, sortBy === 'price-desc' && styles.selectedSortOptionText]}>
+                {language === 'az' ? 'Qiymət: azalana doğru' : 'Цена: по убыванию'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {showFilters && (
+          <View style={styles.filtersContainer}>
+            <ScrollView style={styles.filtersScroll}>
               <View style={styles.filterSection}>
                 <Text style={styles.filterTitle}>
-                  {language === 'az' ? 'Alt kateqoriyalar' : 'Подкатегории'}
+                  {language === 'az' ? 'Kateqoriyalar' : 'Категории'}
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.filterOptions}>
-                    {selectedCategoryData?.subcategories?.map(subcategory => (
+                    {categories.map(category => (
                       <TouchableOpacity
-                        key={subcategory.id}
+                        key={category.id}
                         style={[
                           styles.filterOption,
-                          selectedSubcategory === subcategory.id && styles.selectedOption
+                          selectedCategory === category.id && styles.selectedOption,
                         ]}
-                        onPress={() => handleSubcategorySelect(subcategory.id)}
+                        onPress={() => handleCategorySelect(category.id)}
                       >
-                        <Text 
+                        <Text
                           style={[
                             styles.filterOptionText,
-                            selectedSubcategory === subcategory.id && styles.selectedOptionText
+                            selectedCategory === category.id && styles.selectedOptionText,
                           ]}
                         >
-                          {subcategory.name[language]}
+                          {category.name[language]}
                         </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 </ScrollView>
               </View>
-            )}
-            
-            <View style={styles.filterSection}>
-              <Text style={styles.filterTitle}>
-                {language === 'az' ? 'Qiymət' : 'Цена'}
-              </Text>
-              <View style={styles.priceRangeContainer}>
-                <View style={styles.priceInputContainer}>
-                  <TextInput
-                    style={styles.priceInput}
-                    placeholder={language === 'az' ? 'Min' : 'Мин'}
-                    value={minPrice}
-                    onChangeText={(text) => setMinPrice(sanitizeNumericInput(text))} // ✅ Sanitize input
-                    keyboardType="decimal-pad" // ✅ Better keyboard type
-                  />
-                  <Text style={styles.priceCurrency}>AZN</Text>
+
+              {selectedCategoryData && (
+                <View style={styles.filterSection}>
+                  <Text style={styles.filterTitle}>
+                    {language === 'az' ? 'Alt kateqoriyalar' : 'Подкатегории'}
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.filterOptions}>
+                      {selectedCategoryData?.subcategories?.map(subcategory => (
+                        <TouchableOpacity
+                          key={subcategory.id}
+                          style={[
+                            styles.filterOption,
+                            selectedSubcategory === subcategory.id && styles.selectedOption,
+                          ]}
+                          onPress={() => handleSubcategorySelect(subcategory.id)}
+                        >
+                          <Text
+                            style={[
+                              styles.filterOptionText,
+                              selectedSubcategory === subcategory.id && styles.selectedOptionText,
+                            ]}
+                          >
+                            {subcategory.name[language]}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
                 </View>
-                <Text style={styles.priceRangeSeparator}>-</Text>
-                <View style={styles.priceInputContainer}>
-                  <TextInput
-                    style={styles.priceInput}
-                    placeholder={language === 'az' ? 'Max' : 'Макс'}
-                    value={maxPrice}
-                    onChangeText={(text) => setMaxPrice(sanitizeNumericInput(text))} // ✅ Sanitize input
-                    keyboardType="decimal-pad" // ✅ Better keyboard type
-                  />
-                  <Text style={styles.priceCurrency}>AZN</Text>
+              )}
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterTitle}>
+                  {language === 'az' ? 'Qiymət' : 'Цена'}
+                </Text>
+                <View style={styles.priceRangeContainer}>
+                  <View style={styles.priceInputContainer}>
+                    <TextInput
+                      style={styles.priceInput}
+                      placeholder={language === 'az' ? 'Min' : 'Мин'}
+                      value={minPrice}
+                      onChangeText={(text) => setMinPrice(sanitizeNumericInput(text))} // ✅ Sanitize input
+                      keyboardType="decimal-pad" // ✅ Better keyboard type
+                    />
+                    <Text style={styles.priceCurrency}>AZN</Text>
+                  </View>
+                  <Text style={styles.priceRangeSeparator}>-</Text>
+                  <View style={styles.priceInputContainer}>
+                    <TextInput
+                      style={styles.priceInput}
+                      placeholder={language === 'az' ? 'Max' : 'Макс'}
+                      value={maxPrice}
+                      onChangeText={(text) => setMaxPrice(sanitizeNumericInput(text))} // ✅ Sanitize input
+                      keyboardType="decimal-pad" // ✅ Better keyboard type
+                    />
+                    <Text style={styles.priceCurrency}>AZN</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.priceApplyButton}
+                    onPress={handlePriceRangeApply}
+                  >
+                    <Text style={styles.priceApplyButtonText}>OK</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity 
-                  style={styles.priceApplyButton}
-                  onPress={handlePriceRangeApply}
-                >
-                  <Text style={styles.priceApplyButtonText}>OK</Text>
-                </TouchableOpacity>
               </View>
-            </View>
-          </ScrollView>
-          
-          {(selectedCategory || selectedSubcategory || priceRange.min || priceRange.max || searchImage) && (
-            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-              <Text style={styles.clearButtonText}>
-                {language === 'az' ? 'Filtrləri təmizlə' : 'Очистить фильтры'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+            </ScrollView>
+
+            {(selectedCategory || selectedSubcategory || priceRange.min || priceRange.max || searchImage) && (
+              <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+                <Text style={styles.clearButtonText}>
+                  {language === 'az' ? 'Filtrləri təmizlə' : 'Очистить фильтры'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
-      
+
       <View style={styles.listingContainer}>
         <ListingGrid />
       </View>

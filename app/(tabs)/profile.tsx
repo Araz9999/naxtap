@@ -35,7 +35,7 @@ export default function ProfileScreen() {
 
   // Get user's active chats for live support
   const userChats = isAuthenticated ? liveChats.filter(chat =>
-    chat.userId === currentUser?.id && chat.status !== 'closed'
+    chat.userId === currentUser?.id && chat.status !== 'closed',
   ) : [];
   const availableOperators = getAvailableOperators();
   const hasActiveChat = userChats.length > 0;
@@ -61,7 +61,7 @@ export default function ProfileScreen() {
       logger.error('[handleDeleteProfile] User not authenticated');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Hesaba daxil olmamısınız' : 'Вы не авторизованы'
+        language === 'az' ? 'Hesaba daxil olmamısınız' : 'Вы не авторизованы',
       );
       return;
     }
@@ -95,7 +95,7 @@ export default function ProfileScreen() {
         {
           text: t('cancel'),
           style: 'cancel',
-          onPress: () => logger.debug('[handleDeleteProfile] First confirmation cancelled')
+          onPress: () => logger.debug('[handleDeleteProfile] First confirmation cancelled'),
         },
         {
           text: t('delete'),
@@ -114,7 +114,7 @@ export default function ProfileScreen() {
                   {
                     text: t('cancel'),
                     style: 'cancel',
-                    onPress: () => logger.debug('[handleDeleteProfile] Second confirmation cancelled')
+                    onPress: () => logger.debug('[handleDeleteProfile] Second confirmation cancelled'),
                   },
                   {
                     text: language === 'az' ? 'Bəli, profilimi sil' : 'Да, удалить мой профиль',
@@ -148,10 +148,10 @@ export default function ProfileScreen() {
                               onPress: () => {
                                 logger.debug('[handleDeleteProfile] Navigating to login screen');
                                 router.replace('/auth/login');
-                              }
-                            }
+                              },
+                            },
                           ],
-                          { cancelable: false }
+                          { cancelable: false },
                         );
                       } catch (error) {
                         logger.error('[handleDeleteProfile] Error during profile deletion:', error);
@@ -175,7 +175,7 @@ export default function ProfileScreen() {
 
                         Alert.alert(
                           t('error'),
-                          errorMessage
+                          errorMessage,
                         );
                       } finally {
                         // ✅ Always reset loading state
@@ -183,12 +183,12 @@ export default function ProfileScreen() {
                       }
                     },
                   },
-                ]
+                ],
               );
             }, 300);
           },
         },
-      ]
+      ],
     );
   };
 
@@ -255,7 +255,7 @@ export default function ProfileScreen() {
       logger.error('[applyAvatar] Failed to update avatar:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Profil şəkli yenilənmədi' : 'Не удалось обновить фото профиля'
+        language === 'az' ? 'Profil şəkli yenilənmədi' : 'Не удалось обновить фото профиля',
       );
     } finally {
       setIsUpdatingAvatar(false);
@@ -269,7 +269,7 @@ export default function ProfileScreen() {
         if (status !== 'granted') {
           Alert.alert(
             t('permissionRequired'),
-            t('galleryPermissionRequired')
+            t('galleryPermissionRequired'),
           );
           return;
         }
@@ -289,7 +289,7 @@ export default function ProfileScreen() {
       logger.error('[pickAvatarFromGallery] Error:', error);
       Alert.alert(
         t('error'),
-        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение'
+        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение',
       );
     }
   };
@@ -299,7 +299,7 @@ export default function ProfileScreen() {
       if (Platform.OS === 'web') {
         Alert.alert(
           t('error'),
-          language === 'az' ? 'Kamera veb versiyada dəstəklənmir' : 'Камера не поддерживается в веб-версии'
+          language === 'az' ? 'Kamera veb versiyada dəstəklənmir' : 'Камера не поддерживается в веб-версии',
         );
         return;
       }
@@ -308,7 +308,7 @@ export default function ProfileScreen() {
       if (status !== 'granted') {
         Alert.alert(
           t('permissionRequired'),
-          t('cameraPermissionRequired')
+          t('cameraPermissionRequired'),
         );
         return;
       }
@@ -326,7 +326,7 @@ export default function ProfileScreen() {
       logger.error('[pickAvatarFromCamera] Error:', error);
       Alert.alert(
         t('error'),
-        language === 'az' ? 'Kamera açıla bilmədi' : 'Не удалось открыть камеру'
+        language === 'az' ? 'Kamera açıla bilmədi' : 'Не удалось открыть камеру',
       );
     }
   };
@@ -345,14 +345,14 @@ export default function ProfileScreen() {
           {
             text: t('gallery'),
             onPress: () => pickAvatarFromGallery(),
-          }
-        ]
+          },
+        ],
       );
     } catch (error) {
       logger.error('[handleAvatarPress] Error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Bir xəta baş verdi' : 'Произошла ошибка'
+        language === 'az' ? 'Bir xəta baş verdi' : 'Произошла ошибка',
       );
     }
   };
@@ -559,7 +559,7 @@ export default function ProfileScreen() {
           style={[
             styles.menuItem,
             { borderBottomWidth: 0 },
-            isDeletingAccount && styles.menuItemDisabled
+            isDeletingAccount && styles.menuItemDisabled,
           ]}
           onPress={handleDeleteProfile}
           activeOpacity={0.7}

@@ -10,7 +10,7 @@ export const transferProcedure = publicProcedure
       toMerchant: z.string().min(1),
       amount: z.number().positive(),
       description: z.string().min(1),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const merchantId = config.PAYRIFF_MERCHANT_ID;

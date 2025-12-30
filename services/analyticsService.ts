@@ -35,13 +35,13 @@ class AnalyticsService {
     }
 
     logger.info('[AnalyticsService] Initializing analytics:', { platform: Platform.OS });
-    
+
     if (Platform.OS === 'web') {
       await this.initializeGoogleAnalytics();
     }
-    
+
     await this.initializeMixpanel();
-    
+
     logger.info('[AnalyticsService] Analytics initialized successfully');
   }
 
@@ -75,12 +75,12 @@ class AnalyticsService {
         gtag?: (...args: unknown[]) => void;
         dataLayer?: unknown[];
       }
-      
+
       const windowWithGtag = window as unknown as WindowWithGtag;
       windowWithGtag.gtag = windowWithGtag.gtag || function(...args: unknown[]) {
         (windowWithGtag.dataLayer = windowWithGtag.dataLayer || []).push(args);
       };
-      
+
       logger.info('[AnalyticsService] Google Analytics initialized successfully');
     } catch (error) {
       logger.error('[AnalyticsService] Failed to initialize Google Analytics:', error);
@@ -112,38 +112,38 @@ class AnalyticsService {
 
   track(event: AnalyticsEvent): void {
     if (!this.isEnabled) return;
-    
+
     // ===== VALIDATION START =====
-    
+
     // 1. Validate event object
     if (!event || typeof event !== 'object') {
       logger.error('[Analytics] Invalid event object');
       return;
     }
-    
+
     // 2. Validate event name
     if (!event.name || typeof event.name !== 'string' || event.name.trim().length === 0) {
       logger.error('[Analytics] Invalid event name');
       return;
     }
-    
+
     if (event.name.trim().length > 100) {
       logger.error('[Analytics] Event name too long (max 100 chars)');
       return;
     }
-    
+
     // 3. Validate properties (if provided)
     if (event.properties !== undefined && typeof event.properties !== 'object') {
       logger.error('[Analytics] Invalid properties object');
       return;
     }
-    
+
     // 4. Validate userId (if provided)
     if (event.userId !== undefined && typeof event.userId !== 'string') {
       logger.error('[Analytics] Invalid userId');
       return;
     }
-    
+
     // ===== VALIDATION END =====
 
     logger.info('[AnalyticsService] Tracking event:', { name: event.name, userId: event.userId });
@@ -151,7 +151,7 @@ class AnalyticsService {
     if (Platform.OS === 'web') {
       this.trackGoogleAnalytics(event);
     }
-    
+
     this.trackMixpanel(event);
   }
 
@@ -163,7 +163,7 @@ class AnalyticsService {
         gtag?: (command: string, eventName: string, params?: Record<string, unknown>) => void;
       }
       const windowWithGtag = window as unknown as WindowWithGtag;
-      
+
       if (windowWithGtag.gtag) {
         windowWithGtag.gtag('event', event.name, {
           ...event.properties,
@@ -188,7 +188,7 @@ class AnalyticsService {
         };
       }
       const windowWithMixpanel = window as unknown as WindowWithMixpanel;
-      
+
       if (Platform.OS === 'web' && windowWithMixpanel.mixpanel) {
         windowWithMixpanel.mixpanel.track(event.name, event.properties);
         if (event.userId) {
@@ -205,19 +205,19 @@ class AnalyticsService {
 
   identify(userProperties: UserProperties): void {
     if (!this.isEnabled) return;
-    
+
     // ===== VALIDATION START =====
-    
+
     if (!userProperties || typeof userProperties !== 'object') {
       logger.error('[Analytics] Invalid userProperties object');
       return;
     }
-    
+
     if (!userProperties.userId || typeof userProperties.userId !== 'string' || userProperties.userId.trim().length === 0) {
       logger.error('[Analytics] Invalid userId in userProperties');
       return;
     }
-    
+
     // ===== VALIDATION END =====
 
     logger.info('[AnalyticsService] Identifying user:', { userId: userProperties.userId });
@@ -234,7 +234,7 @@ class AnalyticsService {
           };
         }
         const windowWithAnalytics = window as unknown as WindowWithAnalytics;
-        
+
         if (windowWithAnalytics.gtag) {
           windowWithAnalytics.gtag('config', this.googleAnalyticsId, {
             user_id: userProperties.userId,
@@ -253,7 +253,7 @@ class AnalyticsService {
 
   setUserProperties(properties: Partial<UserProperties>): void {
     if (!this.isEnabled) return;
-    
+
     // ✅ Input validation
     if (!properties || Object.keys(properties).length === 0) {
       logger.error('[AnalyticsService] Empty properties object');
@@ -273,7 +273,7 @@ class AnalyticsService {
       logger.error('[Analytics] Invalid pageName');
       return;
     }
-    
+
     this.track({
       name: 'page_view',
       properties: {
@@ -289,7 +289,7 @@ class AnalyticsService {
       logger.error('[Analytics] Invalid action');
       return;
     }
-    
+
     this.track({
       name: 'user_action',
       properties: {
@@ -301,49 +301,49 @@ class AnalyticsService {
 
   trackPurchase(amount: number, currency: string, itemId?: string): void {
     // ===== VALIDATION START =====
-    
+
     // 1. Validate amount
     if (typeof amount !== 'number' || isNaN(amount) || !isFinite(amount)) {
       logger.error('[Analytics] Invalid purchase amount');
       return;
     }
-    
+
     if (amount < 0) {
       logger.error('[Analytics] Purchase amount cannot be negative');
       return;
     }
-    
+
     if (amount > 1000000) {
       logger.error('[Analytics] Purchase amount exceeds maximum (1,000,000)');
       return;
     }
-    
+
     // 2. Validate currency
     if (!currency || typeof currency !== 'string' || currency.trim().length === 0) {
       logger.error('[Analytics] Invalid currency');
       return;
     }
-    
+
     const validCurrencies = ['AZN', 'USD', 'EUR', 'GBP', 'RUB', 'TRY'];
     if (!validCurrencies.includes(currency.toUpperCase())) {
       logger.error(`[Analytics] Invalid currency: ${currency}`);
       return;
     }
-    
+
     // 3. Validate itemId (if provided)
     if (itemId !== undefined && typeof itemId !== 'string') {
       logger.error('[Analytics] Invalid itemId');
       return;
     }
-    
+
     // ===== VALIDATION END =====
-    
+
     this.track({
       name: 'purchase',
       properties: {
         amount: parseFloat(amount.toFixed(2)),
         currency: currency.toUpperCase(),
-        item_id: itemId || "",
+        item_id: itemId || '',
       },
     });
   }

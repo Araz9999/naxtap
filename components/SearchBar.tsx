@@ -16,25 +16,25 @@ function SearchBar() {
   const handleSearch = () => {
     // ✅ Trim and validate search query
     const trimmedQuery = localQuery.trim();
-    
+
     // ✅ Prevent searching with only whitespace
     if (trimmedQuery.length === 0 && searchQuery.length > 0) {
       handleClear();
       return;
     }
-    
+
     // ✅ Validate max length (200 characters)
     if (trimmedQuery.length > 200) {
       setLocalQuery(trimmedQuery.substring(0, 200));
       return;
     }
-    
+
     // ✅ Basic sanitization - remove potentially dangerous characters
     const sanitized = trimmedQuery
       .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
       .replace(/<[^>]+>/g, '') // Remove HTML tags
       .replace(/[<>"']/g, ''); // Remove dangerous chars
-    
+
     setSearchQuery(sanitized);
     applyFilters();
   };
@@ -45,8 +45,8 @@ function SearchBar() {
     applyFilters();
   };
 
-  const placeholder = language === 'az' 
-    ? 'Nə axtarırsınız?' 
+  const placeholder = language === 'az'
+    ? 'Nə axtarırsınız?'
     : 'Что вы ищете?';
 
   return (

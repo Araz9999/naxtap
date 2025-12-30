@@ -1,9 +1,9 @@
 import React from 'react';
-import { 
-  Home, Car, Smartphone, Briefcase, Dog, Music, Store, 
+import {
+  Home, Car, Smartphone, Briefcase, Dog, Music, Store,
   Utensils, BookOpen, Package, ChevronRight, Palette,
-  MessageCircle, Send, Circle, 
-  Copy, Share2, ExternalLink
+  MessageCircle, Send, Circle,
+  Copy, Share2, ExternalLink,
 } from 'lucide-react-native';
 
 export const SocialIcons = {
@@ -39,12 +39,12 @@ export const SocialIcons = {
   ),
   External: ({ size = 24, color = '#666' }: { size?: number; color?: string }) => (
     <ExternalLink size={size} color={color} />
-  )
+  ),
 };
 
-export { 
-  Home, Car, Smartphone, Briefcase, Dog, Music, Store, 
+export {
+  Home, Car, Smartphone, Briefcase, Dog, Music, Store,
   Utensils, BookOpen, Package, ChevronRight, Palette,
-  MessageCircle, Send, Circle, 
-  Copy, Share2, ExternalLink
+  MessageCircle, Send, Circle,
+  Copy, Share2, ExternalLink,
 };

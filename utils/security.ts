@@ -11,7 +11,7 @@ import { sanitizeString, sanitizeHTML, safeJSONParse, RateLimiter } from './vali
  */
 class CSRFTokenManager {
   private token: string | null = null;
-  
+
   generateToken(): string {
     // Generate a cryptographically secure random token
     const array = new Uint8Array(32);
@@ -23,22 +23,22 @@ class CSRFTokenManager {
         array[i] = Math.floor(Math.random() * 256);
       }
     }
-    
+
     this.token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
     return this.token;
   }
-  
+
   getToken(): string {
     if (!this.token) {
       return this.generateToken();
     }
     return this.token;
   }
-  
+
   validateToken(token: string): boolean {
     return this.token === token;
   }
-  
+
   clearToken(): void {
     this.token = null;
   }
@@ -73,11 +73,11 @@ export function getSecurityHeaders(includeCSRF: boolean = true): Record<string, 
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
   };
-  
+
   if (includeCSRF) {
     headers['X-CSRF-Token'] = csrfTokenManager.getToken();
   }
-  
+
   return headers;
 }
 
@@ -88,12 +88,12 @@ export function secureCompare(a: string, b: string): boolean {
   if (a.length !== b.length) {
     return false;
   }
-  
+
   let result = 0;
   for (let i = 0; i < a.length; i++) {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
-  
+
   return result === 0;
 }
 
@@ -109,40 +109,40 @@ export interface PasswordStrength {
 export function checkPasswordStrength(password: string): PasswordStrength {
   const feedback: string[] = [];
   let score = 0;
-  
+
   // Length check
   if (password.length >= 8) score++;
   if (password.length >= 12) score++;
   if (password.length >= 16) score++;
-  
+
   // Complexity checks
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) {
     score++;
   } else {
     feedback.push('Kiçik və böyük hərflərdən istifadə edin');
   }
-  
+
   if (/[0-9]/.test(password)) {
     score++;
   } else {
     feedback.push('Ən azı bir rəqəm əlavə edin');
   }
-  
+
   if (/[^a-zA-Z0-9]/.test(password)) {
     score++;
   } else {
     feedback.push('Xüsusi simvollar əlavə edin');
   }
-  
+
   // Common password check
   const commonPasswords = ['password', '123456', 'qwerty', 'abc123', 'password123'];
   if (commonPasswords.some(common => password.toLowerCase().includes(common))) {
     score = Math.max(0, score - 2);
     feedback.push('Ümumi şifrələrdən istifadə etməyin');
   }
-  
+
   const finalScore = Math.min(4, Math.max(0, score - 2)); // Normalize to 0-4
-  
+
   return {
     score: finalScore,
     feedback,
@@ -162,7 +162,7 @@ export const emailRateLimiter = new RateLimiter(3, 60 * 60 * 1000); // 3 emails 
  */
 export function sanitizeInputs<T extends Record<string, unknown>>(inputs: T): T {
   const sanitized = {} as T;
-  
+
   for (const [key, value] of Object.entries(inputs)) {
     if (typeof value === 'string') {
       sanitized[key as keyof T] = sanitizeString(value) as T[keyof T];
@@ -172,7 +172,7 @@ export function sanitizeInputs<T extends Record<string, unknown>>(inputs: T): T 
       sanitized[key as keyof T] = value as T[keyof T];
     }
   }
-  
+
   return sanitized;
 }
 
@@ -226,33 +226,33 @@ export interface SecurityEvent {
 class SecurityAuditLogger {
   private events: SecurityEvent[] = [];
   private maxEvents = 1000;
-  
+
   log(event: Omit<SecurityEvent, 'timestamp'>): void {
     const fullEvent: SecurityEvent = {
       ...event,
       timestamp: new Date(),
     };
-    
+
     this.events.push(fullEvent);
-    
+
     // Keep only last maxEvents
     if (this.events.length > this.maxEvents) {
       this.events = this.events.slice(-this.maxEvents);
     }
-    
+
     // In production, send to logging service
     if (__DEV__) {
       console.log('[Security Audit]', fullEvent);
     }
   }
-  
+
   getEvents(userId?: string): SecurityEvent[] {
     if (userId) {
       return this.events.filter(e => e.userId === userId);
     }
     return [...this.events];
   }
-  
+
   clearEvents(): void {
     this.events = [];
   }
@@ -265,12 +265,12 @@ export const securityAuditLogger = new SecurityAuditLogger();
  */
 export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
   const sanitized = { ...obj };
-  
+
   // Remove dangerous properties
   delete (sanitized as Record<string, unknown>)['__proto__'];
   delete (sanitized as Record<string, unknown>)['constructor'];
   delete (sanitized as Record<string, unknown>)['prototype'];
-  
+
   return sanitized;
 }
 
@@ -314,14 +314,14 @@ export function validateFileUpload(file: {
   // Check file extension
   const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.doc', '.docx'];
   const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-  
+
   if (!allowedExtensions.includes(extension)) {
     return {
       valid: false,
       error: `Yalnız ${allowedExtensions.join(', ')} formatları qəbul edilir`,
     };
   }
-  
+
   // Check MIME type
   const allowedMimeTypes = [
     'image/jpeg',
@@ -332,17 +332,17 @@ export function validateFileUpload(file: {
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ];
-  
+
   if (!allowedMimeTypes.includes(file.type)) {
     return { valid: false, error: 'Etibarsız fayl tipi' };
   }
-  
+
   // Check file size (10MB max)
   const maxSize = 10 * 1024 * 1024;
   if (file.size > maxSize) {
     return { valid: false, error: 'Fayl ölçüsü maksimum 10MB olmalıdır' };
   }
-  
+
   return { valid: true };
 }
 

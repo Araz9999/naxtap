@@ -19,7 +19,7 @@ export default publicProcedure
       conversationId: input.conversationId,
       senderId: input.senderId,
       isSupport: input.isSupport,
-      messageLength: input.message.length
+      messageLength: input.message.length,
     });
 
     const message: LiveChatMessage = {
@@ -34,25 +34,25 @@ export default publicProcedure
       status: 'sent',
       isSupport: input.isSupport,
     };
-    
+
     const created = liveChatDb.messages.create(message);
     logger.debug('[SendMessage] Message created:', created.id);
-    
+
     const updated = liveChatDb.conversations.update(input.conversationId, {
       lastMessage: input.message,
       lastMessageTime: message.timestamp,
     });
     logger.debug('[SendMessage] Conversation updated:', updated?.id);
-    
+
     setTimeout(() => {
       logger.debug('[SendMessage] Updating status to delivered:', message.id);
       liveChatDb.messages.updateStatus(message.id, 'delivered');
     }, 500);
-    
+
     setTimeout(() => {
       logger.debug('[SendMessage] Updating status to seen:', message.id);
       liveChatDb.messages.updateStatus(message.id, 'seen');
     }, 2000);
-    
+
     return created;
   });

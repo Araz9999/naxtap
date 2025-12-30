@@ -7,7 +7,7 @@ export default publicProcedure
     z.object({
       agentId: z.string(),
       status: z.enum(['online', 'offline', 'busy']),
-    })
+    }),
   )
   .mutation(({ input }) => {
     return liveChatDb.agents.updateStatus(input.agentId, input.status);

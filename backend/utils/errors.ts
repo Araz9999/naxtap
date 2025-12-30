@@ -7,11 +7,11 @@ export class DatabaseError extends Error {
   constructor(
     message: string,
     public originalError?: unknown,
-    public operation?: string
+    public operation?: string,
   ) {
     super(message);
     this.name = 'DatabaseError';
-    
+
     // Capture stack trace
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, DatabaseError);
@@ -23,8 +23,8 @@ export class DatabaseError extends Error {
       name: this.name,
       message: this.message,
       operation: this.operation,
-      originalError: this.originalError instanceof Error 
-        ? this.originalError.message 
+      originalError: this.originalError instanceof Error
+        ? this.originalError.message
         : String(this.originalError),
     };
   }
@@ -34,11 +34,11 @@ export class ValidationError extends Error {
   constructor(
     message: string,
     public field?: string,
-    public value?: unknown
+    public value?: unknown,
   ) {
     super(message);
     this.name = 'ValidationError';
-    
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ValidationError);
     }
@@ -56,11 +56,11 @@ export class ValidationError extends Error {
 export class AuthenticationError extends Error {
   constructor(
     message: string,
-    public reason?: string
+    public reason?: string,
   ) {
     super(message);
     this.name = 'AuthenticationError';
-    
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, AuthenticationError);
     }
@@ -78,11 +78,11 @@ export class AuthenticationError extends Error {
 export class AuthorizationError extends Error {
   constructor(
     message: string,
-    public requiredRole?: string
+    public requiredRole?: string,
   ) {
     super(message);
     this.name = 'AuthorizationError';
-    
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, AuthorizationError);
     }
@@ -101,11 +101,11 @@ export class PaymentError extends Error {
   constructor(
     message: string,
     public code?: string,
-    public transactionId?: string
+    public transactionId?: string,
   ) {
     super(message);
     this.name = 'PaymentError';
-    
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, PaymentError);
     }
@@ -124,11 +124,11 @@ export class PaymentError extends Error {
 export class RateLimitError extends Error {
   constructor(
     message: string,
-    public retryAfter?: number
+    public retryAfter?: number,
   ) {
     super(message);
     this.name = 'RateLimitError';
-    
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, RateLimitError);
     }
@@ -147,11 +147,11 @@ export class ExternalAPIError extends Error {
   constructor(
     message: string,
     public service?: string,
-    public statusCode?: number
+    public statusCode?: number,
   ) {
     super(message);
     this.name = 'ExternalAPIError';
-    
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ExternalAPIError);
     }
@@ -172,7 +172,7 @@ export class ExternalAPIError extends Error {
  */
 export function isErrorType<T extends Error>(
   error: unknown,
-  errorClass: new (...args: unknown[]) => T
+  errorClass: new (...args: unknown[]) => T,
 ): error is T {
   return error instanceof errorClass;
 }
@@ -202,7 +202,7 @@ export function formatErrorForLogging(error: unknown): Record<string, unknown> {
       ...(error as unknown as Record<string, unknown>),
     };
   }
-  
+
   return {
     error: String(error),
   };

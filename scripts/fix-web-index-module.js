@@ -18,7 +18,7 @@ const path = require('path');
     if (scriptTagRegex.test(html)) {
       html = html.replace(
         scriptTagRegex,
-        (m) => m.replace('<script ', '<script type="module" ')
+        (m) => m.replace('<script ', '<script type="module" '),
       );
       fs.writeFileSync(distHtml, html);
       console.log('[fix-web-index-module] Patched dist/index.html with type="module"');

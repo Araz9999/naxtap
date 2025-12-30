@@ -19,14 +19,14 @@ export const verifyPasswordOTPProcedure = publicProcedure
       phone: z.string().optional(),
       otp: z.string().length(6, 'OTP kodu 6 rəqəm olmalıdır'),
     })
-    .refine((data) => data.email || data.phone, {
-      message: 'Email və ya telefon nömrəsi tələb olunur',
-    })
+      .refine((data) => data.email || data.phone, {
+        message: 'Email və ya telefon nömrəsi tələb olunur',
+      }),
   )
   .mutation(async ({ input }) => {
     try {
       const { email, phone, otp } = input;
-      const contactInfo = email 
+      const contactInfo = email
         ? email.toLowerCase().trim()
         : phone?.replace(/\s/g, '') || '';
 
@@ -34,7 +34,7 @@ export const verifyPasswordOTPProcedure = publicProcedure
 
       // Check OTP
       const storedOTP = otpStore.get(contactInfo);
-      
+
       if (!storedOTP) {
         throw new Error('OTP tapılmadı. Zəhmət olmasa yenidən göndərin');
       }

@@ -115,13 +115,13 @@ export default function CreateInvoiceScreen() {
             style: 'cancel',
             onPress: () => router.back(),
           },
-        ]
+        ],
       );
     } catch (error) {
       logger.error('Failed to create invoice:', error);
       Alert.alert(
         'Xəta',
-        error instanceof Error ? error.message : 'Faktura yaradılarkən xəta baş verdi'
+        error instanceof Error ? error.message : 'Faktura yaradılarkən xəta baş verdi',
       );
     }
   };

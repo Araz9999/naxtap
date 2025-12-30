@@ -116,7 +116,7 @@ export default function AdminReportsScreen() {
         language === 'az' ? 'Xəta' : 'Ошибка',
         language === 'az'
           ? (e?.message?.includes('Resolution') ? 'Həll/Rədd səbəbi tələb olunur.' : 'Status yenilənmədi.')
-          : (e?.message?.includes('Resolution') ? 'Требуется причина/резолюция.' : 'Не удалось обновить статус.')
+          : (e?.message?.includes('Resolution') ? 'Требуется причина/резолюция.' : 'Не удалось обновить статус.'),
       );
     },
   });
@@ -224,7 +224,7 @@ export default function AdminReportsScreen() {
       }
       Alert.alert(
         language === 'az' ? 'Məlumat' : 'Инфо',
-        language === 'az' ? 'Hədəf tapılmadı.' : 'Цель не найдена.'
+        language === 'az' ? 'Hədəf tapılmadı.' : 'Цель не найдена.',
       );
     } catch (e) {
       logger.error('[AdminReports] navigation to target failed:', e);
@@ -241,7 +241,7 @@ export default function AdminReportsScreen() {
     if (needsResolution && !res) {
       Alert.alert(
         language === 'az' ? 'Tələb olunur' : 'Требуется',
-        language === 'az' ? 'Həll/Rədd səbəbini yazın.' : 'Укажите причину/резолюцию.'
+        language === 'az' ? 'Həll/Rədd səbəbini yazın.' : 'Укажите причину/резолюцию.',
       );
       return;
     }
@@ -460,8 +460,8 @@ export default function AdminReportsScreen() {
                 <Text style={[styles.kvVal, { color: colors.text }]}>
                   {selectedReport?.status
                     ? (language === 'az'
-                        ? (statusLabelAz[selectedReport.status as Exclude<ReportStatus, 'all'>] || selectedReport.status)
-                        : (statusLabelRu[selectedReport.status as Exclude<ReportStatus, 'all'>] || selectedReport.status))
+                      ? (statusLabelAz[selectedReport.status as Exclude<ReportStatus, 'all'>] || selectedReport.status)
+                      : (statusLabelRu[selectedReport.status as Exclude<ReportStatus, 'all'>] || selectedReport.status))
                     : '-'}
                 </Text>
               </View>

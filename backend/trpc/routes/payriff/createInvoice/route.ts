@@ -24,7 +24,7 @@ export const createInvoiceProcedure = publicProcedure
       amountDynamic: z.boolean().optional(),
       directPay: z.boolean().optional(),
       metadata: z.record(z.string(), z.string()).optional(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const merchantId = config.PAYRIFF_MERCHANT_ID;

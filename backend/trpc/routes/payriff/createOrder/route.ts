@@ -15,7 +15,7 @@ export const createOrderProcedure = publicProcedure
       cardSave: z.boolean().optional(),
       operation: z.enum(['PURCHASE', 'PRE_AUTH']).optional(),
       metadata: z.record(z.string(), z.string()).optional(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const secretKey = config.PAYRIFF_SECRET_KEY;

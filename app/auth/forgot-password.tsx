@@ -11,7 +11,7 @@ import { validateEmail } from '@/utils/inputValidation';
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { language } = useLanguageStore();
-  
+
   const [contactInfo, setContactInfo] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +20,7 @@ export default function ForgotPasswordScreen() {
   const [otpCode, setOtpCode] = useState('');
   const [contactType, setContactType] = useState<'email' | 'phone'>('email');
   const [resendSecondsLeft, setResendSecondsLeft] = useState(0);
-  
+
   const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation();
   const verifyOTPMutation = trpc.auth.verifyPasswordOTP.useMutation();
 
@@ -31,25 +31,25 @@ export default function ForgotPasswordScreen() {
     }, 1000);
     return () => clearInterval(id);
   }, [resendSecondsLeft]);
-  
+
   const detectContactType = (input: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[+]?[0-9\s\-\(\)]{7,}$/;
-    
+
     if (emailRegex.test(input)) {
       return 'email';
     } else if (phoneRegex.test(input.replace(/\s/g, ''))) {
       return 'phone';
     }
-    
+
     // Default detection based on presence of @ symbol
     return input.includes('@') ? 'email' : 'phone';
   };
-  
+
   const handleContactInfoChange = (text: string) => {
     setContactInfo(text);
   };
-  
+
   const handlePhoneChange = (text: string) => {
     // Remove any non-digit characters except spaces and dashes
     const cleaned = text.replace(/[^0-9\s\-]/g, '');
@@ -57,77 +57,77 @@ export default function ForgotPasswordScreen() {
     setContactInfo('+994 ' + cleaned);
     setContactType('phone');
   };
-  
+
   const handleSendResetCode = async () => {
     // ===== VALIDATION START =====
-    
+
     // 1. Contact info required
     if (!contactInfo || typeof contactInfo !== 'string' || contactInfo.trim().length === 0) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        contactType === 'email' 
+        contactType === 'email'
           ? (language === 'az' ? 'E-poçt ünvanını daxil edin' : 'Введите адрес электронной почты')
-          : (language === 'az' ? 'Mobil nömrəni daxil edin' : 'Введите номер телефона')
+          : (language === 'az' ? 'Mobil nömrəni daxil edin' : 'Введите номер телефона'),
       );
       return;
     }
-    
+
     // 2. Auto-detect contact type
     const detectedType = detectContactType(contactInfo.trim());
     setContactType(detectedType);
-    
+
     // 3. Validate based on detected type
     if (detectedType === 'email') {
       const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       const trimmedEmail = contactInfo.trim();
-      
+
       if (!emailRegex.test(trimmedEmail)) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Düzgün e-poçt ünvanı daxil edin' : 'Введите правильный адрес электронной почты'
+          language === 'az' ? 'Düzgün e-poçt ünvanı daxil edin' : 'Введите правильный адрес электронной почты',
         );
         return;
       }
-      
+
       if (trimmedEmail.length > 255) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Email çox uzundur' : 'Email слишком длинный'
+          language === 'az' ? 'Email çox uzundur' : 'Email слишком длинный',
         );
         return;
       }
     } else {
       const phoneRegex = /^[+]?[0-9]{10,15}$/;
       const cleanedPhone = contactInfo.replace(/[\s\-\(\)]/g, '');
-      
+
       if (!phoneRegex.test(cleanedPhone)) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Düzgün mobil nömrə daxil edin (10-15 rəqəm)' : 'Введите правильный номер телефона (10-15 цифр)'
+          language === 'az' ? 'Düzgün mobil nömrə daxil edin (10-15 rəqəm)' : 'Введите правильный номер телефона (10-15 цифр)',
         );
         return;
       }
-      
+
       if (cleanedPhone.length < 10) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Telefon nömrəsi çox qısadır' : 'Номер телефона слишком короткий'
+          language === 'az' ? 'Telefon nömrəsi çox qısadır' : 'Номер телефона слишком короткий',
         );
         return;
       }
     }
-    
+
     // ===== VALIDATION END =====
-    
+
     setIsLoading(true);
-    
+
     try {
-      const input = detectedType === 'email' 
+      const input = detectedType === 'email'
         ? { email: contactInfo.trim() }
         : { phone: contactInfo.replace(/[\s\-\(\)]/g, '') };
-      
+
       const result = await forgotPasswordMutation.mutateAsync(input as any);
-      
+
       setIsLoading(false);
       setIsCodeSent(true);
       const retryAfterSeconds = (result as any)?.retryAfterSeconds;
@@ -139,10 +139,10 @@ export default function ForgotPasswordScreen() {
     } catch (error: any) {
       logger.error('Password reset error:', error);
       setIsLoading(false);
-      const errorMessage = error?.message || (language === 'az' 
+      const errorMessage = error?.message || (language === 'az'
         ? 'Kod göndərilərkən xəta baş verdi. Yenidən cəhd edin.'
         : 'Ошибка при отправке кода. Попробуйте снова.');
-      
+
       if (typeof window !== 'undefined') {
         window.alert(errorMessage);
       } else {
@@ -153,10 +153,10 @@ export default function ForgotPasswordScreen() {
 
   const handleVerifyOTP = async () => {
     if (!otpCode || otpCode.length !== 6) {
-      const message = language === 'az' 
+      const message = language === 'az'
         ? 'OTP kodu 6 rəqəm olmalıdır'
         : 'OTP код должен содержать 6 цифр';
-      
+
       if (typeof window !== 'undefined') {
         window.alert(message);
       } else {
@@ -171,9 +171,9 @@ export default function ForgotPasswordScreen() {
       const input = contactType === 'email'
         ? { email: contactInfo.trim(), otp: otpCode }
         : { phone: contactInfo.replace(/[\s\-\(\)]/g, ''), otp: otpCode };
-      
+
       const result = await verifyOTPMutation.mutateAsync(input);
-      
+
       if (result?.resetToken) {
         setIsLoading(false);
         setIsOTPVerified(true);
@@ -186,7 +186,7 @@ export default function ForgotPasswordScreen() {
       const errorMessage = error?.message || (language === 'az'
         ? 'Yanlış OTP kodu. Yenidən cəhd edin.'
         : 'Неверный OTP код. Попробуйте снова.');
-      
+
       if (typeof window !== 'undefined') {
         window.alert(errorMessage);
       } else {
@@ -194,7 +194,7 @@ export default function ForgotPasswordScreen() {
       }
     }
   };
-  
+
   const handleClose = () => {
     if (router.canGoBack()) {
       router.back();
@@ -202,7 +202,7 @@ export default function ForgotPasswordScreen() {
       router.replace('/');
     }
   };
-  
+
   const handleBackToLogin = () => {
     if (router.canGoBack()) {
       router.back();
@@ -210,7 +210,7 @@ export default function ForgotPasswordScreen() {
       router.replace('/');
     }
   };
-  
+
   const handleResendCode = async () => {
     if (resendSecondsLeft > 0) {
       return;
@@ -220,7 +220,7 @@ export default function ForgotPasswordScreen() {
     setOtpCode('');
     await handleSendResetCode();
   };
-  
+
   if (isCodeSent && !isOTPVerified) {
     return (
       <KeyboardAvoidingView
@@ -228,7 +228,7 @@ export default function ForgotPasswordScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
@@ -237,27 +237,27 @@ export default function ForgotPasswordScreen() {
               <X size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.content}>
             <View style={styles.iconContainer}>
               <Mail size={60} color={Colors.primary} />
             </View>
-            
+
             <Text style={styles.title}>
               {language === 'az' ? 'OTP Kodu Daxil Edin' : 'Введите OTP код'}
             </Text>
-            
+
             <Text style={styles.subtitle}>
               {contactType === 'email'
-                ? (language === 'az' 
-                    ? `${contactInfo} ünvanına göndərilən 6 rəqəmli OTP kodunu daxil edin`
-                    : `Введите 6-значный OTP код, отправленный на ${contactInfo}`)
+                ? (language === 'az'
+                  ? `${contactInfo} ünvanına göndərilən 6 rəqəmli OTP kodunu daxil edin`
+                  : `Введите 6-значный OTP код, отправленный на ${contactInfo}`)
                 : (language === 'az'
-                    ? `${contactInfo} nömrəsinə göndərilən 6 rəqəmli OTP kodunu daxil edin`
-                    : `Введите 6-значный OTP код, отправленный на ${contactInfo}`)
+                  ? `${contactInfo} nömrəsinə göndərilən 6 rəqəmli OTP kodunu daxil edin`
+                  : `Введите 6-значный OTP код, отправленный на ${contactInfo}`)
               }
             </Text>
-            
+
             <View style={styles.form}>
               <View style={styles.inputGroup}>
                 <TextInput
@@ -272,12 +272,12 @@ export default function ForgotPasswordScreen() {
                   editable={!isLoading}
                 />
               </View>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[
                   styles.primaryButton,
-                  (!otpCode || otpCode.length !== 6 || isLoading) && styles.disabledButton
-                ]} 
+                  (!otpCode || otpCode.length !== 6 || isLoading) && styles.disabledButton,
+                ]}
                 onPress={handleVerifyOTP}
                 disabled={!otpCode || otpCode.length !== 6 || isLoading}
               >
@@ -289,7 +289,7 @@ export default function ForgotPasswordScreen() {
                   </Text>
                 )}
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.secondaryButton}
                 onPress={handleResendCode}
@@ -298,12 +298,12 @@ export default function ForgotPasswordScreen() {
                 <Text style={styles.secondaryButtonText}>
                   {resendSecondsLeft > 0
                     ? (language === 'az'
-                        ? `Kodu Yenidən Göndər (${resendSecondsLeft})`
-                        : `Отправить код снова (${resendSecondsLeft})`)
+                      ? `Kodu Yenidən Göndər (${resendSecondsLeft})`
+                      : `Отправить код снова (${resendSecondsLeft})`)
                     : (language === 'az' ? 'Kodu Yenidən Göndər' : 'Отправить код снова')}
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.secondaryButton} onPress={handleBackToLogin}>
                 <Text style={styles.secondaryButtonText}>
                   {language === 'az' ? 'Girişə qayıt' : 'Вернуться к входу'}
@@ -315,14 +315,14 @@ export default function ForgotPasswordScreen() {
       </KeyboardAvoidingView>
     );
   }
-  
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
@@ -334,27 +334,27 @@ export default function ForgotPasswordScreen() {
             <X size={24} color={Colors.text} />
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.content}>
           <View style={styles.iconContainer}>
             <User size={60} color={Colors.primary} />
           </View>
-          
+
           <Text style={styles.title}>
             {language === 'az' ? 'Şifrəni unutmusunuz?' : 'Забыли пароль?'}
           </Text>
-          
+
           <Text style={styles.subtitle}>
-            {language === 'az' 
+            {language === 'az'
               ? 'Şifrəniz qeydiyyat zamanı yazdığınız e-poçt və ya nömrənizə göndəriləcək'
               : 'Ваш пароль будет отправлен на email или номер, указанный при регистрации'
             }
           </Text>
-          
+
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <View style={styles.tabContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.tab, contactType === 'email' && styles.activeTab]}
                   onPress={() => {
                     setContactType('email');
@@ -367,8 +367,8 @@ export default function ForgotPasswordScreen() {
                     {language === 'az' ? 'E-poçt' : 'Email'}
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.tab, contactType === 'phone' && styles.activeTab]}
                   onPress={() => {
                     setContactType('phone');
@@ -382,7 +382,7 @@ export default function ForgotPasswordScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-              
+
               <View style={styles.inputContainer}>
                 {contactType === 'email' ? (
                   <View style={styles.inputWithIcon}>
@@ -420,12 +420,12 @@ export default function ForgotPasswordScreen() {
                 )}
               </View>
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[
                 styles.primaryButton,
-                (!contactInfo || isLoading) && styles.disabledButton
-              ]} 
+                (!contactInfo || isLoading) && styles.disabledButton,
+              ]}
               onPress={handleSendResetCode}
               disabled={!contactInfo || isLoading}
             >
@@ -437,7 +437,7 @@ export default function ForgotPasswordScreen() {
                 </Text>
               )}
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.secondaryButton} onPress={handleBackToLogin}>
               <Text style={styles.secondaryButtonText}>
                 {language === 'az' ? 'Girişə qayıt' : 'Вернуться к входу'}

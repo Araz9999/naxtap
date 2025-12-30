@@ -22,10 +22,10 @@ export const createModeratorProcedure = adminProcedure
             'manage_tickets',
             'view_analytics',
             'manage_moderators',
-          ])
+          ]),
         )
         .optional(),
-    })
+    }),
   )
   .mutation(async ({ input }) => {
     try {
@@ -33,9 +33,9 @@ export const createModeratorProcedure = adminProcedure
       if (existingUser) {
         throw new Error('User with this email already exists');
       }
-      
+
       const passwordHash = await hashPassword(input.password);
-      
+
       const moderator = await prisma.user.create({
         data: {
           email: input.email.toLowerCase(),
@@ -59,9 +59,9 @@ export const createModeratorProcedure = adminProcedure
           createdAt: true,
         },
       });
-      
+
       logger.info('[Admin] Moderator created:', { moderatorId: moderator.id });
-      
+
       return moderator;
     } catch (error) {
       logger.error('[Admin] Create moderator error:', error);

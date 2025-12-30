@@ -45,7 +45,7 @@ const notifyStoreFollowersIfNeeded = async (listing: Listing) => {
   // Intentionally left for component-level implementation to avoid circular deps
 };
 
-let expiringListingsInterval: NodeJS.Timeout | null = null;
+let expiringListingsInterval: ReturnType<typeof setInterval> | null = null;
 
 export const initListingStoreInterval = () => {
   if (expiringListingsInterval) {
@@ -85,7 +85,7 @@ export const useListingStore = create<ListingState>((set, get) =>
     setSelectedCategory: (categoryId: number | null) => {
       set({
         selectedCategory: categoryId,
-        selectedSubcategory: null
+        selectedSubcategory: null,
       });
       get().applyFilters();
     },
@@ -112,7 +112,7 @@ export const useListingStore = create<ListingState>((set, get) =>
         selectedCategory,
         selectedSubcategory,
         priceRange,
-        sortBy
+        sortBy,
       } = get();
 
       if (!listings || !Array.isArray(listings)) {
@@ -248,7 +248,7 @@ export const useListingStore = create<ListingState>((set, get) =>
         selectedSubcategory: null,
         priceRange: { min: null, max: null },
         sortBy: null,
-        filteredListings: get().listings
+        filteredListings: get().listings,
       });
     },
 
@@ -268,7 +268,7 @@ export const useListingStore = create<ListingState>((set, get) =>
       }
 
       set(state => ({
-        listings: [listing, ...state.listings]
+        listings: [listing, ...state.listings],
       }));
 
       const unusedViews = get().getUserUnusedViews(listing.userId);
@@ -281,7 +281,7 @@ export const useListingStore = create<ListingState>((set, get) =>
             if (sendNotification && typeof sendNotification === 'function') {
               sendNotification(
                 'Baxışlar avtomatik tətbiq edildi',
-                `${unusedViews} istifadə olunmayan baxış yeni elanınıza avtomatik olaraq tətbiq edildi.`
+                `${unusedViews} istifadə olunmayan baxış yeni elanınıza avtomatik olaraq tətbiq edildi.`,
               );
             }
           } catch (err) {
@@ -329,8 +329,8 @@ export const useListingStore = create<ListingState>((set, get) =>
 
       set(state => ({
         listings: state.listings.map(listing =>
-          listing.id === id ? { ...listing, ...updates } : listing
-        )
+          listing.id === id ? { ...listing, ...updates } : listing,
+        ),
       }));
       get().applyFilters();
     },
@@ -347,8 +347,8 @@ export const useListingStore = create<ListingState>((set, get) =>
         listings: state.listings.map(listing =>
           listing.id === id
             ? { ...listing, deletedAt: now }
-            : listing
-        )
+            : listing,
+        ),
       }));
 
       logger.info('[ListingStore] Listing soft deleted:', id);
@@ -361,8 +361,8 @@ export const useListingStore = create<ListingState>((set, get) =>
         listings: state.listings.map(listing =>
           listing.id === id
             ? { ...listing, deletedAt: now }
-            : listing
-        )
+            : listing,
+        ),
       }));
 
       try {
@@ -424,7 +424,7 @@ export const useListingStore = create<ListingState>((set, get) =>
           if (currentPromotionEnd > now) {
             logger.warn('[promoteListing] Listing already has active promotion:', {
               id,
-              currentEnd: currentPromotionEnd.toISOString()
+              currentEnd: currentPromotionEnd.toISOString(),
             });
           }
         }
@@ -449,10 +449,10 @@ export const useListingStore = create<ListingState>((set, get) =>
                 isVip: type === 'vip',
                 adType: type,
                 promotionEndDate: promotionEndDate.toISOString(),
-                gracePeriodEndDate: gracePeriodEndDate.toISOString()
+                gracePeriodEndDate: gracePeriodEndDate.toISOString(),
               }
-              : l
-          )
+              : l,
+          ),
         }));
 
         get().applyFilters();
@@ -460,7 +460,7 @@ export const useListingStore = create<ListingState>((set, get) =>
         logger.info('[promoteListing] Promotion successful:', {
           id,
           type,
-          endsAt: promotionEndDate.toISOString()
+          endsAt: promotionEndDate.toISOString(),
         });
       } catch (error) {
         logger.error('[promoteListing] Error:', error);
@@ -479,10 +479,10 @@ export const useListingStore = create<ListingState>((set, get) =>
               isPremium: type === 'premium' || type === 'vip',
               isFeatured: type === 'featured' || type === 'vip',
               isVip: type === 'vip',
-              adType: type
+              adType: type,
             }
-            : listing
-        )
+            : listing,
+        ),
       }));
       get().applyFilters();
     },
@@ -525,7 +525,7 @@ export const useListingStore = create<ListingState>((set, get) =>
 
                     sendNotification(
                       'Ön sıra müddəti bitdi',
-                      `"${title}" elanınız alınan baxış sayına çatdığı üçün ön sıralardan çıxarıldı.`
+                      `"${title}" elanınız alınan baxış sayına çatdığı üçün ön sıralardan çıxarıldı.`,
                     );
                   }
                 } catch (error) {
@@ -537,7 +537,7 @@ export const useListingStore = create<ListingState>((set, get) =>
             return updatedListing;
           }
           return listing;
-        })
+        }),
       }));
       get().applyFilters();
     },
@@ -584,7 +584,7 @@ export const useListingStore = create<ListingState>((set, get) =>
             logger.info('[checkExpiringListings] Listing expired:', {
               id: listing.id,
               title: listing.title?.az || 'Unknown',
-              daysRemaining
+              daysRemaining,
             });
 
             if (listing.targetViewsForFeatured && listing.views < listing.targetViewsForFeatured) {
@@ -596,8 +596,8 @@ export const useListingStore = create<ListingState>((set, get) =>
                 set(state => ({
                   userUnusedViews: {
                     ...state.userUnusedViews,
-                    [listing.userId]: currentUnusedViews + unusedViews
-                  }
+                    [listing.userId]: currentUnusedViews + unusedViews,
+                  },
                 }));
 
                 try {
@@ -605,7 +605,7 @@ export const useListingStore = create<ListingState>((set, get) =>
                   if (sendNotification && typeof sendNotification === 'function') {
                     sendNotification(
                       'İstifadə olunmayan baxışlar saxlanıldı',
-                      `"${listing.title?.az || 'Elanınız'}" elanınızın müddəti bitdi. ${unusedViews} istifadə olunmayan baxış yeni elanlarınızda avtomatik tətbiq olunacaq.`
+                      `"${listing.title?.az || 'Elanınız'}" elanınızın müddəti bitdi. ${unusedViews} istifadə olunmayan baxış yeni elanlarınızda avtomatik tətbiq olunacaq.`,
                     );
                   }
                 } catch (notifError) {
@@ -619,7 +619,7 @@ export const useListingStore = create<ListingState>((set, get) =>
               targetViewsForFeatured: undefined,
               purchasedViews: undefined,
               archivedAt: new Date().toISOString(),
-              isArchived: true
+              isArchived: true,
             });
 
             logger.info('[checkExpiringListings] Listing auto-archived:', listing.id);
@@ -637,7 +637,7 @@ export const useListingStore = create<ListingState>((set, get) =>
                 if (sendNotification && typeof sendNotification === 'function') {
                   sendNotification(
                     '📅 Elan müddəti bitir - 7 gün qalıb',
-                    `"${listing.title?.az || 'Elanınız'}" elanınızın müddəti 7 gündə bitəcək.\n\n💡 İndi yeniləsəniz 15% endirim əldə edərsiniz!`
+                    `"${listing.title?.az || 'Elanınız'}" elanınızın müddəti 7 gündə bitəcək.\n\n💡 İndi yeniləsəniz 15% endirim əldə edərsiniz!`,
                   );
                   logger.info('[checkExpiringListings] Sent 7-day notification for:', listing.id);
                 }
@@ -657,7 +657,7 @@ export const useListingStore = create<ListingState>((set, get) =>
                 if (sendNotification && typeof sendNotification === 'function') {
                   sendNotification(
                     '⚠️ Elan müddəti bitir - 3 gün qalıb',
-                    `"${listing.title?.az || 'Elanınız'}" elanınızın müddəti 3 gündə bitəcək.\n\n💡 İndi yeniləsəniz 10% endirim əldə edərsiniz!`
+                    `"${listing.title?.az || 'Elanınız'}" elanınızın müddəti 3 gündə bitəcək.\n\n💡 İndi yeniləsəniz 10% endirim əldə edərsiniz!`,
                   );
                   logger.info('[checkExpiringListings] Sent 3-day notification for:', listing.id);
                 }
@@ -677,7 +677,7 @@ export const useListingStore = create<ListingState>((set, get) =>
                 if (sendNotification && typeof sendNotification === 'function') {
                   sendNotification(
                     '🔴 SON GÜN! Elan sabah bitir',
-                    `"${listing.title?.az || 'Elanınız'}" elanınızın müddəti SABAH bitəcək!\n\n💡 Dərhal yeniləsəniz 5% endirim əldə edərsiniz!`
+                    `"${listing.title?.az || 'Elanınız'}" elanınızın müddəti SABAH bitəcək!\n\n💡 Dərhal yeniləsəniz 5% endirim əldə edərsiniz!`,
                   );
                   logger.info('[checkExpiringListings] Sent 1-day notification for:', listing.id);
                 }
@@ -699,13 +699,13 @@ export const useListingStore = create<ListingState>((set, get) =>
                     isVip: false,
                     adType: 'free',
                     promotionEndDate: undefined,
-                    gracePeriodEndDate: undefined
+                    gracePeriodEndDate: undefined,
                   });
 
                   const { sendNotification } = useThemeStore.getState();
                   sendNotification(
                     'Güzəşt müddəti bitdi',
-                    `"${listing.title.az}" elanınızın güzəşt müddəti bitdi və elan adi rejimə keçdi.`
+                    `"${listing.title.az}" elanınızın güzəşt müddəti bitdi və elan adi rejimə keçdi.`,
                   );
                 } else {
                   const graceDaysRemaining = Math.ceil((gracePeriodEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -713,7 +713,7 @@ export const useListingStore = create<ListingState>((set, get) =>
                     const { sendNotification } = useThemeStore.getState();
                     sendNotification(
                       'Güzəşt müddəti bitir',
-                      `"${listing.title.az}" elanınızın güzəşt müddəti ${graceDaysRemaining} gündə bitəcək`
+                      `"${listing.title.az}" elanınızın güzəşt müddəti ${graceDaysRemaining} gündə bitəcək`,
                     );
                   }
                 }
@@ -723,13 +723,13 @@ export const useListingStore = create<ListingState>((set, get) =>
                   isFeatured: false,
                   isVip: false,
                   adType: 'free',
-                  promotionEndDate: undefined
+                  promotionEndDate: undefined,
                 });
 
                 const { sendNotification } = useThemeStore.getState();
                 sendNotification(
                   'Təşviq müddəti bitdi',
-                  `"${listing.title.az}" elanınızın təşviq müddəti bitdi və elan adi rejimə keçdi.`
+                  `"${listing.title.az}" elanınızın təşviq müddəti bitdi və elan adi rejimə keçdi.`,
                 );
               }
             }
@@ -808,10 +808,10 @@ export const useListingStore = create<ListingState>((set, get) =>
               ...l,
               purchasedViews: (l.purchasedViews || 0) + viewCount,
               isFeatured: true,
-              targetViewsForFeatured: targetViews
+              targetViewsForFeatured: targetViews,
             }
-            : l
-        )
+            : l,
+        ),
       }));
 
       get().applyFilters();
@@ -819,7 +819,7 @@ export const useListingStore = create<ListingState>((set, get) =>
       const { sendNotification } = useThemeStore.getState();
       sendNotification(
         'Baxış satın alındı',
-        `${viewCount} baxış uğurla satın alındı. Elanınız ${targetViews} baxışa çatana qədər ön sıralarda görünəcək.`
+        `${viewCount} baxış uğurla satın alındı. Elanınız ${targetViews} baxışa çatana qədər ön sıralarda görünəcək.`,
       );
     },
 
@@ -838,16 +838,16 @@ export const useListingStore = create<ListingState>((set, get) =>
               creativeEffects: effects.map((effect, index) => ({
                 ...effect,
                 endDate: effectEndDates[index].endDate.toISOString(),
-                isActive: true
-              }))
+                isActive: true,
+              })),
             }
-            : l
-        )
+            : l,
+        ),
       }));
 
       logger.info('[ListingStore] Creative effects applied successfully:', {
         listingId: id,
-        effectCount: effects.length
+        effectCount: effects.length,
       });
 
       get().applyFilters();
@@ -855,7 +855,7 @@ export const useListingStore = create<ListingState>((set, get) =>
       const { sendNotification } = useThemeStore.getState();
       sendNotification(
         'Kreativ effektlər tətbiq edildi',
-        `${effects.length} kreativ effekt elanınıza uğurla tətbiq edildi.`
+        `${effects.length} kreativ effekt elanınıza uğurla tətbiq edildi.`,
       );
     },
 
@@ -872,8 +872,8 @@ export const useListingStore = create<ListingState>((set, get) =>
         set(state => ({
           userUnusedViews: {
             ...state.userUnusedViews,
-            [userId]: 0
-          }
+            [userId]: 0,
+          },
         }));
 
         const state = get();
@@ -889,10 +889,10 @@ export const useListingStore = create<ListingState>((set, get) =>
                   ...l,
                   purchasedViews: (l.purchasedViews || 0) + unusedViews,
                   isFeatured: true,
-                  targetViewsForFeatured: targetViews
+                  targetViewsForFeatured: targetViews,
                 }
-                : l
-            )
+                : l,
+            ),
           }));
 
           get().applyFilters();
@@ -934,7 +934,7 @@ export const useListingStore = create<ListingState>((set, get) =>
           archivedAt: now,
           isFeatured: false,
           isPremium: false,
-          isVip: false
+          isVip: false,
         });
 
         logger.info('[archiveListing] Listing archived successfully:', id);
@@ -995,7 +995,7 @@ export const useListingStore = create<ListingState>((set, get) =>
         logger.info('[reactivateListing] Reactivating listing:', {
           id,
           packageId,
-          duration: renewalPackage.duration
+          duration: renewalPackage.duration,
         });
 
         const now = new Date();
@@ -1005,12 +1005,12 @@ export const useListingStore = create<ListingState>((set, get) =>
           isArchived: false,
           archivedAt: undefined,
           expiresAt: newExpiresAt.toISOString(),
-          adType: renewalPackage.id as any
+          adType: renewalPackage.id as any,
         });
 
         logger.info('[reactivateListing] Listing reactivated successfully:', {
           id,
-          newExpiresAt: newExpiresAt.toISOString()
+          newExpiresAt: newExpiresAt.toISOString(),
         });
       } catch (error) {
         logger.error('[reactivateListing] Error:', error);
@@ -1035,7 +1035,7 @@ export const useListingStore = create<ListingState>((set, get) =>
         const archivedListings = listings.filter(l =>
           l.userId === userId &&
           !l.deletedAt &&
-          (l.isArchived || l.archivedAt)
+          (l.isArchived || l.archivedAt),
         );
 
         logger.debug('[getArchivedListings] Found archived listings:', archivedListings.length);
@@ -1092,7 +1092,7 @@ export const useListingStore = create<ListingState>((set, get) =>
         logger.debug('[getExpiringListings] Found expiring listings:', {
           userId,
           days,
-          count: expiringListings.length
+          count: expiringListings.length,
         });
 
         return expiringListings;
@@ -1100,6 +1100,6 @@ export const useListingStore = create<ListingState>((set, get) =>
         logger.error('[getExpiringListings] Error:', error);
         return [];
       }
-    }
-  } as ListingState)
+    },
+  } as ListingState),
 );

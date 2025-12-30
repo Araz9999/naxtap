@@ -52,7 +52,7 @@ export default function AdminTicketsScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   useEffect(() => {
     return () => {
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -91,7 +91,7 @@ export default function AdminTicketsScreen() {
         language === 'az' ? 'Xəta' : 'Ошибка',
         typeof e?.message === 'string' && e.message.trim()
           ? e.message
-          : (language === 'az' ? 'Status yenilənmədi.' : 'Не удалось обновить статус.')
+          : (language === 'az' ? 'Status yenilənmədi.' : 'Не удалось обновить статус.'),
       );
     },
   });
@@ -109,7 +109,7 @@ export default function AdminTicketsScreen() {
         language === 'az' ? 'Xəta' : 'Ошибка',
         typeof e?.message === 'string' && e.message.trim()
           ? e.message
-          : (language === 'az' ? 'Cavab göndərilmədi.' : 'Не удалось отправить ответ.')
+          : (language === 'az' ? 'Cavab göndərilmədi.' : 'Не удалось отправить ответ.'),
       );
     },
   });
@@ -221,7 +221,7 @@ export default function AdminTicketsScreen() {
     if ((next === 'resolved' || next === 'closed') && !resolution) {
       Alert.alert(
         language === 'az' ? 'Tələb olunur' : 'Требуется',
-        language === 'az' ? 'Həll/bağlama səbəbini yazın.' : 'Укажите причину решения/закрытия.'
+        language === 'az' ? 'Həll/bağlama səbəbini yazın.' : 'Укажите причину решения/закрытия.',
       );
       return;
     }

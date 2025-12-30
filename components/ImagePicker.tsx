@@ -24,14 +24,14 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
   const pickImages = async () => {
     try {
       setIsLoading(true);
-      
+
       // ✅ Request permissions with proper error handling
       if (Platform.OS !== 'web') {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
           Alert.alert(
             language === 'az' ? 'İcazə lazımdır' : 'Требуется разрешение',
-            language === 'az' ? 'Qalereya daxil olmaq üçün icazə lazımdır' : 'Для доступа к галерее требуется разрешение'
+            language === 'az' ? 'Qalereya daxil olmaq üçün icazə lazımdır' : 'Для доступа к галерее требуется разрешение',
           );
           return;
         }
@@ -50,17 +50,17 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
         const maxImages = 10;
         const maxFileSize = 10 * 1024 * 1024; // 10MB per image
         const currentCount = selectedImages.length;
-        
+
         if (currentCount >= maxImages) {
           Alert.alert(
             language === 'az' ? 'Limit aşıldı' : 'Лимит превышен',
-            language === 'az' 
+            language === 'az'
               ? `Maksimum ${maxImages} şəkil əlavə edə bilərsiniz`
-              : `Можно добавить максимум ${maxImages} изображений`
+              : `Можно добавить максимум ${maxImages} изображений`,
           );
           return;
         }
-        
+
         // ✅ Validate each image size
         const validAssets = [];
         for (const asset of result.assets) {
@@ -69,28 +69,28 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
               language === 'az' ? 'Şəkil çox böyükdür' : 'Изображение слишком большое',
               language === 'az'
                 ? `${asset.fileName || 'Şəkil'} çox böyükdür (max 10MB)`
-                : `${asset.fileName || 'Изображение'} слишком большое (макс 10MB)`
+                : `${asset.fileName || 'Изображение'} слишком большое (макс 10MB)`,
             );
             continue;
           }
           validAssets.push(asset);
         }
-        
+
         if (validAssets.length === 0) {
           return;
         }
-        
+
         const availableSlots = maxImages - currentCount;
         const imageUris = validAssets.slice(0, availableSlots).map(asset => asset.uri);
         setSelectedImages(prev => [...prev, ...imageUris]);
-        
+
         logger.info(`Added ${imageUris.length} images`);
       }
     } catch (error) {
       logger.error('Error picking images:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение'
+        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение',
       );
     } finally {
       setIsLoading(false);
@@ -102,7 +102,7 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
     if (selectedImages.length === 0) {
       Alert.alert(
         language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
-        language === 'az' ? 'Ən azı bir şəkil seçin' : 'Выберите хотя бы одно изображение'
+        language === 'az' ? 'Ən azı bir şəkil seçin' : 'Выберите хотя бы одно изображение',
       );
       return;
     }
@@ -111,7 +111,7 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
     if (!currentUser) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена'
+        language === 'az' ? 'İstifadəçi məlumatı tapılmadı' : 'Информация о пользователе не найдена',
       );
       return;
     }
@@ -120,14 +120,14 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
       selectedImages.forEach((uri, index) => {
         // ✅ Unique ID generation
         const uniqueId = `${Date.now()}_${index}_${Math.random().toString(36).substring(2, 11)}`;
-        
+
         const attachment: MessageAttachment = {
           id: uniqueId,
           type: 'image',
           uri: uri,
           name: `image_${Date.now()}_${index + 1}.jpg`,
           size: 0, // File size not available from URI only
-          mimeType: 'image/jpeg'
+          mimeType: 'image/jpeg',
         };
 
         const message = {
@@ -145,7 +145,7 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
 
         addMessage(conversationId, message);
       });
-      
+
       logger.info(`Sent ${selectedImages.length} images`);
       setSelectedImages([]);
       onClose();
@@ -153,15 +153,15 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
       logger.error('Error sending images:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkillər göndərilə bilmədi' : 'Не удалось отправить изображения'
+        language === 'az' ? 'Şəkillər göndərilə bilmədi' : 'Не удалось отправить изображения',
       );
     }
   };
 
   const renderItem = ({ item, index }: { item: string; index: number }) => (
     <View style={styles.imageContainer}>
-      <Image 
-        source={{ uri: item }} 
+      <Image
+        source={{ uri: item }}
         style={styles.selectedImage}
         cachePolicy="memory-disk"
         transition={200}
@@ -181,8 +181,8 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
       <Text style={styles.title}>
         {language === 'az' ? 'Şəkil seçin' : 'Выберите изображения'}
       </Text>
-      <TouchableOpacity 
-        style={[styles.pickButton, isLoading && styles.disabledButton]} 
+      <TouchableOpacity
+        style={[styles.pickButton, isLoading && styles.disabledButton]}
         onPress={pickImages}
         disabled={isLoading}
       >
@@ -204,7 +204,7 @@ export default function ImagePickerComponent({ conversationId, onClose }: ImageP
           />
           <TouchableOpacity style={styles.sendButton} onPress={sendImages}>
             <Text style={styles.sendButtonText}>
-              {language === 'az' 
+              {language === 'az'
                 ? `Şəkilləri göndər (${selectedImages.length})`
                 : `Отправить изображения (${selectedImages.length})`
               }

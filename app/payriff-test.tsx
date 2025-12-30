@@ -47,7 +47,7 @@ export default function PayriffTestScreen() {
       });
 
       addTestResult('Create Order', 'success', `Order ID: ${result.payload?.orderId}`);
-      
+
       if (result.payload?.paymentUrl) {
         Alert.alert(
           'Uğurlu!',
@@ -58,7 +58,7 @@ export default function PayriffTestScreen() {
               text: 'Bəli',
               onPress: () => Linking.openURL(result.payload.paymentUrl),
             },
-          ]
+          ],
         );
       }
     } catch (error: any) {
@@ -83,7 +83,7 @@ export default function PayriffTestScreen() {
       });
 
       addTestResult('Create Invoice', 'success', `Invoice Code: ${result.payload?.invoiceCode}`);
-      
+
       if (result.payload?.paymentUrl) {
         Alert.alert(
           'Uğurlu!',
@@ -94,7 +94,7 @@ export default function PayriffTestScreen() {
               text: 'Bəli',
               onPress: () => Linking.openURL(result.payload.paymentUrl),
             },
-          ]
+          ],
         );
       }
     } catch (error: any) {
@@ -113,7 +113,7 @@ export default function PayriffTestScreen() {
         addTestResult(
           'Get Wallet',
           'success',
-          `Balans: ${getWalletQuery.data.payload?.totalBalance || 0} AZN`
+          `Balans: ${getWalletQuery.data.payload?.totalBalance || 0} AZN`,
         );
       }
     } catch (error: any) {
@@ -141,7 +141,7 @@ export default function PayriffTestScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Test Parametrləri</Text>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Məbləğ (AZN)</Text>
             <TextInput

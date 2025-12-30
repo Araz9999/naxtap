@@ -41,34 +41,35 @@ class Logger {
     return LOG_LEVELS[level] >= LOG_LEVELS[this.config.minLevel];
   }
 
-  private formatMessage(level: LogLevel, message: string, ...args: any[]): string {
+  private formatMessage(level: LogLevel, message: string): string {
     const timestamp = new Date().toISOString();
     const prefix = this.config.prefix ? `[${this.config.prefix}]` : '';
     return `${timestamp} ${prefix}[${level.toUpperCase()}] ${message}`;
   }
 
-  debug(message: string, metadata?: any): void {
+  // Allow console-like usage: logger.info('msg', a, b, c)
+  debug(message: string, ...args: any[]): void {
     if (this.shouldLog('debug')) {
-      console.debug(this.formatMessage('debug', message), metadata || '');
+      console.debug(this.formatMessage('debug', message), ...args);
     }
   }
 
-  info(message: string, metadata?: any): void {
+  info(message: string, ...args: any[]): void {
     if (this.shouldLog('info')) {
-      console.info(this.formatMessage('info', message), metadata || '');
+      console.info(this.formatMessage('info', message), ...args);
     }
   }
 
-  warn(message: string, metadata?: any): void {
+  warn(message: string, ...args: any[]): void {
     if (this.shouldLog('warn')) {
-      console.warn(this.formatMessage('warn', message), metadata || '');
+      console.warn(this.formatMessage('warn', message), ...args);
     }
   }
 
-  error(message: string, error?: Error | unknown, metadata?: any): void {
+  error(message: string, error?: Error | unknown, ...args: any[]): void {
     if (this.shouldLog('error')) {
-      console.error(this.formatMessage('error', message), error || '', metadata || '');
-      
+      console.error(this.formatMessage('error', message), error || '', ...args);
+
       // In production, send to error tracking service
       if (!IS_DEV && error) {
         this.reportError(message, error);

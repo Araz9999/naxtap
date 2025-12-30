@@ -22,7 +22,7 @@ import {
   RefreshCw,
   AlertCircle,
   DollarSign,
-  FileText
+  FileText,
 } from 'lucide-react-native';
 import { useUserStore } from '@/store/userStore';
 import { useLanguageStore } from '@/store/languageStore';
@@ -59,7 +59,7 @@ const filterOptions = [
   { id: 'completed', label: 'Tamamlanmış' },
   { id: 'pending', label: 'Gözləyən' },
   { id: 'failed', label: 'Uğursuz' },
-  { id: 'refunded', label: 'Geri qaytarılmış' }
+  { id: 'refunded', label: 'Geri qaytarılmış' },
 ];
 
 const typeLabels = {
@@ -69,7 +69,7 @@ const typeLabels = {
   premium_feature: 'Premium Xüsusiyyət',
   wallet_topup: 'Balans Artırılması',
   wallet_operation: 'Balans Əməliyyatı',
-  transfer: 'Transfer'
+  transfer: 'Transfer',
 };
 
 export default function PaymentHistoryScreen() {
@@ -78,7 +78,7 @@ export default function PaymentHistoryScreen() {
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
   const colors = getColors(themeMode, colorTheme);
-  
+
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -99,7 +99,7 @@ export default function PaymentHistoryScreen() {
         // swallow - UI handles error state
       });
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, []),
   );
 
   const toPaymentRecord = useCallback((t: PayriffWalletHistory): PaymentRecord | null => {
@@ -138,10 +138,10 @@ export default function PaymentHistoryScreen() {
             : descLower.includes('premium')
               ? 'premium_feature'
               : opUpper === 'TOPUP' || opUpper === 'PURCHASE'
-        ? 'wallet_topup'
-        : opUpper.includes('TRANSFER')
-          ? 'transfer'
-          : 'wallet_operation';
+                ? 'wallet_topup'
+                : opUpper.includes('TRANSFER')
+                  ? 'transfer'
+                  : 'wallet_operation';
 
     return {
       id: String(t.id),
@@ -160,11 +160,13 @@ export default function PaymentHistoryScreen() {
     const history = walletQuery.data?.payload?.historyResponse || [];
     const mapped = history
       .map(toPaymentRecord)
-      .filter((p): p is PaymentRecord => Boolean(p))
-      .filter((p) => Math.abs(p.amount) > 0);
+      .filter((p: PaymentRecord | null | undefined): p is PaymentRecord => Boolean(p))
+      .filter((p: PaymentRecord) => Math.abs(p.amount) > 0);
 
     // Most recent first
-    mapped.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    mapped.sort(
+      (a: PaymentRecord, b: PaymentRecord) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
     return mapped;
   }, [toPaymentRecord, walletQuery.data?.payload?.historyResponse]);
 
@@ -180,13 +182,13 @@ export default function PaymentHistoryScreen() {
       logger.warn('[PaymentHistory] Invalid payment record:', payment);
       return false;
     }
-    
+
     if (selectedFilter === 'all') return true;
     return payment.status === selectedFilter;
   });
 
   const totalSpent = paymentHistory
-    .filter(p => p.status === 'completed' && p.amount < 0)
+    .filter((p: PaymentRecord) => p.status === 'completed' && p.amount < 0)
     .reduce((sum, p) => sum + Math.abs(p.amount), 0);
 
   const monthlyStats = useMemo(() => {
@@ -294,20 +296,20 @@ export default function PaymentHistoryScreen() {
         logger.warn('[PaymentHistory] Empty date string provided');
         return language === 'az' ? 'Tarix məlum deyil' : 'Дата неизвестна';
       }
-      
+
       const date = new Date(dateString);
-      
+
       if (isNaN(date.getTime())) {
         logger.warn('[PaymentHistory] Invalid date string:', dateString);
         return language === 'az' ? 'Tarix səhv' : 'Неверная дата';
       }
-      
+
       return date.toLocaleDateString(language === 'az' ? 'az-AZ' : 'ru-RU', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch (error) {
       logger.error('[PaymentHistory] Date formatting error:', error);
@@ -320,7 +322,7 @@ export default function PaymentHistoryScreen() {
       logger.error('[PaymentHistory] Null payment record in renderPaymentItem');
       return null;
     }
-    
+
     if (!payment.id || !payment.status || typeof payment.amount !== 'number') {
       logger.warn('[PaymentHistory] Incomplete payment record:', { id: payment.id, status: payment.status });
       return null;
@@ -328,23 +330,23 @@ export default function PaymentHistoryScreen() {
 
     const isCredit = payment.amount > 0;
     const displayAmount = Math.abs(payment.amount);
-    
+
     return (
       <TouchableOpacity
         key={payment.id}
         style={styles.paymentItem}
         onPress={() => {
-          logger.info('[PaymentHistory] Payment item clicked:', { 
-            paymentId: payment.id, 
-            transactionId: payment.transactionId 
+          logger.info('[PaymentHistory] Payment item clicked:', {
+            paymentId: payment.id,
+            transactionId: payment.transactionId,
           });
-          
+
           Alert.alert(
             language === 'az' ? 'Ödəniş Detalları' : 'Детали платежа',
             `${language === 'az' ? 'Transaksiya ID' : 'ID транзакции'}: ${payment.transactionId}\n` +
             `${language === 'az' ? 'Məbləğ' : 'Сумма'}: ${payment.amount < 0 ? '-' : '+'}${Math.abs(payment.amount)} AZN\n` +
             `${language === 'az' ? 'Status' : 'Статус'}: ${getStatusText(payment.status)}\n` +
-            `${language === 'az' ? 'Tarix' : 'Дата'}: ${formatDate(payment.date)}`
+            `${language === 'az' ? 'Tarix' : 'Дата'}: ${formatDate(payment.date)}`,
           );
         }}
       >
@@ -384,18 +386,18 @@ export default function PaymentHistoryScreen() {
               color:
                 payment.status === 'refunded' || isCredit
                   ? colors.success
-                  : colors.text
-            }
+                  : colors.text,
+            },
           ]}>
             {payment.status === 'refunded' || isCredit ? '+' : '-'}{displayAmount} AZN
           </Text>
           <View style={[
             styles.statusBadge,
-            { backgroundColor: `${getStatusColor(payment.status)}20` }
+            { backgroundColor: `${getStatusColor(payment.status)}20` },
           ]}>
             <Text style={[
               styles.statusText,
-              { color: getStatusColor(payment.status) }
+              { color: getStatusColor(payment.status) },
             ]}>
               {getStatusText(payment.status)}
             </Text>
@@ -418,33 +420,33 @@ export default function PaymentHistoryScreen() {
   };
 
   const styles = createStyles(colors);
-  
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Ödəniş Tarixçəsi',
           headerRight: () => (
             <View style={styles.headerActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.headerButton}
                 onPress={() => {
                   logger.info('[PaymentHistory] Export payment history requested');
                   Alert.alert(
                     language === 'az' ? 'Tarixçəni Yüklə' : 'Загрузить историю',
-                    language === 'az' 
-                      ? 'Ödəniş tarixçəsi PDF formatında yükləniləcək.' 
-                      : 'История платежей будет загружена в формате PDF.'
+                    language === 'az'
+                      ? 'Ödəniş tarixçəsi PDF formatında yükləniləcək.'
+                      : 'История платежей будет загружена в формате PDF.',
                   );
                 }}
               >
                 <Download size={20} color={colors.primary} />
               </TouchableOpacity>
             </View>
-          )
-        }} 
+          ),
+        }}
       />
-      
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -477,7 +479,7 @@ export default function PaymentHistoryScreen() {
             <>
               <Text style={styles.summaryAmount}>{totalSpent} AZN</Text>
               <Text style={styles.summarySubtitle}>
-                {paymentHistory.filter(p => p.status === 'completed' && p.amount < 0).length} uğurlu ödəniş
+                {paymentHistory.filter((p: PaymentRecord) => p.status === 'completed' && p.amount < 0).length} uğurlu ödəniş
               </Text>
             </>
           )}
@@ -485,8 +487,8 @@ export default function PaymentHistoryScreen() {
 
         {/* Filter Tabs */}
         <View style={styles.filterContainer}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterScrollContent}
           >
@@ -495,7 +497,7 @@ export default function PaymentHistoryScreen() {
                 key={option.id}
                 style={[
                   styles.filterTab,
-                  selectedFilter === option.id && styles.activeFilterTab
+                  selectedFilter === option.id && styles.activeFilterTab,
                 ]}
                 onPress={() => {
                   logger.info('[PaymentHistory] Filter changed:', { from: selectedFilter, to: option.id });
@@ -504,7 +506,7 @@ export default function PaymentHistoryScreen() {
               >
                 <Text style={[
                   styles.filterTabText,
-                  selectedFilter === option.id && styles.activeFilterTabText
+                  selectedFilter === option.id && styles.activeFilterTabText,
                 ]}>
                   {option.label}
                 </Text>
@@ -579,15 +581,15 @@ export default function PaymentHistoryScreen() {
         {/* Help Section */}
         <View style={styles.helpSection}>
           <Text style={styles.sectionTitle}>Kömək və Dəstək</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.helpItem}
             onPress={() => {
               logger.info('[PaymentHistory] Payment issues help requested');
               Alert.alert(
                 language === 'az' ? 'Ödəniş Problemləri' : 'Проблемы с оплатой',
-                language === 'az' 
-                  ? 'Ödəniş ilə bağlı problemləriniz varsa, dəstək komandamızla əlaqə saxlayın.' 
-                  : 'Если у вас есть проблемы с оплатой, свяжитесь с нашей службой поддержки.'
+                language === 'az'
+                  ? 'Ödəniş ilə bağlı problemləriniz varsa, dəstək komandamızla əlaqə saxlayın.'
+                  : 'Если у вас есть проблемы с оплатой, свяжитесь с нашей службой поддержки.',
               );
             }}
           >
@@ -596,15 +598,15 @@ export default function PaymentHistoryScreen() {
               {language === 'az' ? 'Ödəniş problemləri' : 'Проблемы с оплатой'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.helpItem}
             onPress={() => {
               logger.info('[PaymentHistory] Refund request initiated');
               Alert.alert(
                 language === 'az' ? 'Geri Qaytarma' : 'Возврат',
-                language === 'az' 
-                  ? 'Geri qaytarma tələbləri 24 saat ərzində işlənir. Dəstək komandası sizinlə əlaqə saxlayacaq.' 
-                  : 'Запросы на возврат обрабатываются в течение 24 часов. Служба поддержки свяжется с вами.'
+                language === 'az'
+                  ? 'Geri qaytarma tələbləri 24 saat ərzində işlənir. Dəstək komandası sizinlə əlaqə saxlayacaq.'
+                  : 'Запросы на возврат обрабатываются в течение 24 часов. Служба поддержки свяжется с вами.',
               );
             }}
           >
@@ -613,15 +615,15 @@ export default function PaymentHistoryScreen() {
               {language === 'az' ? 'Geri qaytarma tələbi' : 'Запрос на возврат'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.helpItem}
             onPress={() => {
               logger.info('[PaymentHistory] Receipt request initiated');
               Alert.alert(
                 language === 'az' ? 'Qəbz Tələb Et' : 'Запросить чек',
-                language === 'az' 
-                  ? 'Qəbz email ünvanınıza göndəriləcək. Zəhmət olmasa bir neçə dəqiqə gözləyin.' 
-                  : 'Чек будет отправлен на ваш email. Пожалуйста, подождите несколько минут.'
+                language === 'az'
+                  ? 'Qəbz email ünvanınıza göndəriləcək. Zəhmət olmasa bir neçə dəqiqə gözləyin.'
+                  : 'Чек будет отправлен на ваш email. Пожалуйста, подождите несколько минут.',
               );
             }}
           >

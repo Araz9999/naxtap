@@ -34,9 +34,9 @@ export default function ViewPurchaseModal({
   const { purchaseViews } = useListingStore();
   const { walletBalance, bonusBalance } = useUserStore();
   const colors = getColors(themeMode, colorTheme);
-  
+
   // ✅ Calculate total balance
-  const totalBalance = (typeof walletBalance === 'number' && isFinite(walletBalance) ? walletBalance : 0) + 
+  const totalBalance = (typeof walletBalance === 'number' && isFinite(walletBalance) ? walletBalance : 0) +
                        (typeof bonusBalance === 'number' && isFinite(bonusBalance) ? bonusBalance : 0);
 
   const [viewCount, setViewCount] = useState<number>(100);
@@ -45,88 +45,88 @@ export default function ViewPurchaseModal({
   const [loading, setLoading] = useState<boolean>(false);
 
   const predefinedAmounts = [50, 100, 250, 500, 1000];
-  
+
   // ✅ Calculate cost with proper validation
   const calculateCost = () => {
     const finalViewCount = isCustom ? parseInt(customAmount) || 0 : viewCount;
     if (finalViewCount <= 0 || !isFinite(finalViewCount)) return 0;
     return finalViewCount * 0.01;
   };
-  
+
   const cost = calculateCost();
 
   const handlePurchase = async () => {
     // ===== VALIDATION START =====
-    
+
     const finalViewCount = isCustom ? parseInt(customAmount) || 0 : viewCount;
-    
+
     // ✅ 1. Check if view count is positive
     if (finalViewCount <= 0) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
+        language === 'az'
           ? 'Zəhmət olmasa düzgün miqdar daxil edin'
-          : 'Пожалуйста, введите правильное количество'
+          : 'Пожалуйста, введите правильное количество',
       );
       return;
     }
-    
+
     // ✅ 2. Check if view count is a valid number
     if (!Number.isInteger(finalViewCount) || !isFinite(finalViewCount)) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
+        language === 'az'
           ? 'Baxış sayı tam ədəd olmalıdır'
-          : 'Количество просмотров должно быть целым числом'
+          : 'Количество просмотров должно быть целым числом',
       );
       return;
     }
-    
+
     // ✅ 3. Check minimum (10 views)
     if (finalViewCount < 10) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
+        language === 'az'
           ? 'Minimum 10 baxış satın ala bilərsiniz'
-          : 'Минимум 10 просмотров'
+          : 'Минимум 10 просмотров',
       );
       return;
     }
-    
+
     // ✅ 4. Check maximum (100,000 views)
     if (finalViewCount > 100000) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
+        language === 'az'
           ? 'Maksimum 100,000 baxış satın ala bilərsiniz'
-          : 'Максимум 100,000 просмотров'
+          : 'Максимум 100,000 просмотров',
       );
       return;
     }
-    
+
     // ✅ 5. Calculate cost
     const calculatedCost = finalViewCount * 0.01;
     if (!isFinite(calculatedCost) || calculatedCost <= 0) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' 
+        language === 'az'
           ? 'Məbləğ hesablana bilmədi'
-          : 'Не удалось рассчитать сумму'
+          : 'Не удалось рассчитать сумму',
       );
       return;
     }
-    
+
     // ✅ 6. Check balance
     if (calculatedCost > totalBalance) {
       Alert.alert(
         language === 'az' ? 'Kifayət qədər balans yoxdur' : 'Недостаточно средств',
-        language === 'az' 
+        language === 'az'
           ? `Bu əməliyyat üçün ${calculatedCost.toFixed(2)} AZN lazımdır. Balansınız: ${totalBalance.toFixed(2)} AZN`
-          : `Для этой операции требуется ${calculatedCost.toFixed(2)} AZN. Ваш баланс: ${totalBalance.toFixed(2)} AZN`
+          : `Для этой операции требуется ${calculatedCost.toFixed(2)} AZN. Ваш баланс: ${totalBalance.toFixed(2)} AZN`,
       );
       return;
     }
-    
+
     // ===== VALIDATION END =====
 
     setLoading(true);
@@ -137,29 +137,29 @@ export default function ViewPurchaseModal({
         language === 'az'
           ? `${finalViewCount} baxış uğurla satın alındı. Elanınız indi ön sıralarda görünəcək.`
           : `${finalViewCount} просмотров успешно куплено. Ваше объявление теперь будет показано в приоритете.`,
-        [{ text: 'OK', onPress: onClose }]
+        [{ text: 'OK', onPress: onClose }],
       );
     } catch (error) {
-      let errorMessage = language === 'az' 
+      let errorMessage = language === 'az'
         ? 'Ödəniş zamanı xəta baş verdi'
         : 'Произошла ошибка при оплате';
-      
+
       // ✅ Provide specific error messages
       if (error instanceof Error) {
         if (error.message.includes('balans') || error.message.includes('balance')) {
-          errorMessage = language === 'az' 
+          errorMessage = language === 'az'
             ? 'Kifayət qədər balans yoxdur'
             : 'Недостаточно средств';
         } else if (error.message.includes('tapılmadı') || error.message.includes('not found')) {
-          errorMessage = language === 'az' 
+          errorMessage = language === 'az'
             ? 'Elan tapılmadı'
             : 'Объявление не найдено';
         }
       }
-      
+
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        errorMessage
+        errorMessage,
       );
     } finally {
       setLoading(false);
@@ -208,7 +208,7 @@ export default function ViewPurchaseModal({
               <View style={styles.infoRow}>
                 <Eye size={20} color={colors.primary} />
                 <Text style={[styles.infoText, { color: colors.text, fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14 }]}>
-                  {language === 'az' 
+                  {language === 'az'
                     ? '1 baxış = 1 qəpik (0.01 AZN)'
                     : '1 просмотр = 1 копейка (0.01 AZN)'}
                 </Text>
@@ -231,10 +231,10 @@ export default function ViewPurchaseModal({
                     key={amount}
                     style={[
                       styles.amountButton,
-                      { 
+                      {
                         backgroundColor: !isCustom && viewCount === amount ? colors.primary : colors.background,
-                        borderColor: colors.border 
-                      }
+                        borderColor: colors.border,
+                      },
                     ]}
                     onPress={() => {
                       setIsCustom(false);
@@ -243,10 +243,10 @@ export default function ViewPurchaseModal({
                   >
                     <Text style={[
                       styles.amountButtonText,
-                      { 
+                      {
                         color: !isCustom && viewCount === amount ? 'white' : colors.text,
-                        fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14
-                      }
+                        fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14,
+                      },
                     ]}>
                       {amount}
                     </Text>
@@ -257,19 +257,19 @@ export default function ViewPurchaseModal({
               <TouchableOpacity
                 style={[
                   styles.customButton,
-                  { 
+                  {
                     backgroundColor: isCustom ? colors.primary : colors.background,
-                    borderColor: colors.border 
-                  }
+                    borderColor: colors.border,
+                  },
                 ]}
                 onPress={() => setIsCustom(true)}
               >
                 <Text style={[
                   styles.customButtonText,
-                  { 
+                  {
                     color: isCustom ? 'white' : colors.text,
-                    fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14
-                  }
+                    fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 16 : 14,
+                  },
                 ]}>
                   {language === 'az' ? 'Fərdi miqdar' : 'Свое количество'}
                 </Text>
@@ -280,12 +280,12 @@ export default function ViewPurchaseModal({
                   <TextInput
                     style={[
                       styles.customInput,
-                      { 
+                      {
                         backgroundColor: colors.background,
                         borderColor: colors.border,
                         color: colors.text,
-                        fontSize: fontSize === 'small' ? 14 : fontSize === 'large' ? 18 : 16
-                      }
+                        fontSize: fontSize === 'small' ? 14 : fontSize === 'large' ? 18 : 16,
+                      },
                     ]}
                     placeholder={language === 'az' ? 'Miqdar daxil edin (10-100,000)' : 'Введите количество (10-100,000)'}
                     placeholderTextColor={colors.placeholder}
@@ -302,20 +302,20 @@ export default function ViewPurchaseModal({
                   {customAmount && parseInt(customAmount) > 0 && (
                     <Text style={[
                       styles.customHint,
-                      { 
-                        color: parseInt(customAmount) < 10 || parseInt(customAmount) > 100000 
-                          ? colors.error 
+                      {
+                        color: parseInt(customAmount) < 10 || parseInt(customAmount) > 100000
+                          ? colors.error
                           : colors.textSecondary,
-                        fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12
-                      }
+                        fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12,
+                      },
                     ]}>
                       {parseInt(customAmount) < 10
                         ? (language === 'az' ? 'Minimum: 10 baxış' : 'Минимум: 10 просмотров')
                         : parseInt(customAmount) > 100000
-                        ? (language === 'az' ? 'Maksimum: 100,000 baxış' : 'Максимум: 100,000 просмотров')
-                        : (language === 'az' 
-                          ? `${(parseInt(customAmount) * 0.01).toFixed(2)} AZN` 
-                          : `${(parseInt(customAmount) * 0.01).toFixed(2)} AZN`)
+                          ? (language === 'az' ? 'Maksimum: 100,000 baxış' : 'Максимум: 100,000 просмотров')
+                          : (language === 'az'
+                            ? `${(parseInt(customAmount) * 0.01).toFixed(2)} AZN`
+                            : `${(parseInt(customAmount) * 0.01).toFixed(2)} AZN`)
                       }
                     </Text>
                   )}
@@ -366,10 +366,10 @@ export default function ViewPurchaseModal({
             <TouchableOpacity
               style={[
                 styles.purchaseButton,
-                { 
+                {
                   backgroundColor: colors.primary,
-                  opacity: (loading || cost > totalBalance || cost <= 0) ? 0.7 : 1
-                }
+                  opacity: (loading || cost > totalBalance || cost <= 0) ? 0.7 : 1,
+                },
               ]}
               onPress={handlePurchase}
               disabled={loading || cost > totalBalance || cost <= 0}

@@ -66,8 +66,8 @@ export const Button: React.FC<ButtonProps> = ({
   ];
 
   const iconSize = size === 'small' ? 16 : size === 'large' ? 24 : 20;
-  const iconColor = variant === 'outline' || variant === 'ghost' 
-    ? Colors.primary 
+  const iconColor = variant === 'outline' || variant === 'ghost'
+    ? Colors.primary
     : '#FFFFFF';
 
   return (
@@ -83,9 +83,9 @@ export const Button: React.FC<ButtonProps> = ({
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
     >
       {loading ? (
-        <ActivityIndicator 
-          size="small" 
-          color={variant === 'outline' || variant === 'ghost' ? Colors.primary : '#FFFFFF'} 
+        <ActivityIndicator
+          size="small"
+          color={variant === 'outline' || variant === 'ghost' ? Colors.primary : '#FFFFFF'}
         />
       ) : (
         <>

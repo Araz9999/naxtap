@@ -19,7 +19,7 @@ export default function StarRating({
   size = 16,
   onRatingChange,
   readonly = true,
-  showHalfStars = true
+  showHalfStars = true,
 }: StarRatingProps) {
   const { themeMode, colorTheme } = useThemeStore();
   const colors = getColors(themeMode, colorTheme);
@@ -33,10 +33,10 @@ export default function StarRating({
     const starRating = index + 1;
     const isFullStar = rating >= starRating;
     const isHalfStar = showHalfStars && rating >= starRating - 0.5 && rating < starRating;
-    
+
     let fillColor = 'transparent';
     let strokeColor = colors.textSecondary;
-    
+
     if (isFullStar) {
       fillColor = '#FFD700';
       strokeColor = '#FFD700';

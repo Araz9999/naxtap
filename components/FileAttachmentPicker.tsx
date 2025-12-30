@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  FlatList, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
   Platform,
-  Alert
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image'; // BUG FIX: Use expo-image for better performance
 import * as ImagePicker from 'expo-image-picker';
@@ -15,12 +15,11 @@ import { useThemeStore } from '@/store/themeStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { getColors } from '@/constants/colors';
 import { logger } from '@/utils/logger';
-import { 
-  FileText, 
-  X, 
-  Plus
+import {
+  FileText,
+  X,
+  Plus,
 } from 'lucide-react-native';
-
 
 
 export interface FileAttachment {
@@ -38,10 +37,10 @@ type FileAttachmentPickerProps = {
   maxFiles?: number;
 };
 
-export default function FileAttachmentPicker({ 
-  attachments, 
-  onAttachmentsChange, 
-  maxFiles = 5 
+export default function FileAttachmentPicker({
+  attachments,
+  onAttachmentsChange,
+  maxFiles = 5,
 }: FileAttachmentPickerProps) {
   const { themeMode, colorTheme } = useThemeStore();
   const { language } = useLanguageStore();
@@ -53,9 +52,9 @@ export default function FileAttachmentPicker({
       if (attachments.length >= maxFiles) {
         Alert.alert(
           language === 'az' ? 'Limit aşıldı' : 'Превышен лимит',
-          language === 'az' 
+          language === 'az'
             ? `Maksimum ${maxFiles} fayl əlavə edə bilərsiniz`
-            : `Можно добавить максимум ${maxFiles} файлов`
+            : `Можно добавить максимум ${maxFiles} файлов`,
         );
         return;
       }
@@ -66,9 +65,9 @@ export default function FileAttachmentPicker({
         if (!permissionResult.granted) {
           Alert.alert(
             language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-            language === 'az' 
+            language === 'az'
               ? 'Qalereya giriş icazəsi tələb olunur'
-              : 'Требуется разрешение на доступ к галерее'
+              : 'Требуется разрешение на доступ к галерее',
           );
           return;
         }
@@ -88,9 +87,9 @@ export default function FileAttachmentPicker({
           if (asset.fileSize && asset.fileSize > maxFileSize) {
             Alert.alert(
               language === 'az' ? 'Xəta' : 'Ошибка',
-              language === 'az' 
+              language === 'az'
                 ? `${asset.fileName || 'Fayl'} çox böyükdür (max 10MB)`
-                : `${asset.fileName || 'Файл'} слишком большой (макс 10MB)`
+                : `${asset.fileName || 'Файл'} слишком большой (макс 10MB)`,
             );
             return false;
           }
@@ -103,9 +102,9 @@ export default function FileAttachmentPicker({
           name: asset.fileName || `image_${Date.now()}.jpg`,
           type: 'image' as const,
           size: asset.fileSize,
-          mimeType: asset.mimeType || 'image/jpeg'
+          mimeType: asset.mimeType || 'image/jpeg',
         }));
-        
+
         onAttachmentsChange([...attachments, ...newAttachments]);
       }
     } catch (error) {
@@ -113,7 +112,7 @@ export default function FileAttachmentPicker({
       logger.error('Error picking image:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение'
+        language === 'az' ? 'Şəkil seçilə bilmədi' : 'Не удалось выбрать изображение',
       );
     }
   };
@@ -124,9 +123,9 @@ export default function FileAttachmentPicker({
       if (Platform.OS === 'web') {
         Alert.alert(
           language === 'az' ? 'Dəstəklənmir' : 'Не поддерживается',
-          language === 'az' 
+          language === 'az'
             ? 'Kamera web versiyasında dəstəklənmir'
-            : 'Камера не поддерживается в веб-версии'
+            : 'Камера не поддерживается в веб-версии',
         );
         return;
       }
@@ -135,9 +134,9 @@ export default function FileAttachmentPicker({
       if (attachments.length >= maxFiles) {
         Alert.alert(
           language === 'az' ? 'Limit aşıldı' : 'Превышен лимит',
-          language === 'az' 
+          language === 'az'
             ? `Maksimum ${maxFiles} fayl əlavə edə bilərsiniz`
-            : `Можно добавить максимум ${maxFiles} файлов`
+            : `Можно добавить максимум ${maxFiles} файлов`,
         );
         return;
       }
@@ -147,9 +146,9 @@ export default function FileAttachmentPicker({
       if (!permissionResult.granted) {
         Alert.alert(
           language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-          language === 'az' 
+          language === 'az'
             ? 'Kamera icazəsi tələb olunur'
-            : 'Требуется разрешение на использование камеры'
+            : 'Требуется разрешение на использование камеры',
         );
         return;
       }
@@ -164,15 +163,15 @@ export default function FileAttachmentPicker({
       // BUG FIX: Validate result and file size
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // BUG FIX: Check file size
         const maxFileSize = 10 * 1024 * 1024; // 10MB
         if (asset.fileSize && asset.fileSize > maxFileSize) {
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' 
+            language === 'az'
               ? 'Foto çox böyükdür (max 10MB)'
-              : 'Фото слишком большое (макс 10MB)'
+              : 'Фото слишком большое (макс 10MB)',
           );
           return;
         }
@@ -183,9 +182,9 @@ export default function FileAttachmentPicker({
           name: asset.fileName || `photo_${Date.now()}.jpg`,
           type: 'image',
           size: asset.fileSize,
-          mimeType: asset.mimeType || 'image/jpeg'
+          mimeType: asset.mimeType || 'image/jpeg',
         };
-        
+
         onAttachmentsChange([...attachments, newAttachment]);
       }
     } catch (error) {
@@ -193,7 +192,7 @@ export default function FileAttachmentPicker({
       logger.error('Error taking photo:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Foto çəkilə bilmədi' : 'Не удалось сделать фото'
+        language === 'az' ? 'Foto çəkilə bilmədi' : 'Не удалось сделать фото',
       );
     }
   };
@@ -204,9 +203,9 @@ export default function FileAttachmentPicker({
       if (attachments.length >= maxFiles) {
         Alert.alert(
           language === 'az' ? 'Limit aşıldı' : 'Превышен лимит',
-          language === 'az' 
+          language === 'az'
             ? `Maksimum ${maxFiles} fayl əlavə edə bilərsiniz`
-            : `Можно добавить максимум ${maxFiles} файлов`
+            : `Можно добавить максимум ${maxFiles} файлов`,
         );
         return;
       }
@@ -224,9 +223,9 @@ export default function FileAttachmentPicker({
           if (asset.size && asset.size > maxFileSize) {
             Alert.alert(
               language === 'az' ? 'Xəta' : 'Ошибка',
-              language === 'az' 
+              language === 'az'
                 ? `${asset.name} çox böyükdür (max 20MB)`
-                : `${asset.name} слишком большой (макс 20MB)`
+                : `${asset.name} слишком большой (макс 20MB)`,
             );
             return false;
           }
@@ -243,9 +242,9 @@ export default function FileAttachmentPicker({
           name: asset.name,
           type: 'document' as const,
           size: asset.size,
-          mimeType: asset.mimeType
+          mimeType: asset.mimeType,
         }));
-        
+
         onAttachmentsChange([...attachments, ...newAttachments]);
       }
     } catch (error) {
@@ -253,7 +252,7 @@ export default function FileAttachmentPicker({
       logger.error('Document picker error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Sənəd seçilə bilmədi' : 'Не удалось выбрать документ'
+        language === 'az' ? 'Sənəd seçilə bilmədi' : 'Не удалось выбрать документ',
       );
     }
   };
@@ -273,8 +272,8 @@ export default function FileAttachmentPicker({
     <View style={[styles.attachmentItem, { backgroundColor: colors.card }]}>
       <View style={styles.attachmentContent}>
         {item.type === 'image' ? (
-          <Image 
-            source={{ uri: item.uri }} 
+          <Image
+            source={{ uri: item.uri }}
             style={styles.attachmentImage}
             // BUG FIX: Add caching and performance optimizations
             cachePolicy="memory-disk"
@@ -313,21 +312,21 @@ export default function FileAttachmentPicker({
       [
         {
           text: language === 'az' ? 'Foto çək' : 'Сделать фото',
-          onPress: takePhoto
+          onPress: takePhoto,
         },
         {
           text: language === 'az' ? 'Qalereya' : 'Галерея',
-          onPress: pickImage
+          onPress: pickImage,
         },
         {
           text: language === 'az' ? 'Sənəd' : 'Документ',
-          onPress: pickDocument
+          onPress: pickDocument,
         },
         {
           text: language === 'az' ? 'Ləğv et' : 'Отмена',
-          style: 'cancel'
-        }
-      ]
+          style: 'cancel',
+        },
+      ],
     );
   };
 
@@ -338,7 +337,7 @@ export default function FileAttachmentPicker({
           {language === 'az' ? 'Fayllar' : 'Файлы'}
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {language === 'az' 
+          {language === 'az'
             ? `${attachments.length}/${maxFiles} fayl`
             : `${attachments.length}/${maxFiles} файлов`
           }

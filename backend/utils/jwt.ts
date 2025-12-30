@@ -1,5 +1,5 @@
-import { SignJWT, jwtVerify } from 'jose';
 import { logger } from './logger';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 
 // SECURITY: JWT_SECRET must be set in production
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -14,59 +14,70 @@ if (!JWT_SECRET) {
   logger.warn('[JWT] Using fallback secret for development only');
 }
 
-const secret = new TextEncoder().encode(JWT_SECRET || 'dev-only-fallback-secret-change-immediately');
+const secretString = JWT_SECRET || 'dev-only-fallback-secret-change-immediately';
 
 export interface JWTPayload {
   userId: string;
   email: string;
   role: string;
+  exp?: number;
 }
 
 export async function generateAccessToken(payload: JWTPayload): Promise<string> {
-  const token = await new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setIssuer(JWT_ISSUER)
-    .setAudience(JWT_AUDIENCE)
-    .setExpirationTime('15m')
-    .sign(secret);
-
-  return token;
+  return jwt.sign(
+    { userId: payload.userId, email: payload.email, role: payload.role },
+    secretString,
+    {
+      algorithm: 'HS256',
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+      expiresIn: '15m',
+    },
+  );
 }
 
 export async function generateRefreshToken(payload: JWTPayload): Promise<string> {
-  const token = await new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setIssuer(JWT_ISSUER)
-    .setAudience(JWT_AUDIENCE)
-    .setExpirationTime('30d')
-    .sign(secret);
-
-  return token;
+  return jwt.sign(
+    { userId: payload.userId, email: payload.email, role: payload.role },
+    secretString,
+    {
+      algorithm: 'HS256',
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+      expiresIn: '30d',
+    },
+  );
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret, {
+    const decoded = jwt.verify(token, secretString, {
+      algorithms: ['HS256'],
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
-    });
+    }) as JwtPayload | string;
 
     // BUG FIX: Validate payload fields before using
-    if (
-      typeof payload.userId !== 'string' ||
-      typeof payload.email !== 'string' ||
-      typeof payload.role !== 'string'
-    ) {
+    if (typeof decoded === 'string') {
+      logger.error('[JWT] Invalid payload (string)');
+      return null;
+    }
+
+    const userId = (decoded as any).userId;
+    const email = (decoded as any).email;
+    const role = (decoded as any).role;
+    const exp = (decoded as any).exp;
+
+    if (typeof userId !== 'string' || typeof email !== 'string' || typeof role !== 'string') {
       logger.error('[JWT] Invalid payload structure');
       return null;
     }
 
     return {
-      userId: payload.userId,
-      email: payload.email,
-      role: payload.role,
+      userId,
+      email,
+      role,
+      exp: typeof exp === 'number' ? exp : undefined,
     };
   } catch (error) {
     logger.error('[JWT] Token verification failed:', error);

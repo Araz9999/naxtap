@@ -19,7 +19,7 @@ export const createReportProcedure = protectedProcedure
     logger.info('[Moderation] Report created:', {
       reporterId: ctx.user.userId,
       type: input.type,
-      priority: input.priority || 'medium'
+      priority: input.priority || 'medium',
     });
     const report: Report = {
       id: `report_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,

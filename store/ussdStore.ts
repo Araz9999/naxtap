@@ -40,7 +40,7 @@ export const useUSSDStore = create<USSDStore>((set, get) => ({
       const updatedSessions = sessions.map((session) =>
         session.id === currentSession.id
           ? { ...session, isActive: false }
-          : session
+          : session,
       );
 
       set({
@@ -66,7 +66,7 @@ export const useUSSDStore = create<USSDStore>((set, get) => ({
     };
 
     const updatedSessions = sessions.map((session) =>
-      session.id === currentSession.id ? updatedSession : session
+      session.id === currentSession.id ? updatedSession : session,
     );
 
     set({
@@ -85,7 +85,7 @@ export const useUSSDStore = create<USSDStore>((set, get) => ({
     };
 
     const updatedSessions = sessions.map((session) =>
-      session.id === currentSession.id ? updatedSession : session
+      session.id === currentSession.id ? updatedSession : session,
     );
 
     set({
@@ -112,7 +112,7 @@ export const useUSSDStore = create<USSDStore>((set, get) => ({
     };
 
     const updatedSessions = sessions.map((session) =>
-      session.id === currentSession.id ? updatedSession : session
+      session.id === currentSession.id ? updatedSession : session,
     );
 
     set({

@@ -34,7 +34,7 @@ export const resendVerificationProcedure = protectedProcedure
       throw new Error(
         throttle.reason === 'cooldown'
           ? `Zəhmət olmasa yenidən göndərmək üçün ${seconds} saniyə gözləyin.`
-          : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`
+          : `Çoxlu sorğu göndərildi. ${seconds} saniyə sonra yenidən cəhd edin.`,
       );
     }
 

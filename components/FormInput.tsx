@@ -76,9 +76,9 @@ export const FormInput: React.FC<FormInputProps> = ({
       <View style={containerStyle}>
         {/* Left Icon */}
         {Icon && (
-          <Icon 
-            size={20} 
-            color={hasError ? Colors.error : isFocused ? Colors.primary : Colors.textSecondary} 
+          <Icon
+            size={20}
+            color={hasError ? Colors.error : isFocused ? Colors.primary : Colors.textSecondary}
             style={styles.leftIcon}
           />
         )}
@@ -108,7 +108,7 @@ export const FormInput: React.FC<FormInputProps> = ({
             style={styles.rightIcon}
             accessible={true}
             accessibilityRole="button"
-            accessibilityLabel={showPassword ? "Şifrəni gizlət" : "Şifrəni göstər"}
+            accessibilityLabel={showPassword ? 'Şifrəni gizlət' : 'Şifrəni göstər'}
           >
             {showPassword ? (
               <EyeOff size={20} color={Colors.textSecondary} />

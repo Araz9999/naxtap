@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
   Platform,
-  Modal
+  Modal,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -27,7 +27,7 @@ import {
   Calendar,
   User,
   Award,
-  AlertTriangle
+  AlertTriangle,
 } from 'lucide-react-native';
 import { useStoreStore } from '@/store/storeStore';
 import { useUserStore } from '@/store/userStore';
@@ -66,8 +66,8 @@ const mockReviews: StoreReview[] = [
     isVerifiedPurchase: true,
     storeResponse: {
       message: 'Təşəkkür edirik! Sizin məmnuniyyətiniz bizim üçün ən vacibdir.',
-      date: '2024-02-01T14:20:00Z'
-    }
+      date: '2024-02-01T14:20:00Z',
+    },
   },
   {
     id: '2',
@@ -78,7 +78,7 @@ const mockReviews: StoreReview[] = [
     date: '2024-01-28T16:45:00Z',
     helpful: 8,
     notHelpful: 0,
-    isVerifiedPurchase: true
+    isVerifiedPurchase: true,
   },
   {
     id: '3',
@@ -89,7 +89,7 @@ const mockReviews: StoreReview[] = [
     date: '2024-01-25T09:15:00Z',
     helpful: 3,
     notHelpful: 5,
-    isVerifiedPurchase: false
+    isVerifiedPurchase: false,
   },
   {
     id: '4',
@@ -100,7 +100,7 @@ const mockReviews: StoreReview[] = [
     date: '2024-01-20T14:30:00Z',
     helpful: 15,
     notHelpful: 0,
-    isVerifiedPurchase: true
+    isVerifiedPurchase: true,
   },
   {
     id: '5',
@@ -111,8 +111,8 @@ const mockReviews: StoreReview[] = [
     date: '2024-01-18T11:20:00Z',
     helpful: 2,
     notHelpful: 8,
-    isVerifiedPurchase: true
-  }
+    isVerifiedPurchase: true,
+  },
 ];
 
 const filterOptions = [
@@ -123,7 +123,7 @@ const filterOptions = [
   { id: '2', label: '2 ulduz' },
   { id: '1', label: '1 ulduz' },
   { id: 'no_response', label: 'Cavabsız' },
-  { id: 'verified', label: 'Təsdiqlənmiş' }
+  { id: 'verified', label: 'Təsdiqlənmiş' },
 ];
 
 export default function StoreReviewsScreen() {
@@ -131,7 +131,7 @@ export default function StoreReviewsScreen() {
   const { storeId } = useLocalSearchParams<{ storeId: string }>();
   const { currentUser } = useUserStore();
   const { stores, getUserStore } = useStoreStore();
-  
+
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [reviews, setReviews] = useState<StoreReview[]>(mockReviews);
   const [showResponseModal, setShowResponseModal] = useState(false);
@@ -157,8 +157,8 @@ export default function StoreReviewsScreen() {
   });
 
   // ✅ Prevent division by zero
-  const averageRating = reviews.length > 0 
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
   // ✅ Prevent division by zero in distribution
   const ratingDistribution = [1, 2, 3, 4, 5].map(rating => {
@@ -172,13 +172,13 @@ export default function StoreReviewsScreen() {
       logger.error('[StoreReviews] No review selected for response');
       return;
     }
-    
+
     if (!responseText.trim()) {
       logger.warn('[StoreReviews] Empty response text');
       Alert.alert('Xəta', 'Cavab mətnini daxil edin');
       return;
     }
-    
+
     // ✅ Validate response length
     const trimmedResponse = responseText.trim();
     if (trimmedResponse.length < 10) {
@@ -186,13 +186,13 @@ export default function StoreReviewsScreen() {
       Alert.alert('Xəta', 'Cavab ən azı 10 simvol olmalıdır');
       return;
     }
-    
+
     if (trimmedResponse.length > 500) {
       logger.warn('[StoreReviews] Response too long:', trimmedResponse.length);
       Alert.alert('Xəta', 'Cavab maksimum 500 simvol ola bilər');
       return;
     }
-    
+
     logger.info('[StoreReviews] Sending response to review:', { reviewId: selectedReview.id, responseLength: trimmedResponse.length });
 
     try {
@@ -203,22 +203,22 @@ export default function StoreReviewsScreen() {
             ...review,
             storeResponse: {
               message: responseText.trim(),
-              date: new Date().toISOString()
-            }
+              date: new Date().toISOString(),
+            },
           };
         }
         return review;
       });
-      
+
       setReviews(updatedReviews);
-      
+
       // In a real app, this would send the response to the API
       logger.info('[StoreReviews] Store response added successfully:', {
         reviewId: selectedReview.id,
         responseLength: trimmedResponse.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       Alert.alert('Uğurlu', 'Cavabınız göndərildi və görünür');
       setShowResponseModal(false);
       setResponseText('');
@@ -255,7 +255,7 @@ export default function StoreReviewsScreen() {
               <View
                 style={[
                   styles.distributionFill,
-                  { width: `${item.percentage}%` }
+                  { width: `${item.percentage}%` },
                 ]}
               />
             </View>
@@ -372,17 +372,17 @@ export default function StoreReviewsScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Mağaza Rəyləri',
           headerRight: () => (
             <TouchableOpacity style={styles.headerButton}>
               <Filter size={20} color={COLORS.primary} />
             </TouchableOpacity>
-          )
-        }} 
+          ),
+        }}
       />
-      
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Rating Summary */}
         <View style={styles.summaryCard}>
@@ -430,8 +430,8 @@ export default function StoreReviewsScreen() {
 
         {/* Filter Tabs */}
         <View style={styles.filterContainer}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterScrollContent}
           >
@@ -440,13 +440,13 @@ export default function StoreReviewsScreen() {
                 key={option.id}
                 style={[
                   styles.filterTab,
-                  selectedFilter === option.id && styles.activeFilterTab
+                  selectedFilter === option.id && styles.activeFilterTab,
                 ]}
                 onPress={() => setSelectedFilter(option.id)}
               >
                 <Text style={[
                   styles.filterTabText,
-                  selectedFilter === option.id && styles.activeFilterTabText
+                  selectedFilter === option.id && styles.activeFilterTabText,
                 ]}>
                   {option.label}
                 </Text>
@@ -510,7 +510,7 @@ export default function StoreReviewsScreen() {
               <Text style={styles.closeButtonText}>Bağla</Text>
             </TouchableOpacity>
           </View>
-          
+
           {selectedReview && (
             <View style={styles.modalContent}>
               <View style={styles.originalReview}>
@@ -525,7 +525,7 @@ export default function StoreReviewsScreen() {
                   </Text>
                 </View>
               </View>
-              
+
               <View style={styles.responseForm}>
                 <Text style={styles.responseFormLabel}>Sizin cavabınız:</Text>
                 <TextInput
@@ -537,11 +537,11 @@ export default function StoreReviewsScreen() {
                   numberOfLines={4}
                   textAlignVertical="top"
                 />
-                
+
                 <TouchableOpacity
                   style={[
                     styles.sendButton,
-                    !responseText.trim() && styles.sendButtonDisabled
+                    !responseText.trim() && styles.sendButtonDisabled,
                   ]}
                   onPress={handleSendResponse}
                   disabled={!responseText.trim()}

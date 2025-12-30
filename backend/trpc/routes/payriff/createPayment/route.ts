@@ -11,7 +11,7 @@ export const createPaymentProcedure = publicProcedure
       language: z.enum(['az', 'en', 'ru']).optional().default('az'),
       customerEmail: z.string().email().optional(),
       customerPhone: z.string().optional(),
-    })
+    }),
   )
   .mutation(async ({ input }) => {
     // Avoid logging full input to prevent leaking PII

@@ -8,7 +8,7 @@ import {
   Image,
   Alert,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -23,7 +23,7 @@ import {
   CheckCircle,
   Headphones,
   Star,
-  Activity
+  Activity,
 } from 'lucide-react-native';
 import type { LiveChatConversation, LiveChatMessage, SupportAgent } from '@/backend/types/liveChat';
 
@@ -56,7 +56,7 @@ export default function OperatorDashboard() {
   const allConversations: LiveChatConversation[] = conversationsQuery.data || [];
   const selectedConversation = useMemo(
     () => allConversations.find((c) => c.id === selectedConversationId) || null,
-    [allConversations, selectedConversationId]
+    [allConversations, selectedConversationId],
   );
 
   const messagesQuery = trpc.liveChat.getMessages.useQuery(
@@ -64,7 +64,7 @@ export default function OperatorDashboard() {
     {
       enabled: !!selectedConversationId,
       refetchInterval: 2000,
-    }
+    },
   );
 
   const assignAgentMutation = trpc.liveChat.assignAgent.useMutation();
@@ -113,7 +113,7 @@ export default function OperatorDashboard() {
       language === 'az' ? 'Söhbət götürüldü' : 'Чат принят',
       language === 'az'
         ? `Söhbət sizə təyin edildi${updated?.userName ? `: ${updated.userName}` : ''}`
-        : `Чат назначен вам${updated?.userName ? `: ${updated.userName}` : ''}`
+        : `Чат назначен вам${updated?.userName ? `: ${updated.userName}` : ''}`,
     );
   };
 
@@ -135,7 +135,7 @@ export default function OperatorDashboard() {
             setSelectedConversationId(null);
           },
         },
-      ]
+      ],
     );
   };
 
@@ -156,15 +156,15 @@ export default function OperatorDashboard() {
         <View style={styles.chatStatus}>
           <View style={[
             styles.statusBadge,
-            { backgroundColor: `${getStatusColor(conv.status)}20` }
+            { backgroundColor: `${getStatusColor(conv.status)}20` },
           ]}>
             <View style={[
               styles.statusDot,
-              { backgroundColor: getStatusColor(conv.status) }
+              { backgroundColor: getStatusColor(conv.status) },
             ]} />
             <Text style={[
               styles.statusText,
-              { color: getStatusColor(conv.status) }
+              { color: getStatusColor(conv.status) },
             ]}>
               {language === 'az'
                 ? conv.status === 'open'
@@ -182,11 +182,11 @@ export default function OperatorDashboard() {
           </View>
         </View>
       </View>
-      
+
       <Text style={[styles.messageCount, { color: colors.primary }]}>
         {conv.userName || (language === 'az' ? 'İstifadəçi' : 'Пользователь')}
       </Text>
-      
+
       {conv.status === 'open' && (
         <TouchableOpacity
           style={[styles.takeButton, { backgroundColor: colors.primary }]}
@@ -220,12 +220,12 @@ export default function OperatorDashboard() {
   if (!currentAgent) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Stack.Screen 
-          options={{ 
+        <Stack.Screen
+          options={{
             title: language === 'az' ? 'Operator Paneli' : 'Панель оператора',
             headerStyle: { backgroundColor: colors.card },
             headerTintColor: colors.text,
-          }} 
+          }}
         />
         <View style={styles.errorContainer}>
           <Text style={[styles.errorText, { color: colors.textSecondary }]}>
@@ -238,18 +238,18 @@ export default function OperatorDashboard() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: language === 'az' ? 'Operator Paneli' : 'Панель оператора',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
-        }} 
+        }}
       />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Operator Info */}
         <View style={[styles.operatorCard, { backgroundColor: colors.primary }]}>
-          <Image 
+          <Image
             source={{ uri: currentAgent.avatar || 'https://via.placeholder.com/80' }}
             style={styles.operatorAvatar}
           />
@@ -399,25 +399,25 @@ export default function OperatorDashboard() {
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.messagesContainer}>
               {(messagesQuery.data || []).map((message: LiveChatMessage) => (
                 <View
                   key={message.id}
                   style={[
                     styles.messageItem,
-                    message.isSupport ? styles.operatorMessage : styles.userMessage
+                    message.isSupport ? styles.operatorMessage : styles.userMessage,
                   ]}
                 >
                   <Text style={[
                     styles.messageText,
-                    { color: message.isSupport ? '#fff' : colors.text }
+                    { color: message.isSupport ? '#fff' : colors.text },
                   ]}>
                     {message.message}
                   </Text>
                   <Text style={[
                     styles.messageTime,
-                    { color: message.isSupport ? 'rgba(255,255,255,0.7)' : colors.textSecondary }
+                    { color: message.isSupport ? 'rgba(255,255,255,0.7)' : colors.textSecondary },
                   ]}>
                     {formatClock(message.timestamp)}
                   </Text>
@@ -432,7 +432,7 @@ export default function OperatorDashboard() {
                   onPress={async () => {
                     const text = await prompt(
                       language === 'az' ? 'Mesajınızı yazın' : 'Напишите ваше сообщение',
-                      language === 'az' ? 'Mesaj göndər' : 'Отправить сообщение'
+                      language === 'az' ? 'Mesaj göndər' : 'Отправить сообщение',
                     );
                     if (text && text.trim() && currentAgent) {
                       await sendMessageMutation.mutateAsync({
@@ -452,7 +452,7 @@ export default function OperatorDashboard() {
                     {language === 'az' ? 'Mesaj Göndər' : 'Отправить сообщение'}
                   </Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={[styles.actionButton, { backgroundColor: '#FF5722' }]}
                   onPress={() => handleCloseConversation(selectedConversation)}

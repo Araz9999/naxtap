@@ -25,16 +25,16 @@ export default function UserProfileScreen() {
   const { addRating, getRatingsForTarget, getRatingStats, loadRatings } = useRatingStore();
   const { initiateCall } = useCallStore();
   const router = useRouter();
-  
+
   const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
   const [showUserActionModal, setShowUserActionModal] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'listings' | 'ratings'>('listings');
-  
+
   // Load ratings on component mount
   React.useEffect(() => {
     loadRatings();
   }, [loadRatings]);
-  
+
   const user = users.find(u => u.id === id);
   if (!user) {
     return (
@@ -45,93 +45,93 @@ export default function UserProfileScreen() {
       </View>
     );
   }
-  
+
   const userListings = listings.filter(listing => listing.userId === user.id);
   const isCurrentUser = currentUser?.id === user.id;
-  
+
   // Get ratings data from store with null safety
   const userRatings = getRatingsForTarget(user.id, 'user') || [];
-  const ratingStats = getRatingStats(user.id, 'user') || { 
-    averageRating: 0, 
-    totalRatings: 0, 
-    distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } 
+  const ratingStats = getRatingStats(user.id, 'user') || {
+    averageRating: 0,
+    totalRatings: 0,
+    distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
   };
-  
+
   const handleRatingSubmit = async (rating: number, comment?: string) => {
     if (!currentUser) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Reyting vermək üçün daxil olun' : 'Войдите для оценки'
+        language === 'az' ? 'Reyting vermək üçün daxil olun' : 'Войдите для оценки',
       );
       return;
     }
-    
+
     // Validation: Rating range
     if (rating < 1 || rating > 5) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Reyting 1-5 arasında olmalıdır' : 'Оценка должна быть от 1 до 5'
+        language === 'az' ? 'Reyting 1-5 arasında olmalıdır' : 'Оценка должна быть от 1 до 5',
       );
       return;
     }
-    
+
     // Validation: Comment length if provided
     if (comment && comment.trim().length > 500) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Şərh maksimum 500 simvol ola bilər' : 'Комментарий не должен превышать 500 символов'
+        language === 'az' ? 'Şərh maksimum 500 simvol ola bilər' : 'Комментарий не должен превышать 500 символов',
       );
       return;
     }
-    
+
     try {
       await addRating({
         userId: currentUser.id,
         targetId: user.id,
         targetType: 'user',
         rating,
-        comment: comment?.trim()
+        comment: comment?.trim(),
       });
-      
+
       Alert.alert(
         language === 'az' ? 'Uğurlu' : 'Успешно',
-        language === 'az' ? 'Reyting əlavə edildi' : 'Оценка добавлена'
+        language === 'az' ? 'Reyting əlavə edildi' : 'Оценка добавлена',
       );
     } catch (error) {
       logger.error('Failed to submit rating:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Reyting əlavə edilərkən xəta baş verdi' : 'Ошибка при добавлении оценки'
+        language === 'az' ? 'Reyting əlavə edilərkən xəta baş verdi' : 'Ошибка при добавлении оценки',
       );
     }
   };
-  
+
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}`);
   };
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const month = date.toLocaleString(language === 'az' ? 'az-AZ' : 'ru-RU', { month: 'long' });
     const year = date.getFullYear();
-    
-    return language === 'az' 
-      ? `${month} ${year}` 
+
+    return language === 'az'
+      ? `${month} ${year}`
       : `${month} ${year}`;
   };
 
   return (
     <ScrollView style={styles.container}>
       <Stack.Screen options={{ title: user.name }} />
-      
+
       <View style={styles.header}>
         <Image source={{ uri: user.avatar }} style={styles.avatar} />
         <View style={styles.userInfo}>
           <Text style={styles.userName}>{user.name}</Text>
           <View style={styles.ratingContainer}>
-            <StarRating 
-              rating={ratingStats.averageRating} 
-              size={16} 
+            <StarRating
+              rating={ratingStats.averageRating}
+              size={16}
             />
             <Text style={styles.rating}>
               {ratingStats.averageRating.toFixed(1)}
@@ -146,9 +146,9 @@ export default function UserProfileScreen() {
           <Text style={styles.location}>{user.location[language]}</Text>
         </View>
       </View>
-      
+
       <View style={styles.actions}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.actionButton, styles.messageButton]}
           onPress={() => {
             // Navigate to conversation with this user
@@ -160,8 +160,8 @@ export default function UserProfileScreen() {
             {language === 'az' ? 'Mesaj yaz' : 'Написать'}
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[styles.actionButton, styles.callButton]}
           onPress={async () => {
             try {
@@ -184,9 +184,9 @@ export default function UserProfileScreen() {
             {language === 'az' ? 'Zəng et' : 'Позвонить'}
           </Text>
         </TouchableOpacity>
-        
+
         {!isCurrentUser && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.moreButton]}
             onPress={() => setShowUserActionModal(true)}
           >
@@ -194,7 +194,7 @@ export default function UserProfileScreen() {
           </TouchableOpacity>
         )}
       </View>
-      
+
       {/* Rate User Button */}
       {currentUser && !isCurrentUser && (
         <View style={styles.rateSection}>
@@ -209,7 +209,7 @@ export default function UserProfileScreen() {
           </TouchableOpacity>
         </View>
       )}
-      
+
       {/* Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
@@ -235,13 +235,13 @@ export default function UserProfileScreen() {
           </View>
         </TouchableOpacity>
       </View>
-      
+
       {activeTab === 'listings' && (
         <View style={styles.listingsSection}>
           <Text style={styles.sectionTitle}>
             {language === 'az' ? 'Elanlar' : 'Объявления'} ({userListings.length})
           </Text>
-          
+
           {userListings.length > 0 ? (
             <View style={styles.listingsGrid}>
               {userListings.map(listing => (
@@ -259,13 +259,13 @@ export default function UserProfileScreen() {
           )}
         </View>
       )}
-      
+
       {activeTab === 'ratings' && (
         <View style={styles.ratingsSection}>
           <Text style={styles.sectionTitle}>
             {language === 'az' ? 'Reytinqlər və Şərhlər' : 'Отзывы и рейтинги'}
           </Text>
-          
+
           {/* Rating Summary */}
           {ratingStats.totalRatings > 0 && (
             <View style={styles.ratingSummary}>
@@ -280,14 +280,14 @@ export default function UserProfileScreen() {
               </View>
             </View>
           )}
-          
-          <RatingsList 
-            ratings={userRatings} 
+
+          <RatingsList
+            ratings={userRatings}
             onUserPress={handleUserPress}
           />
         </View>
       )}
-      
+
       <RatingModal
         visible={showRatingModal}
         onClose={() => setShowRatingModal(false)}
@@ -296,7 +296,7 @@ export default function UserProfileScreen() {
         targetName={user.name}
         onSubmit={handleRatingSubmit}
       />
-      
+
       <UserActionModal
         visible={showUserActionModal}
         onClose={() => setShowUserActionModal(false)}

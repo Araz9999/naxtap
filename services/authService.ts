@@ -82,7 +82,7 @@ class AuthService {
 
       const data = await response.json();
       await this.setAuthData(data.user, data.tokens);
-      
+
       return data.user;
     } catch (error) {
       logger.error('Login failed:', error);
@@ -107,7 +107,7 @@ class AuthService {
 
       const data = await response.json();
       await this.setAuthData(data.user, data.tokens);
-      
+
       return data.user;
     } catch (error) {
       logger.error('Registration failed:', error);
@@ -118,7 +118,7 @@ class AuthService {
   async loginWithSocial(provider: 'google' | 'facebook' | 'vk'): Promise<AuthUser> {
     try {
       logger.debug(`[AuthService] Initiating ${provider} login`);
-      
+
       const baseUrl = config.BASE_URL?.replace('/api', '') || 'http://localhost:8081';
       const authUrl = `${baseUrl}/api/auth/${provider}/login`;
 
@@ -131,7 +131,7 @@ class AuthService {
         const WebBrowser = await import('expo-web-browser');
         const result = await WebBrowser.openAuthSessionAsync(
           authUrl,
-          `${baseUrl}/auth/success`
+          `${baseUrl}/auth/success`,
         );
 
         if (result.type === 'success' && result.url) {
@@ -147,7 +147,7 @@ class AuthService {
                 refreshToken: token,
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
               };
-              
+
               await this.setAuthData(user, tokens);
               return user;
             } catch {
@@ -325,7 +325,7 @@ class AuthService {
   private async setAuthData(user: AuthUser, tokens: AuthTokens): Promise<void> {
     this.currentUser = user;
     this.tokens = tokens;
-    
+
     await AsyncStorage.setItem('auth_user', JSON.stringify(user));
     await AsyncStorage.setItem('auth_tokens', JSON.stringify(tokens));
   }
@@ -333,7 +333,7 @@ class AuthService {
   private async clearAuthData(): Promise<void> {
     this.currentUser = null;
     this.tokens = null;
-    
+
     await AsyncStorage.removeItem('auth_user');
     await AsyncStorage.removeItem('auth_tokens');
   }

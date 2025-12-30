@@ -36,12 +36,12 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 export default function CallScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const callId = Array.isArray(id) ? id[0] : id;
-  
+
   const { activeCall, endCall, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
   const [permission, requestPermission] = useCameraPermissions();
-  
+
   const [callDuration, setCallDuration] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [cameraFacing, setCameraFacing] = useState<CameraType>('front');
@@ -69,7 +69,7 @@ export default function CallScreen() {
 
     return () => clearInterval(interval);
   }, [isConnected]);
-  
+
   // ✅ Cleanup camera and resources when component unmounts
   useEffect(() => {
     return () => {
@@ -81,6 +81,17 @@ export default function CallScreen() {
     };
   }, [activeCall?.isVideoEnabled]); // ✅ Add dependency
 
+  // ✅ Navigate back if other user can't be resolved (avoid conditional hooks)
+  useEffect(() => {
+    if (!activeCall || !callId) return;
+    const otherUserId =
+      activeCall.callerId === currentUser?.id ? activeCall.receiverId : activeCall.callerId;
+    const otherUser = users.find((u) => u.id === otherUserId);
+    if (!otherUser) {
+      router.back();
+    }
+  }, [activeCall, callId, currentUser?.id, router]);
+
   if (!activeCall || !callId) {
     return null;
   }
@@ -89,13 +100,10 @@ export default function CallScreen() {
   const otherUserId = activeCall.callerId === currentUser?.id ? activeCall.receiverId : activeCall.callerId;
   const otherUser = users.find(user => user.id === otherUserId);
   const listing = listings.find(l => l.id === activeCall.listingId);
-  
+
   // ✅ Validate other user exists
   if (!otherUser) {
     logger.error('Other user not found:', otherUserId);
-    useEffect(() => {
-      router.back();
-    }, []);
     return (
       <View style={styles.container}>
         <View style={styles.content}>
@@ -111,7 +119,7 @@ export default function CallScreen() {
     endCall(callId);
     router.back();
   };
-  
+
   // ✅ Handle camera permission request with error handling
   const handleRequestPermission = async () => {
     try {
@@ -119,16 +127,16 @@ export default function CallScreen() {
       if (!result.granted) {
         Alert.alert(
           language === 'az' ? 'İcazə verilmədi' : 'Разрешение отклонено',
-          language === 'az' 
+          language === 'az'
             ? 'Video zəng üçün kamera icazəsi tələb olunur'
-            : 'Для видеозвонка требуется разрешение камеры'
+            : 'Для видеозвонка требуется разрешение камеры',
         );
       }
     } catch (error) {
       logger.error('Failed to request camera permission:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İcazə tələbi zamanı xəta' : 'Ошибка при запросе разрешения'
+        language === 'az' ? 'İcazə tələbi zamanı xəta' : 'Ошибка при запросе разрешения',
       );
     }
   };
@@ -142,8 +150,8 @@ export default function CallScreen() {
       return (
         <View style={styles.videoContainer}>
           <View style={styles.remoteVideo}>
-            <Image 
-              source={{ uri: otherUser?.avatar }} 
+            <Image
+              source={{ uri: otherUser?.avatar }}
               style={styles.remoteVideoPlaceholder}
             />
             <Text style={styles.remoteVideoText}>
@@ -186,25 +194,25 @@ export default function CallScreen() {
       <View style={styles.videoContainer}>
         {/* Remote user video (simulated) */}
         <View style={styles.remoteVideo}>
-          <Image 
-            source={{ uri: otherUser?.avatar }} 
+          <Image
+            source={{ uri: otherUser?.avatar }}
             style={styles.remoteVideoPlaceholder}
           />
           <Text style={styles.remoteVideoText}>
             {otherUser?.name}
           </Text>
         </View>
-        
+
         {/* Local user video */}
         {activeCall.isVideoEnabled && permission.granted && (
           <View style={styles.localVideo}>
-            <CameraView 
+            <CameraView
               style={styles.localCamera}
               facing={cameraFacing}
             />
           </View>
         )}
-        
+
         {!activeCall.isVideoEnabled && (
           <View style={styles.localVideoOff}>
             <VideoOff size={24} color="#fff" />
@@ -224,13 +232,13 @@ export default function CallScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       <View style={styles.backgroundOverlay} />
-      
+
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.statusText}>
-            {isConnected 
+            {isConnected
               ? formatDuration(callDuration)
               : (language === 'az' ? 'Qoşulur...' : 'Соединение...')
             }
@@ -239,13 +247,13 @@ export default function CallScreen() {
             {listing?.title ? (typeof listing.title === 'string' ? listing.title : listing.title[language]) : ''}
           </Text>
         </View>
-        
+
         {activeCall.type === 'video' ? (
           renderVideoCall()
         ) : (
           <View style={styles.userInfo}>
-            <Image 
-              source={{ uri: otherUser?.avatar }} 
+            <Image
+              source={{ uri: otherUser?.avatar }}
               style={styles.userAvatar}
             />
             <Text style={styles.userName}>{otherUser?.name}</Text>
@@ -254,7 +262,7 @@ export default function CallScreen() {
             </Text>
           </View>
         )}
-        
+
         <View style={styles.controls}>
           <TouchableOpacity
             style={[styles.controlButton, activeCall.isMuted && styles.activeControl]}
@@ -267,7 +275,7 @@ export default function CallScreen() {
               <Mic size={24} color="#fff" />
             )}
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[styles.controlButton, activeCall.isSpeakerOn && styles.activeControl]}
             onPress={toggleSpeaker}
@@ -279,7 +287,7 @@ export default function CallScreen() {
               <VolumeX size={24} color="#fff" />
             )}
           </TouchableOpacity>
-          
+
           {activeCall.type === 'video' && (
             <>
               <TouchableOpacity
@@ -293,7 +301,7 @@ export default function CallScreen() {
                   <VideoOff size={24} color="#fff" />
                 )}
               </TouchableOpacity>
-              
+
               {activeCall.isVideoEnabled && (
                 <TouchableOpacity
                   style={styles.controlButton}
@@ -306,7 +314,7 @@ export default function CallScreen() {
             </>
           )}
         </View>
-        
+
         <View style={styles.endCallContainer}>
           <TouchableOpacity
             style={styles.endCallButton}
@@ -316,9 +324,9 @@ export default function CallScreen() {
             <PhoneOff size={28} color="#fff" />
           </TouchableOpacity>
         </View>
-        
+
         <Text style={styles.privacyNote}>
-          {language === 'az' 
+          {language === 'az'
             ? 'Bu zəng tətbiq üzərindən həyata keçirilir'
             : 'Этот звонок осуществляется через приложение'
           }

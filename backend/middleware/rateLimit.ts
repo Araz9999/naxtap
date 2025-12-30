@@ -95,8 +95,8 @@ const rateLimiter = new RateLimiter();
 export function createRateLimitMiddleware(config: RateLimitConfig) {
   return async (c: Context, next: Next) => {
     // Get identifier (IP address or user ID)
-    const identifier = c.req.header('x-forwarded-for') || 
-                       c.req.header('x-real-ip') || 
+    const identifier = c.req.header('x-forwarded-for') ||
+                       c.req.header('x-real-ip') ||
                        'unknown';
 
     const isAllowed = rateLimiter.checkLimit(identifier, config);
@@ -114,11 +114,11 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
     if (!isAllowed) {
       logger.warn(`[RateLimit] Request blocked from ${identifier}`);
       return c.json(
-        { 
+        {
           error: config.message || 'Too many requests, please try again later',
-          retryAfter: resetTime ? Math.ceil((resetTime - Date.now()) / 1000) : config.windowMs / 1000
+          retryAfter: resetTime ? Math.ceil((resetTime - Date.now()) / 1000) : config.windowMs / 1000,
         },
-        429
+        429,
       );
     }
 

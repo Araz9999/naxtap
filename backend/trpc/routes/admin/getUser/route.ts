@@ -18,14 +18,14 @@ export const getUserProcedure = adminProcedure
           },
         },
       });
-      
+
       if (!user) {
         throw new Error('User not found');
       }
-      
+
       // Remove sensitive data
       const { passwordHash, ...safeUser } = user;
-      
+
       return safeUser;
     } catch (error) {
       logger.error('[Admin] Get user error:', error);

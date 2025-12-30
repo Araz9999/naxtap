@@ -13,7 +13,7 @@ export const autoPayV3Procedure = publicProcedure
       description: z.string(),
       callbackUrl: z.string().optional(),
       operation: z.enum(['PURCHASE', 'PRE_AUTH']).optional(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const secretKey = config.PAYRIFF_SECRET_KEY;

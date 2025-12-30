@@ -11,7 +11,7 @@ interface UserAnalyticsProps {
 
 export default function UserAnalytics({ user }: UserAnalyticsProps) {
   const { language } = useLanguageStore();
-  
+
   // ✅ Early return if no analytics
   if (!user.analytics) {
     return null;
@@ -24,32 +24,32 @@ export default function UserAnalytics({ user }: UserAnalyticsProps) {
 
     const now = new Date();
     const lastOnline = new Date(lastOnlineDate);
-    
+
     // ✅ Validate date
     if (isNaN(lastOnline.getTime())) {
       return language === 'az' ? 'Məlum deyil' : 'Неизвестно';
     }
-    
+
     const diffInMinutes = Math.floor((now.getTime() - lastOnline.getTime()) / (1000 * 60));
-    
+
     // ✅ Ensure non-negative (future date protection)
     if (diffInMinutes < 0) {
       return language === 'az' ? 'İndi onlayn' : 'Сейчас онлайн';
     }
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);
 
     if (diffInMinutes < 60) {
-      return language === 'az' 
+      return language === 'az'
         ? `${diffInMinutes} dəqiqə əvvəl onlayn idi`
         : `был онлайн ${diffInMinutes} минут назад`;
     } else if (diffInHours < 24) {
-      return language === 'az' 
+      return language === 'az'
         ? `${diffInHours} saat əvvəl onlayn idi`
         : `был онлайн ${diffInHours} часов назад`;
     } else {
-      return language === 'az' 
+      return language === 'az'
         ? `${diffInDays} gün əvvəl onlayn idi`
         : `был онлайн ${diffInDays} дней назад`;
     }
@@ -60,19 +60,19 @@ export default function UserAnalytics({ user }: UserAnalyticsProps) {
     if (isNaN(hours) || hours < 0) {
       return language === 'az' ? 'Məlum deyil' : 'Неизвестно';
     }
-    
+
     if (hours < 1) {
       const minutes = Math.max(1, Math.round(hours * 60)); // ✅ At least 1 minute
-      return language === 'az' 
+      return language === 'az'
         ? `${minutes} dəqiqə ərzində`
         : `в течение ${minutes} минут`;
     } else if (hours < 24) {
-      return language === 'az' 
+      return language === 'az'
         ? `${Math.round(hours)} saat ərzində`
         : `в течение ${Math.round(hours)} часов`;
     } else {
       const days = Math.round(hours / 24);
-      return language === 'az' 
+      return language === 'az'
         ? `${days} gün ərzində`
         : `в течение ${days} дней`;
     }
@@ -97,7 +97,7 @@ export default function UserAnalytics({ user }: UserAnalyticsProps) {
             <MessageCircle size={14} color={Colors.textSecondary} />
           </View>
           <Text style={styles.analyticsText}>
-            {language === 'az' 
+            {language === 'az'
               ? `Mesajların ${Math.min(100, Math.max(0, user.analytics.messageResponseRate))}%-na cavab verir`
               : `Отвечает на ${Math.min(100, Math.max(0, user.analytics.messageResponseRate))}% сообщений`}
           </Text>
@@ -110,7 +110,7 @@ export default function UserAnalytics({ user }: UserAnalyticsProps) {
           <Clock size={14} color={Colors.textSecondary} />
         </View>
         <Text style={styles.analyticsText}>
-          {language === 'az' 
+          {language === 'az'
             ? `Adətən ${formatResponseTime(user.analytics.averageResponseTime)}`
             : `Обычно ${formatResponseTime(user.analytics.averageResponseTime)}`}
         </Text>

@@ -1,15 +1,15 @@
 // @ts-ignore - TypeScript module resolution issue with Hono
-import { Hono } from "hono";
+import { Hono } from 'hono';
 // @ts-ignore - TypeScript module resolution issue with Hono
-import type { Context, Next } from "hono";
-import { trpcServer } from "@hono/trpc-server";
-import { cors } from "hono/cors";
-import { secureHeaders } from "hono/secure-headers";
-import { appRouter } from "./trpc/app-router";
-import { createContext } from "./trpc/create-context";
-import authRoutes from "./routes/auth";
-import paymentsRoutes from "./routes/payments";
-import { logger } from "./utils/logger";
+import type { Context, Next } from 'hono';
+import { trpcServer } from '@hono/trpc-server';
+import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
+import { appRouter } from './trpc/app-router';
+import { createContext } from './trpc/create-context';
+import authRoutes from './routes/auth';
+import paymentsRoutes from './routes/payments';
+import { logger } from './utils/logger';
 
 // Simple in-memory rate limiter (per IP per window)
 type RateRecord = { count: number; resetAt: number };
@@ -28,11 +28,11 @@ function rateLimit(limit: number, windowMs: number) {
     }
 
     if (record.count >= limit) {
-      logger.warn('[RateLimit] Request limit exceeded:', { 
-        ip, 
-        limit, 
+      logger.warn('[RateLimit] Request limit exceeded:', {
+        ip,
+        limit,
         count: record.count,
-        path: c.req.path 
+        path: c.req.path,
       });
       return c.text('Too Many Requests', 429);
     }
@@ -56,17 +56,17 @@ const ALLOWED_ORIGINS = [
   'http://localhost:19006',
 ].filter(Boolean);
 
-app.use("*", cors({
+app.use('*', cors({
   origin: (origin) => {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return origin;
-    
+
     // Check if origin is in allowed list
     if (ALLOWED_ORIGINS.includes(origin)) return origin;
-    
+
     // Always allow localhost with any port for local development flows
     if (origin.startsWith('http://localhost')) return origin;
-    
+
     logger.warn(`[CORS] Rejected origin: ${origin}`);
     return null;
   },
@@ -86,51 +86,51 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(
-  "/api/trpc/*",
+  '/api/trpc/*',
   trpcServer({
     router: appRouter,
     createContext,
-  })
+  }),
 );
 
 // Mount REST routes under /api
-app.route("/api/auth", authRoutes);
-app.route("/api/payments", paymentsRoutes);
+app.route('/api/auth', authRoutes);
+app.route('/api/payments', paymentsRoutes);
 
 // SECURITY: Add security headers
 app.use('*', async (c, next) => {
   await next();
-  
+
   // Prevent clickjacking
   c.header('X-Frame-Options', 'DENY');
-  
+
   // Prevent MIME type sniffing
   c.header('X-Content-Type-Options', 'nosniff');
-  
+
   // Enable XSS protection
   c.header('X-XSS-Protection', '1; mode=block');
-  
+
   // Strict Transport Security (HSTS) for HTTPS
   if (process.env.NODE_ENV === 'production') {
     c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
-  
+
   // Content Security Policy
   c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.mxpnl.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
-  
+
   // Referrer Policy
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
+
   // Permissions Policy
   c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 });
 
-app.get("/", (c) => {
+app.get('/', (c) => {
   logger.info('[API] Health check requested');
-  return c.json({ 
-    status: "ok", 
-    message: "API is running",
-    timestamp: new Date().toISOString()
+  return c.json({
+    status: 'ok',
+    message: 'API is running',
+    timestamp: new Date().toISOString(),
   });
 });
 

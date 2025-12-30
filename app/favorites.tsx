@@ -13,13 +13,13 @@ export default function FavoritesScreen() {
   const { language } = useLanguageStore();
   const { favorites, isAuthenticated } = useUserStore();
   const { listings } = useListingStore();
-  
+
   const favoriteListings = listings.filter(listing => favorites.includes(listing.id));
 
   if (!isAuthenticated) {
     return (
       <>
-        <Stack.Screen 
+        <Stack.Screen
           options={{
             title: language === 'az' ? 'Seçilmişlər' : 'Избранное',
             headerLeft: () => (
@@ -27,16 +27,16 @@ export default function FavoritesScreen() {
                 <ArrowLeft size={24} color={Colors.text} />
               </TouchableOpacity>
             ),
-          }} 
+          }}
         />
         <View style={styles.authContainer}>
           <Heart size={64} color={Colors.textSecondary} />
           <Text style={styles.authTitle}>
-            {language === 'az' 
-              ? 'Seçilmişləri görmək üçün hesabınıza daxil olun' 
+            {language === 'az'
+              ? 'Seçilmişləri görmək üçün hesabınıza daxil olun'
               : 'Войдите в аккаунт, чтобы увидеть избранное'}
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.authButton}
             onPress={() => router.push('/auth/login')}
           >
@@ -51,7 +51,7 @@ export default function FavoritesScreen() {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           title: language === 'az' ? 'Seçilmişlər' : 'Избранное',
           headerLeft: () => (
@@ -59,7 +59,7 @@ export default function FavoritesScreen() {
               <ArrowLeft size={24} color={Colors.text} />
             </TouchableOpacity>
           ),
-        }} 
+        }}
       />
       <View style={styles.container}>
         {favoriteListings.length === 0 ? (
@@ -69,11 +69,11 @@ export default function FavoritesScreen() {
               {language === 'az' ? 'Seçilmiş elan yoxdur' : 'Нет избранных объявлений'}
             </Text>
             <Text style={styles.emptyDescription}>
-              {language === 'az' 
-                ? 'Bəyəndiyiniz elanları ürək ikonuna toxunaraq seçilmişlərə əlavə edin' 
+              {language === 'az'
+                ? 'Bəyəndiyiniz elanları ürək ikonuna toxunaraq seçilmişlərə əlavə edin'
                 : 'Добавляйте понравившиеся объявления в избранное, нажав на иконку сердца'}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.browseButton}
               onPress={() => router.push('/')}
             >
@@ -83,20 +83,20 @@ export default function FavoritesScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <ScrollView 
+          <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.listingsContainer}
             showsVerticalScrollIndicator={false}
           >
             <Text style={styles.countText}>
-              {language === 'az' 
-                ? `${favoriteListings.length} seçilmiş elan` 
+              {language === 'az'
+                ? `${favoriteListings.length} seçilmiş elan`
                 : `${favoriteListings.length} избранных объявлений`}
             </Text>
             <View style={styles.gridContainer} testID="favorites-grid">
               {favoriteListings.map((listing) => (
                 <View key={listing.id} style={styles.gridItem} testID={`favorite-item-${listing.id}`}>
-                  <ListingCard 
+                  <ListingCard
                     listing={listing}
                   />
                 </View>

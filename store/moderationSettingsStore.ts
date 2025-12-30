@@ -42,7 +42,7 @@ export const useModerationSettingsStore = create<ModerationSettingsState>()(
     {
       name: 'moderation-settings-v2',
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 

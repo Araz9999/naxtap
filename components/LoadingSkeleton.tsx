@@ -34,7 +34,7 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
           duration: 1000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
 
     animation.start();

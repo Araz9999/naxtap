@@ -34,48 +34,48 @@ export const vehicleBrands = [
   'SYM', 'Temsa', 'Tesla', 'Textron', 'Tofas', 'Toyota', 'UAZ', 'Vespa',
   'Volkswagen', 'Volvo', 'Vortex', 'Voyah', 'Wanderer', 'Wey', 'Wuling',
   'Xpeng', 'Yamaha', 'Yutong', 'ZAZ', 'Zeekr', 'ZIL', 'Zongshen', 'Zontes',
-  'ZRP', 'Digər'
+  'ZRP', 'Digər',
 ];
 
 export const fuelTypes = {
   az: ['Benzin', 'Dizel', 'Qaz', 'Hibrid', 'Elektrik', 'Digər'],
-  ru: ['Бензин', 'Дизель', 'Газ', 'Гибрид', 'Электричество', 'Другое']
+  ru: ['Бензин', 'Дизель', 'Газ', 'Гибрид', 'Электричество', 'Другое'],
 };
 
 export const transmissionTypes = {
   az: ['Mexaniki', 'Avtomat', 'Robot', 'Variator'],
-  ru: ['Механическая', 'Автомат', 'Робот', 'Вариатор']
+  ru: ['Механическая', 'Автомат', 'Робот', 'Вариатор'],
 };
 
 export const driveTypes = {
   az: ['Ön', 'Arxa', 'Tam'],
-  ru: ['Передний', 'Задний', 'Полный']
+  ru: ['Передний', 'Задний', 'Полный'],
 };
 
 export const bodyTypes = {
   az: ['Sedan', 'Hetçbek', 'Universal', 'Kupe', 'Kabriolet', 'SUV', 'Crossover', 'Miniven', 'Pikap', 'Liftbek'],
-  ru: ['Седан', 'Хэтчбек', 'Универсал', 'Купе', 'Кабриолет', 'Внедорожник', 'Кроссовер', 'Минивэн', 'Пикап', 'Лифтбек']
+  ru: ['Седан', 'Хэтчбек', 'Универсал', 'Купе', 'Кабриолет', 'Внедорожник', 'Кроссовер', 'Минивэн', 'Пикап', 'Лифтбек'],
 };
 
 export const vehicleConditions = {
   az: ['Yeni', 'İşlənmiş', 'Qəzalı', 'Ehtiyat hissələri üçün'],
-  ru: ['Новый', 'Б/у', 'После ДТП', 'На запчасти']
+  ru: ['Новый', 'Б/у', 'После ДТП', 'На запчасти'],
 };
 
 export const colors = {
   az: [
     'Ağ', 'Qara', 'Gümüşü', 'Boz', 'Qırmızı', 'Mavi', 'Göy', 'Yaşıl',
-    'Sarı', 'Narıncı', 'Bənövşəyi', 'Çəhrayı', 'Qəhvəyi', 'Bej', 'Qızılı', 'Digər'
+    'Sarı', 'Narıncı', 'Bənövşəyi', 'Çəhrayı', 'Qəhvəyi', 'Bej', 'Qızılı', 'Digər',
   ],
   ru: [
     'Белый', 'Черный', 'Серебристый', 'Серый', 'Красный', 'Синий', 'Голубой', 'Зеленый',
-    'Желтый', 'Оранжевый', 'Фиолетовый', 'Розовый', 'Коричневый', 'Бежевый', 'Золотой', 'Другой'
-  ]
+    'Желтый', 'Оранжевый', 'Фиолетовый', 'Розовый', 'Коричневый', 'Бежевый', 'Золотой', 'Другой',
+  ],
 };
 
 export const currencies = {
   az: ['AZN', 'USD', 'EUR'],
-  ru: ['AZN', 'USD', 'EUR']
+  ru: ['AZN', 'USD', 'EUR'],
 };
 
 export const getYears = () => {

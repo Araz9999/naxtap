@@ -68,7 +68,7 @@ class Logger {
   error(message: string, error?: Error | unknown, ...args: any[]): void {
     if (this.shouldLog('error')) {
       console.error(this.formatMessage('error', message), error || '', ...args);
-      
+
       // In production, send to error tracking service
       if (!IS_DEV && error) {
         this.reportError(message, error);

@@ -62,8 +62,8 @@ function CategoryList() {
       <Text style={[styles.title, { color: colors.text }]}>
         {t('categories', language)}
       </Text>
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >

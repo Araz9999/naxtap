@@ -14,12 +14,12 @@ class SMSService {
     this.apiKey = process.env.SMS_API_KEY || '';
     this.fromNumber = process.env.SMS_FROM_NUMBER || '';
     this.provider = process.env.SMS_PROVIDER || 'console'; // 'console', 'twilio', 'aws-sns', etc.
-    
+
     // Log configuration status on startup
     if (this.isConfigured()) {
-      logger.info('[SMS] SMS service configured:', { 
+      logger.info('[SMS] SMS service configured:', {
         provider: this.provider,
-        fromNumber: this.fromNumber ? `${this.fromNumber.substring(0, 4)}***` : 'not set'
+        fromNumber: this.fromNumber ? `${this.fromNumber.substring(0, 4)}***` : 'not set',
       });
     } else {
       logger.info('[SMS] SMS service running in development mode (console logging)');
@@ -37,31 +37,31 @@ class SMSService {
     if (this.provider.toLowerCase() === 'twilio') {
       const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
       const authToken = process.env.TWILIO_AUTH_TOKEN || '';
-      return !!accountSid && 
-             !!authToken && 
+      return !!accountSid &&
+             !!authToken &&
              !!this.fromNumber &&
-             !accountSid.includes('your-') && 
+             !accountSid.includes('your-') &&
              !authToken.includes('your-');
     }
 
     // For other providers, check generic API key
-    return !!this.apiKey && 
-           !this.apiKey.includes('your-') && 
+    return !!this.apiKey &&
+           !this.apiKey.includes('your-') &&
            !!this.fromNumber;
   }
 
   async sendSMS(options: SMSOptions): Promise<boolean> {
-    logger.info('[SMS] Sending SMS:', { 
+    logger.info('[SMS] Sending SMS:', {
       to: options.to,
       provider: this.provider,
-      messageLength: options.message.length
+      messageLength: options.message.length,
     });
-    
+
     // For development/testing: log to console if not configured
     if (!this.isConfigured()) {
-      logger.warn('[SMS] SMS service not configured, logging OTP to console:', { 
+      logger.warn('[SMS] SMS service not configured, logging OTP to console:', {
         to: options.to,
-        message: options.message
+        message: options.message,
       });
       console.log('\n📱 ===== SMS OTP (Development Mode) =====');
       console.log(`To: ${options.to}`);
@@ -94,12 +94,12 @@ class SMSService {
   private async sendViaTwilio(options: SMSOptions): Promise<boolean> {
     const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
     const authToken = process.env.TWILIO_AUTH_TOKEN || '';
-    
+
     if (!accountSid || !authToken || !this.fromNumber) {
       logger.error('[SMS] Twilio credentials not fully configured', {
         hasAccountSid: !!accountSid,
         hasAuthToken: !!authToken,
-        hasFromNumber: !!this.fromNumber
+        hasFromNumber: !!this.fromNumber,
       });
       return false;
     }
@@ -125,14 +125,14 @@ class SMSService {
             Body: options.message,
           }),
           signal: AbortSignal.timeout(15000), // 15 second timeout
-        }
+        },
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error('[SMS] Twilio API error:', { 
+        logger.error('[SMS] Twilio API error:', {
           status: response.status,
-          error: errorText
+          error: errorText,
         });
         return false;
       }

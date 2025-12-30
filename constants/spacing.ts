@@ -12,17 +12,17 @@ export const Spacing = {
   xl: 20,
   xxl: 24,
   xxxl: 32,
-  
+
   // Component-specific
   buttonPadding: 16,
   cardPadding: 16,
   screenPadding: 20,
   sectionGap: 24,
-  
+
   // Touch targets
   minTouchTarget: 44, // iOS/Android minimum
   recommendedTouchTarget: 48,
-  
+
   // Border radius
   radiusSmall: 8,
   radiusMedium: 12,
@@ -39,12 +39,12 @@ export const Typography = {
   xl: 20,
   xxl: 24,
   xxxl: 32,
-  
+
   // Line heights
   lineHeightTight: 1.2,
   lineHeightNormal: 1.5,
   lineHeightRelaxed: 1.75,
-  
+
   // Font weights
   light: '300' as const,
   regular: '400' as const,

@@ -27,7 +27,7 @@ export default function CreateOrderScreen() {
   const createOrderMutation = trpc.payriff.createOrder.useMutation({
     onSuccess: (data) => {
       logger.debug('Order created successfully:', data);
-      
+
       if (data.payload?.paymentUrl) {
         Alert.alert(
           'Order Created',
@@ -47,7 +47,7 @@ export default function CreateOrderScreen() {
                 }
               },
             },
-          ]
+          ],
         );
       } else {
         Alert.alert('Success', 'Order created successfully!');
@@ -67,7 +67,7 @@ export default function CreateOrderScreen() {
     }
 
     const amountNum = parseFloat(amount);
-    
+
     if (isNaN(amountNum) || amountNum <= 0) {
       Alert.alert('Error', 'Please enter a valid amount greater than 0');
       return;

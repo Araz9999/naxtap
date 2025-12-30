@@ -14,7 +14,7 @@ export const getTicketsProcedure = moderatorProcedure
         status: statusSchema.optional(),
         search: z.string().optional(),
       })
-      .optional()
+      .optional(),
   )
   .query(async ({ input }) => {
     try {

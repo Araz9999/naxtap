@@ -19,15 +19,15 @@ import { logger } from '@/utils/logger';
 export default function PayriffPaymentScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  
+
   const amount = parseFloat(params.amount as string);
   const description = params.description as string || 'Ödəniş';
   const orderId = params.orderId as string || `ORDER-${Date.now()}`;
-  
+
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   const paymentCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Check for invalid amount on mount
@@ -36,7 +36,7 @@ export default function PayriffPaymentScreen() {
       Alert.alert(
         'Xəta',
         'Etibarsız məbləğ. Zəhmət olmasa düzgün məbləğ daxil edin.',
-        [{ text: 'OK', onPress: () => router.back() }]
+        [{ text: 'OK', onPress: () => router.back() }],
       );
     }
   }, [amount, router]);
@@ -46,7 +46,7 @@ export default function PayriffPaymentScreen() {
       Alert.alert(
         'Konfiqurasiya xətası',
         'Payriff ödəniş sistemi konfiqurasiya edilməyib. Zəhmət olmasa .env faylında PAYRIFF_MERCHANT_ID və PAYRIFF_SECRET_KEY dəyərlərini əlavə edin.',
-        [{ text: 'OK', onPress: () => router.back() }]
+        [{ text: 'OK', onPress: () => router.back() }],
       );
     }
   }, [router]);
@@ -88,7 +88,7 @@ export default function PayriffPaymentScreen() {
           window.location.href = response.paymentUrl;
         } else {
           payriffService.openPaymentPage(response.paymentUrl);
-          
+
           paymentCheckTimeoutRef.current = setTimeout(() => {
             checkPaymentStatusWithRetry(orderId, 0);
           }, 3000);
@@ -111,7 +111,7 @@ export default function PayriffPaymentScreen() {
   const checkPaymentStatus = async (orderId: string) => {
     try {
       const status = await payriffService.checkPaymentStatus(orderId);
-      
+
       if (status.status === 'success') {
         setPaymentStatus('success');
         Alert.alert(
@@ -122,7 +122,7 @@ export default function PayriffPaymentScreen() {
               text: 'OK',
               onPress: () => router.back(),
             },
-          ]
+          ],
         );
       } else if (status.status === 'failed') {
         setPaymentStatus('error');
@@ -142,7 +142,7 @@ export default function PayriffPaymentScreen() {
 
     try {
       const status = await payriffService.checkPaymentStatus(orderId);
-      
+
       if (status.status === 'success') {
         setPaymentStatus('success');
         Alert.alert(
@@ -153,7 +153,7 @@ export default function PayriffPaymentScreen() {
               text: 'OK',
               onPress: () => router.back(),
             },
-          ]
+          ],
         );
         return;
       } else if (status.status === 'failed') {
@@ -177,7 +177,7 @@ export default function PayriffPaymentScreen() {
       }
     } catch (error) {
       logger.error('Payment status check failed:', error);
-      
+
       if (retryCount < maxRetries) {
         paymentCheckTimeoutRef.current = setTimeout(() => {
           checkPaymentStatusWithRetry(orderId, retryCount + 1);

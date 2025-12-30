@@ -137,7 +137,7 @@ export const chatDb = {
     getByConversationId: (conversationId: string) => messagesByConversationId.get(conversationId) || [],
     create: (
       conversationId: string,
-      msg: Pick<ChatMessage, 'senderId' | 'receiverId' | 'listingId' | 'text' | 'type' | 'attachments'>
+      msg: Pick<ChatMessage, 'senderId' | 'receiverId' | 'listingId' | 'text' | 'type' | 'attachments'>,
     ) => {
       const id = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
       const createdAt = new Date().toISOString();

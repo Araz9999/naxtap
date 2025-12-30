@@ -11,7 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Keyboard,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -27,7 +27,7 @@ import {
   Phone,
   Mail,
   Globe,
-  MessageCircle
+  MessageCircle,
 } from 'lucide-react-native';
 import { logger } from '@/utils/logger';
 import { validateEmail, validateAzerbaijanPhone, validateWebsiteURL, validateStoreName } from '@/utils/inputValidation';
@@ -38,9 +38,9 @@ export default function EditStoreScreen() {
   const { language } = useLanguageStore();
   const { stores, editStore } = useStoreStore();
   const { currentUser } = useUserStore();
-  
+
   const store = stores.find(s => s.id === id);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     categoryName: '',
@@ -50,35 +50,35 @@ export default function EditStoreScreen() {
       phone: '',
       email: '',
       website: '',
-      whatsapp: ''
-    }
+      whatsapp: '',
+    },
   });
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  
+
   // ✅ Warn on back if unsaved changes
   const handleBack = () => {
     if (hasUnsavedChanges) {
       Alert.alert(
         language === 'az' ? 'Yadda saxlanılmamış dəyişikliklər' : 'Несохраненные изменения',
-        language === 'az' 
-          ? 'Dəyişiklikləriniz yadda saxlanılmayıb. Geri qayıtmaq istədiyinizə əminsinizmi?' 
+        language === 'az'
+          ? 'Dəyişiklikləriniz yadda saxlanılmayıb. Geri qayıtmaq istədiyinizə əminsinizmi?'
           : 'Ваши изменения не сохранены. Вы уверены, что хотите вернуться?',
         [
           { text: language === 'az' ? 'Ləğv et' : 'Отмена', style: 'cancel' },
-          { 
-            text: language === 'az' ? 'Geri qayıt' : 'Вернуться', 
+          {
+            text: language === 'az' ? 'Geri qayıt' : 'Вернуться',
             style: 'destructive',
-            onPress: () => router.back() 
-          }
-        ]
+            onPress: () => router.back(),
+          },
+        ],
       );
     } else {
       router.back();
     }
   };
-  
+
   useEffect(() => {
     try {
       if (store) {
@@ -87,14 +87,14 @@ export default function EditStoreScreen() {
           logger.error('[EditStoreScreen] Invalid store data');
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Mağaza məlumatları düzgün deyil' : 'Данные магазина неверны'
+            language === 'az' ? 'Mağaza məlumatları düzgün deyil' : 'Данные магазина неверны',
           );
           return;
         }
-        
+
         // ✅ Null-safe access to contactInfo
         const contactInfo = store.contactInfo || {};
-        
+
         setFormData({
           name: store.name || '',
           categoryName: store.categoryName || '',
@@ -104,170 +104,170 @@ export default function EditStoreScreen() {
             phone: contactInfo.phone || '',
             email: contactInfo.email || '',
             website: contactInfo.website || '',
-            whatsapp: contactInfo.whatsapp || ''
-          }
+            whatsapp: contactInfo.whatsapp || '',
+          },
         });
-        
+
         // ✅ Reset unsaved changes flag
         setHasUnsavedChanges(false);
         setValidationErrors({});
-        
+
         logger.debug('[EditStoreScreen] Store data loaded:', store.id);
       }
     } catch (error) {
       logger.error('[EditStoreScreen] Error loading store data:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza məlumatlarını yükləyərkən xəta' : 'Ошибка при загрузке данных магазина'
+        language === 'az' ? 'Mağaza məlumatlarını yükləyərkən xəta' : 'Ошибка при загрузке данных магазина',
       );
     }
   }, [store, language]);
-  
+
   const handleSave = async () => {
     // ✅ Validate authentication
     if (!currentUser || !currentUser.id) {
       logger.error('[EditStoreScreen] User not authenticated');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Hesaba daxil olmalısınız' : 'Вы должны войти в систему'
+        language === 'az' ? 'Hesaba daxil olmalısınız' : 'Вы должны войти в систему',
       );
       return;
     }
-    
+
     // ✅ Validate store
     if (!store || !store.id) {
       logger.error('[EditStoreScreen] Invalid store');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден'
+        language === 'az' ? 'Mağaza tapılmadı' : 'Магазин не найден',
       );
       return;
     }
-    
+
     // ✅ Check if already saving
     if (isLoading) {
       logger.warn('[EditStoreScreen] Save already in progress');
       return;
     }
-    
+
     // Validation: Store name
-        const nameValidation = validateStoreName(formData.name.trim());
-        if (!formData.name.trim() || !nameValidation?.isValid) {
-          Alert.alert(
-            language === 'az' ? 'Xəta' : 'Ошибка',
-            (nameValidation && nameValidation.error) || (language === 'az' ? 'Mağaza adı düzgün deyil' : 'Неверное название магазина')
-          );
-          return;
-        }
-        
-        if (formData.name.trim().length < 3) {
+    const nameValidation = validateStoreName(formData.name.trim());
+    if (!formData.name.trim() || !nameValidation?.isValid) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza adı ən azı 3 simvol olmalıdır' : 'Название магазина должно быть не менее 3 символов'
+        (nameValidation && nameValidation.error) || (language === 'az' ? 'Mağaza adı düzgün deyil' : 'Неверное название магазина'),
       );
       return;
     }
-    
+
+    if (formData.name.trim().length < 3) {
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        language === 'az' ? 'Mağaza adı ən azı 3 simvol olmalıdır' : 'Название магазина должно быть не менее 3 символов',
+      );
+      return;
+    }
+
     if (formData.name.trim().length > 50) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Mağaza adı maksimum 50 simvol ola bilər' : 'Название магазина не должно превышать 50 символов'
+        language === 'az' ? 'Mağaza adı maksimum 50 simvol ola bilər' : 'Название магазина не должно превышать 50 символов',
       );
       return;
     }
-    
+
     // Validation: Address
     if (!formData.address.trim()) {
       logger.warn('[EditStore] Address is required');
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Ünvan tələb olunur' : 'Адрес обязателен'
+        language === 'az' ? 'Ünvan tələb olunur' : 'Адрес обязателен',
       );
       return;
     }
-    
+
     if (formData.address.trim().length < 5) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Ünvan ən azı 5 simvol olmalıdır' : 'Адрес должен быть не менее 5 символов'
+        language === 'az' ? 'Ünvan ən azı 5 simvol olmalıdır' : 'Адрес должен быть не менее 5 символов',
       );
       return;
     }
-    
+
     // ✅ Validation: Description length if provided
     if (formData.description.trim() && formData.description.trim().length > 1000) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Təsvir maksimum 1000 simvol ola bilər' : 'Описание не должно превышать 1000 символов'
+        language === 'az' ? 'Təsvir maksimum 1000 simvol ola bilər' : 'Описание не должно превышать 1000 символов',
       );
       return;
     }
-    
+
     // ✅ Validation: Email format if provided (enhanced regex)
     const emailTrimmed = formData.contactInfo.email.trim();
     if (emailTrimmed) {
       // Enhanced email regex
       const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-      
+
       if (!emailRegex.test(emailTrimmed) || emailTrimmed.length > 255) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Düzgün email formatı daxil edin' : 'Введите корректный формат email'
+          language === 'az' ? 'Düzgün email formatı daxil edin' : 'Введите корректный формат email',
         );
         return;
       }
     }
-    
+
     // ✅ Validation: Phone number if provided (enhanced)
     const phoneTrimmed = formData.contactInfo.phone.trim();
     if (phoneTrimmed) {
       // Remove non-digit characters for validation
       const phoneDigits = phoneTrimmed.replace(/\D/g, '');
-      
+
       if (phoneDigits.length < 9 || phoneDigits.length > 15) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Telefon nömrəsi 9-15 rəqəm olmalıdır' : 'Номер телефона должен содержать 9-15 цифр'
+          language === 'az' ? 'Telefon nömrəsi 9-15 rəqəm olmalıdır' : 'Номер телефона должен содержать 9-15 цифр',
         );
         return;
       }
     }
-    
+
     // ✅ Validation: WhatsApp number if provided (enhanced)
     const whatsappTrimmed = formData.contactInfo.whatsapp.trim();
     if (whatsappTrimmed) {
       // Remove non-digit characters for validation
       const whatsappDigits = whatsappTrimmed.replace(/\D/g, '');
-      
+
       if (whatsappDigits.length < 9 || whatsappDigits.length > 15) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'WhatsApp nömrəsi 9-15 rəqəm olmalıdır' : 'Номер WhatsApp должен содержать 9-15 цифр'
+          language === 'az' ? 'WhatsApp nömrəsi 9-15 rəqəm olmalıdır' : 'Номер WhatsApp должен содержать 9-15 цифр',
         );
         return;
       }
     }
-    
+
     // ✅ Validation: Website URL if provided (enhanced)
     const websiteTrimmed = formData.contactInfo.website.trim();
     if (websiteTrimmed) {
       try {
         const url = new URL(websiteTrimmed);
-        
+
         // Check protocol
         if (!['http:', 'https:'].includes(url.protocol)) {
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Vebsayt http:// və ya https:// ilə başlamalıdır' : 'Веб-сайт должен начинаться с http:// или https://'
+            language === 'az' ? 'Vebsayt http:// və ya https:// ilə başlamalıdır' : 'Веб-сайт должен начинаться с http:// или https://',
           );
           return;
         }
-        
+
         // Check URL length
         if (websiteTrimmed.length > 2083) {
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Vebsayt ünvanı çox uzundur' : 'URL веб-сайта слишком длинный'
+            language === 'az' ? 'Vebsayt ünvanı çox uzundur' : 'URL веб-сайта слишком длинный',
           );
           return;
         }
@@ -275,17 +275,17 @@ export default function EditStoreScreen() {
         logger.error('[EditStoreScreen] Invalid website URL:', error);
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
-          language === 'az' ? 'Düzgün vebsayt ünvanı daxil edin' : 'Введите корректный URL веб-сайта'
+          language === 'az' ? 'Düzgün vebsayt ünvanı daxil edin' : 'Введите корректный URL веб-сайта',
         );
         return;
       }
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       logger.debug('[EditStoreScreen] Saving store:', store.id);
-      
+
       // ✅ Prepare update data
       const updateData = {
         name: formData.name.trim(),
@@ -296,34 +296,34 @@ export default function EditStoreScreen() {
           phone: formData.contactInfo.phone.trim() || undefined,
           email: formData.contactInfo.email.trim() || undefined,
           website: formData.contactInfo.website.trim() || undefined,
-          whatsapp: formData.contactInfo.whatsapp.trim() || undefined
-        }
+          whatsapp: formData.contactInfo.whatsapp.trim() || undefined,
+        },
       };
-      
+
       await editStore(store.id, updateData);
-      
+
       logger.info('[EditStoreScreen] Store updated successfully:', store.id);
-      
+
       logger.info('[EditStore] Store updated successfully:', store.id);
-      
+
       Alert.alert(
         language === 'az' ? 'Uğurlu!' : 'Успешно!',
-        language === 'az' 
-          ? `"${formData.name.trim()}" mağazası yeniləndi` 
+        language === 'az'
+          ? `"${formData.name.trim()}" mağazası yeniləndi`
           : `Магазин "${formData.name.trim()}" обновлен`,
         [{
           text: 'OK',
-          onPress: () => router.back()
+          onPress: () => router.back(),
         }],
-        { cancelable: false }
+        { cancelable: false },
       );
     } catch (error) {
       logger.error('[EditStoreScreen] Error updating store:', error);
-      
-      let errorMessage = language === 'az' 
-        ? 'Mağaza yenilənərkən xəta baş verdi' 
+
+      let errorMessage = language === 'az'
+        ? 'Mağaza yenilənərkən xəta baş verdi'
         : 'Ошибка при обновлении магазина';
-      
+
       if (error instanceof Error) {
         if (error.message.includes('not found') || error.message.includes('tapılmadı')) {
           errorMessage = language === 'az'
@@ -339,16 +339,16 @@ export default function EditStoreScreen() {
             : 'Ошибка сети. Попробуйте снова';
         }
       }
-      
+
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        errorMessage
+        errorMessage,
       );
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   if (!store) {
     return (
       <View style={styles.container}>
@@ -370,7 +370,7 @@ export default function EditStoreScreen() {
       </View>
     );
   }
-  
+
   if (store.userId !== currentUser?.id) {
     return (
       <View style={styles.container}>
@@ -395,7 +395,7 @@ export default function EditStoreScreen() {
       </View>
     );
   }
-  
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -442,7 +442,7 @@ export default function EditStoreScreen() {
                 <TextInput
                   style={[
                     styles.textInput,
-                    validationErrors.name && styles.textInputError
+                    validationErrors.name && styles.textInputError,
                   ]}
                   value={formData.name}
                   onChangeText={(text) => {
@@ -453,7 +453,7 @@ export default function EditStoreScreen() {
                     if (text.trim().length > 0 && text.trim().length < 3) {
                       setValidationErrors(prev => ({
                         ...prev,
-                        name: language === 'az' ? 'Minimum 3 simvol' : 'Минимум 3 символа'
+                        name: language === 'az' ? 'Minimum 3 simvol' : 'Минимум 3 символа',
                       }));
                     } else {
                       setValidationErrors(prev => {
@@ -500,7 +500,7 @@ export default function EditStoreScreen() {
                     style={[
                       styles.textInput,
                       styles.textInputWithIcon,
-                      validationErrors.address && styles.textInputError
+                      validationErrors.address && styles.textInputError,
                     ]}
                     value={formData.address}
                     onChangeText={(text) => {
@@ -511,7 +511,7 @@ export default function EditStoreScreen() {
                       if (text.trim().length > 0 && text.trim().length < 5) {
                         setValidationErrors(prev => ({
                           ...prev,
-                          address: language === 'az' ? 'Minimum 5 simvol' : 'Минимум 5 символов'
+                          address: language === 'az' ? 'Minimum 5 simvol' : 'Минимум 5 символов',
                         }));
                       } else {
                         setValidationErrors(prev => {
@@ -572,14 +572,14 @@ export default function EditStoreScreen() {
                     style={[
                       styles.textInput,
                       styles.textInputWithIcon,
-                      validationErrors.phone && styles.textInputError
+                      validationErrors.phone && styles.textInputError,
                     ]}
                     value={formData.contactInfo.phone}
                     onChangeText={(text) => {
                       const filtered = text.replace(/[^0-9+\-() ]/g, '');
                       setFormData(prev => ({
                         ...prev,
-                        contactInfo: { ...prev.contactInfo, phone: filtered }
+                        contactInfo: { ...prev.contactInfo, phone: filtered },
                       }));
                       setHasUnsavedChanges(true);
 
@@ -588,7 +588,7 @@ export default function EditStoreScreen() {
                         if (phoneDigits.length < 9) {
                           setValidationErrors(prev => ({
                             ...prev,
-                            phone: language === 'az' ? 'Minimum 9 rəqəm' : 'Минимум 9 цифр'
+                            phone: language === 'az' ? 'Minimum 9 rəqəm' : 'Минимум 9 цифр',
                           }));
                         } else {
                           setValidationErrors(prev => {
@@ -625,13 +625,13 @@ export default function EditStoreScreen() {
                     style={[
                       styles.textInput,
                       styles.textInputWithIcon,
-                      validationErrors.email && styles.textInputError
+                      validationErrors.email && styles.textInputError,
                     ]}
                     value={formData.contactInfo.email}
                     onChangeText={(text) => {
                       setFormData(prev => ({
                         ...prev,
-                        contactInfo: { ...prev.contactInfo, email: text }
+                        contactInfo: { ...prev.contactInfo, email: text },
                       }));
                       setHasUnsavedChanges(true);
 
@@ -640,7 +640,7 @@ export default function EditStoreScreen() {
                         if (!emailRegex.test(text.trim())) {
                           setValidationErrors(prev => ({
                             ...prev,
-                            email: language === 'az' ? 'Düzgün email formatı' : 'Корректный формат email'
+                            email: language === 'az' ? 'Düzgün email formatı' : 'Корректный формат email',
                           }));
                         } else {
                           setValidationErrors(prev => {
@@ -679,13 +679,13 @@ export default function EditStoreScreen() {
                     style={[
                       styles.textInput,
                       styles.textInputWithIcon,
-                      validationErrors.website && styles.textInputError
+                      validationErrors.website && styles.textInputError,
                     ]}
                     value={formData.contactInfo.website}
                     onChangeText={(text) => {
                       setFormData(prev => ({
                         ...prev,
-                        contactInfo: { ...prev.contactInfo, website: text }
+                        contactInfo: { ...prev.contactInfo, website: text },
                       }));
                       setHasUnsavedChanges(true);
 
@@ -693,7 +693,7 @@ export default function EditStoreScreen() {
                         if (!text.trim().match(/^https?:\/\/.+/)) {
                           setValidationErrors(prev => ({
                             ...prev,
-                            website: language === 'az' ? 'http:// və ya https:// ilə başlamalıdır' : 'Должен начинаться с http:// или https://'
+                            website: language === 'az' ? 'http:// və ya https:// ilə başlamalıdır' : 'Должен начинаться с http:// или https://',
                           }));
                         } else {
                           setValidationErrors(prev => {
@@ -732,14 +732,14 @@ export default function EditStoreScreen() {
                     style={[
                       styles.textInput,
                       styles.textInputWithIcon,
-                      validationErrors.whatsapp && styles.textInputError
+                      validationErrors.whatsapp && styles.textInputError,
                     ]}
                     value={formData.contactInfo.whatsapp}
                     onChangeText={(text) => {
                       const filtered = text.replace(/[^0-9+\-() ]/g, '');
                       setFormData(prev => ({
                         ...prev,
-                        contactInfo: { ...prev.contactInfo, whatsapp: filtered }
+                        contactInfo: { ...prev.contactInfo, whatsapp: filtered },
                       }));
                       setHasUnsavedChanges(true);
 
@@ -748,7 +748,7 @@ export default function EditStoreScreen() {
                         if (whatsappDigits.length < 9) {
                           setValidationErrors(prev => ({
                             ...prev,
-                            whatsapp: language === 'az' ? 'Minimum 9 rəqəm' : 'Минимум 9 цифр'
+                            whatsapp: language === 'az' ? 'Minimum 9 rəqəm' : 'Минимум 9 цифр',
                           }));
                         } else {
                           setValidationErrors(prev => {
@@ -779,11 +779,11 @@ export default function EditStoreScreen() {
 
             {/* Save Button */}
             <View style={styles.section}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
-                  styles.saveButtonLarge, 
+                  styles.saveButtonLarge,
                   isLoading && styles.saveButtonDisabled,
-                  !hasUnsavedChanges && styles.saveButtonDisabled
+                  !hasUnsavedChanges && styles.saveButtonDisabled,
                 ]}
                 onPress={handleSave}
                 disabled={isLoading || !hasUnsavedChanges || Object.keys(validationErrors).length > 0}
@@ -794,7 +794,7 @@ export default function EditStoreScreen() {
                   <Save size={20} color="white" />
                 )}
                 <Text style={styles.saveButtonText}>
-                  {isLoading 
+                  {isLoading
                     ? (language === 'az' ? 'Yadda saxlanılır...' : 'Сохранение...')
                     : !hasUnsavedChanges
                       ? (language === 'az' ? 'Dəyişiklik yoxdur' : 'Нет изменений')

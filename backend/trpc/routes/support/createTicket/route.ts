@@ -13,7 +13,7 @@ export const createTicketProcedure = protectedProcedure
       category: z.string().min(1).max(50),
       priority: prioritySchema.optional().default('medium'),
       attachments: z.array(z.string()).optional().default([]),
-    })
+    }),
   )
   .mutation(async ({ input, ctx }) => {
     try {

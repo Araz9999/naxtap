@@ -23,7 +23,7 @@ import {
   Package,
   Users,
   Heart,
-  HeartOff
+  HeartOff,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -36,7 +36,7 @@ export default function StoresTabScreen() {
   const { currentUser } = useUserStore();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
+
   // ✅ Filter active stores with validation
   const activeStores = stores.filter(store => {
     // Validate store has required fields
@@ -46,7 +46,7 @@ export default function StoresTabScreen() {
     }
     return store.isActive;
   });
-  
+
   // ✅ Safe search with validation and sanitization
   const filteredStores = activeStores.filter(store => {
     // Validate required fields
@@ -54,25 +54,25 @@ export default function StoresTabScreen() {
       logger.warn('[StoresTab] Store missing name or category:', store.id);
       return false;
     }
-    
+
     // ✅ Sanitize and limit search query length
     const sanitizedQuery = searchQuery
       .trim()
       .toLowerCase()
       .substring(0, 200); // Max 200 chars
-    
+
     if (!sanitizedQuery) return true; // Show all if empty
-    
+
     const storeName = (store.name || '').toLowerCase();
     const categoryName = (store.categoryName || '').toLowerCase();
-    
+
     return storeName.includes(sanitizedQuery) || categoryName.includes(sanitizedQuery);
   });
-  
+
   const handleStorePress = (storeId: string) => {
     router.push(`/store/${storeId}`);
   };
-  
+
   const handleFollowToggle = async (storeId: string) => {
     // ✅ Validate storeId
     if (!storeId || typeof storeId !== 'string') {
@@ -83,23 +83,23 @@ export default function StoresTabScreen() {
     if (!currentUser) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'İzləmək üçün daxil olun' : 'Войдите для подписки'
+        language === 'az' ? 'İzləmək üçün daxil olun' : 'Войдите для подписки',
       );
       return;
     }
-    
+
     // ✅ Set loading state
     setIsLoading(true);
-    
+
     try {
       const isFollowing = isFollowingStore(currentUser.id, storeId);
-      
-      logger.debug('[handleFollowToggle] Toggling follow:', { 
-        userId: currentUser.id, 
-        storeId, 
-        isFollowing 
+
+      logger.debug('[handleFollowToggle] Toggling follow:', {
+        userId: currentUser.id,
+        storeId,
+        isFollowing,
       });
-      
+
       if (isFollowing) {
         await unfollowStore(currentUser.id, storeId);
         logger.debug('[handleFollowToggle] Unfollowed successfully');
@@ -111,14 +111,14 @@ export default function StoresTabScreen() {
       logger.error('[handleFollowToggle] Failed to toggle follow:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Əməliyyat zamanı xəta baş verdi' : 'Ошибка при выполнении операции'
+        language === 'az' ? 'Əməliyyat zamanı xəta baş verdi' : 'Ошибка при выполнении операции',
       );
     } finally {
       // ✅ Always reset loading state
       setIsLoading(false);
     }
   };
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
@@ -139,7 +139,7 @@ export default function StoresTabScreen() {
           />
         </View>
       </View>
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* ✅ Loading indicator */}
         {isLoading && (
@@ -147,17 +147,17 @@ export default function StoresTabScreen() {
             <ActivityIndicator size="small" color={Colors.primary} />
           </View>
         )}
-        
+
         {filteredStores.length > 0 ? (
           <View style={[styles.storesGrid, isLoading && styles.gridDisabled]}>
             {filteredStores.map((store) => {
               const isFollowing = currentUser ? isFollowingStore(currentUser.id, store.id) : false;
-              
+
               // ✅ Safe rating calculation with validation
               const averageRating = (typeof store.rating === 'number' && typeof store.totalRatings === 'number' && store.totalRatings > 0)
                 ? store.rating / Math.max(store.totalRatings, 1)
                 : 0;
-              
+
               return (
                 <View key={store.id} style={styles.storeCard}>
                   <TouchableOpacity
@@ -173,7 +173,7 @@ export default function StoresTabScreen() {
                         </View>
                       )}
                     </View>
-                    
+
                     <View style={styles.storeInfo}>
                       <Text style={styles.storeName} numberOfLines={2}>
                         {store.name || language === 'az' ? 'Mağaza' : 'Магазин'}
@@ -181,7 +181,7 @@ export default function StoresTabScreen() {
                       <Text style={styles.storeCategory} numberOfLines={1}>
                         {store.categoryName || language === 'az' ? 'Kateqoriya yoxdur' : 'Нет категории'}
                       </Text>
-                      
+
                       <View style={styles.storeStats}>
                         <View style={styles.statItem}>
                           <Star size={12} color={Colors.secondary} fill={Colors.secondary} />
@@ -197,13 +197,13 @@ export default function StoresTabScreen() {
                           </Text>
                         </View>
                       </View>
-                      
+
                       <Text style={styles.adsCount}>
                         {typeof store.adsUsed === 'number' ? store.adsUsed : 0} {language === 'az' ? 'elan' : 'объявлений'}
                       </Text>
                     </View>
                   </TouchableOpacity>
-                  
+
                   {currentUser && (
                     <TouchableOpacity
                       style={styles.followButton}
@@ -217,7 +217,7 @@ export default function StoresTabScreen() {
                       )}
                     </TouchableOpacity>
                   )}
-                  
+
                   <View style={styles.premiumBadge}>
                     <Text style={styles.premiumText}>
                       {language === 'az' ? 'Mağaza' : 'Магазин'}
@@ -231,7 +231,7 @@ export default function StoresTabScreen() {
           <View style={styles.emptyState}>
             <Package size={64} color={Colors.textSecondary} />
             <Text style={styles.emptyTitle}>
-              {searchQuery 
+              {searchQuery
                 ? (language === 'az' ? 'Mağaza tapılmadı' : 'Магазины не найдены')
                 : (language === 'az' ? 'Hələ mağaza yoxdur' : 'Пока нет магазинов')
               }

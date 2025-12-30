@@ -36,7 +36,7 @@ class PaymentService {
         script.src = 'https://js.stripe.com/v3/';
         script.async = true;
         document.head.appendChild(script);
-        
+
         return new Promise((resolve) => {
           script.onload = () => {
             (window as any).Stripe = (window as any).Stripe(this.stripeKey);

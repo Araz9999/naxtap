@@ -25,9 +25,9 @@ payments.post('/payriff/create-order', async (c) => {
     }
 
     const orderId = `ORDER-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-    
+
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8081';
-    
+
     const orderData = {
       amount,
       currency,
@@ -57,7 +57,7 @@ payments.post('/payriff/create-order', async (c) => {
 payments.post('/payriff/callback', async (c) => {
   try {
     logger.info('[Payments] Payriff callback received');
-    
+
     const body = await c.req.json();
     const signature = c.req.header('X-Signature') || '';
 
@@ -119,7 +119,7 @@ payments.post('/payriff/refund', async (c) => {
       amount: z.number().positive().optional(),
     });
     const { orderId, amount } = schema.parse(body);
-    
+
     logger.info('[Payments] Refund requested:', { orderId, amount });
 
     if (!orderId) {

@@ -8,16 +8,16 @@ export default publicProcedure
   }))
   .mutation(({ input }) => {
     const messages = liveChatDb.messages.getByConversationId(input.conversationId);
-    
+
     messages.forEach(msg => {
       if (msg.status !== 'seen') {
         liveChatDb.messages.updateStatus(msg.id, 'seen');
       }
     });
-    
+
     liveChatDb.conversations.update(input.conversationId, {
       unreadCount: 0,
     });
-    
+
     return { success: true };
   });

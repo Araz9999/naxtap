@@ -26,7 +26,7 @@ export default function PaymentSuccessScreen() {
 
   useEffect(() => {
     logger.debug('Payment success:', { orderId, amount, cardUuid, brand });
-    
+
     if (cardUuid && pan && brand && !cardSaved && !savingCard) {
       setSavingCard(true);
       saveCardMutation.mutate(
@@ -46,7 +46,7 @@ export default function PaymentSuccessScreen() {
             logger.error('Failed to save card:', error);
             setSavingCard(false);
           },
-        }
+        },
       );
     }
   }, [orderId, amount, cardUuid, pan, brand, cardHolderName]);
