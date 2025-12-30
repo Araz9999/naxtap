@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
 import { liveChatDb } from '../../../../db/liveChat';
 import { LiveChatMessage } from '../../../../types/liveChat';
+import { TRPCError } from '@trpc/server';
 
 import { logger } from '../../../../utils/logger';
 export default publicProcedure
@@ -22,6 +23,11 @@ export default publicProcedure
       messageLength: input.message.length,
     });
 
+    const conv = liveChatDb.conversations.getById(input.conversationId);
+    if (!conv) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Conversation not found' });
+    }
+
     const message: LiveChatMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       conversationId: input.conversationId,
@@ -31,7 +37,9 @@ export default publicProcedure
       message: input.message,
       attachments: input.attachments,
       timestamp: new Date().toISOString(),
-      status: 'sent',
+      // "delivered" means accepted & stored by server (real, immediate).
+      // "seen" will only be set when the opposite side fetches/marks messages as read.
+      status: 'delivered',
       isSupport: input.isSupport,
     };
 
@@ -43,16 +51,6 @@ export default publicProcedure
       lastMessageTime: message.timestamp,
     });
     logger.debug('[SendMessage] Conversation updated:', updated?.id);
-
-    setTimeout(() => {
-      logger.debug('[SendMessage] Updating status to delivered:', message.id);
-      liveChatDb.messages.updateStatus(message.id, 'delivered');
-    }, 500);
-
-    setTimeout(() => {
-      logger.debug('[SendMessage] Updating status to seen:', message.id);
-      liveChatDb.messages.updateStatus(message.id, 'seen');
-    }, 2000);
 
     return created;
   });

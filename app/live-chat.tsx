@@ -74,7 +74,7 @@ export default function LiveChatScreen() {
   const conversationId = activeConversation?.id;
 
   const messagesQuery = trpc.liveChat.getMessages.useQuery(
-    { conversationId: conversationId || '' },
+    { conversationId: conversationId || '', viewerType: 'user' },
     {
       enabled: !!conversationId,
       refetchInterval: 2000,
@@ -104,7 +104,7 @@ export default function LiveChatScreen() {
   useEffect(() => {
     if (!conversationId) return;
     // Mark as read periodically while open
-    markAsReadMutation.mutate({ conversationId });
+    markAsReadMutation.mutate({ conversationId, viewerType: 'user' });
   }, [conversationId, markAsReadMutation]);
 
   useEffect(() => {

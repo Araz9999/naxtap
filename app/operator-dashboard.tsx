@@ -60,7 +60,7 @@ export default function OperatorDashboard() {
   );
 
   const messagesQuery = trpc.liveChat.getMessages.useQuery(
-    { conversationId: selectedConversationId || '' },
+    { conversationId: selectedConversationId || '', viewerType: 'support' },
     {
       enabled: !!selectedConversationId,
       refetchInterval: 2000,

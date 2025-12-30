@@ -5,19 +5,10 @@ import { liveChatDb } from '../../../../db/liveChat';
 export default publicProcedure
   .input(z.object({
     conversationId: z.string(),
+    // Defaults to "user" for backwards compatibility.
+    viewerType: z.enum(['user', 'support']).optional(),
   }))
   .mutation(({ input }) => {
-    const messages = liveChatDb.messages.getByConversationId(input.conversationId);
-
-    messages.forEach(msg => {
-      if (msg.status !== 'seen') {
-        liveChatDb.messages.updateStatus(msg.id, 'seen');
-      }
-    });
-
-    liveChatDb.conversations.update(input.conversationId, {
-      unreadCount: 0,
-    });
-
-    return { success: true };
+    const updatedCount = liveChatDb.messages.markAsRead(input.conversationId, input.viewerType ?? 'user');
+    return { success: true, updatedCount };
   });
