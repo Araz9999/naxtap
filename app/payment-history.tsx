@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Platform
+  Platform,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -28,6 +30,9 @@ import { getColors } from '@/constants/colors';
 import { useThemeStore } from '@/store/themeStore';
 import { Alert } from 'react-native';
 import { logger } from '@/utils/logger';
+import { trpc } from '@/lib/trpc';
+import type { PayriffWalletHistory } from '@/services/payriffService';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface PaymentRecord {
   id: string;
@@ -39,77 +44,15 @@ interface PaymentRecord {
   transactionId: string;
   storeId?: string;
   storeName?: string;
-  type: 'store_renewal' | 'listing_promotion' | 'view_purchase' | 'premium_feature';
+  type:
+    | 'store_renewal'
+    | 'listing_promotion'
+    | 'view_purchase'
+    | 'premium_feature'
+    | 'wallet_topup'
+    | 'wallet_operation'
+    | 'transfer';
 }
-
-const mockPaymentHistory: PaymentRecord[] = [
-  {
-    id: '1',
-    date: '2024-02-01T10:30:00Z',
-    amount: 150,
-    description: 'Mağaza yeniləməsi - Premium paket',
-    status: 'completed',
-    method: 'card',
-    transactionId: 'TXN-2024-001',
-    storeId: '1',
-    storeName: 'TechMart Bakı',
-    type: 'store_renewal'
-  },
-  {
-    id: '2',
-    date: '2024-01-28T14:15:00Z',
-    amount: 25,
-    description: 'Elan tanıtımı - 7 gün',
-    status: 'completed',
-    method: 'wallet',
-    transactionId: 'TXN-2024-002',
-    type: 'listing_promotion'
-  },
-  {
-    id: '3',
-    date: '2024-01-25T09:45:00Z',
-    amount: 50,
-    description: 'Baxış alma - 1000 baxış',
-    status: 'completed',
-    method: 'card',
-    transactionId: 'TXN-2024-003',
-    type: 'view_purchase'
-  },
-  {
-    id: '4',
-    date: '2024-01-20T16:20:00Z',
-    amount: 200,
-    description: 'Mağaza yeniləməsi - Business paket',
-    status: 'failed',
-    method: 'card',
-    transactionId: 'TXN-2024-004',
-    storeId: '2',
-    storeName: 'Fashion House',
-    type: 'store_renewal'
-  },
-  {
-    id: '5',
-    date: '2024-01-18T11:30:00Z',
-    amount: 15,
-    description: 'Premium xüsusiyyət - Analitika',
-    status: 'completed',
-    method: 'bonus',
-    transactionId: 'TXN-2024-005',
-    type: 'premium_feature'
-  },
-  {
-    id: '6',
-    date: '2024-01-15T13:10:00Z',
-    amount: 100,
-    description: 'Mağaza yeniləməsi - Əsas paket',
-    status: 'refunded',
-    method: 'bank',
-    transactionId: 'TXN-2024-006',
-    storeId: '1',
-    storeName: 'TechMart Bakı',
-    type: 'store_renewal'
-  }
-];
 
 const filterOptions = [
   { id: 'all', label: 'Hamısı' },
@@ -123,7 +66,10 @@ const typeLabels = {
   store_renewal: 'Mağaza Yeniləməsi',
   listing_promotion: 'Elan Tanıtımı',
   view_purchase: 'Baxış Alma',
-  premium_feature: 'Premium Xüsusiyyət'
+  premium_feature: 'Premium Xüsusiyyət',
+  wallet_topup: 'Balans Artırılması',
+  wallet_operation: 'Balans Əməliyyatı',
+  transfer: 'Transfer'
 };
 
 export default function PaymentHistoryScreen() {
@@ -134,12 +80,99 @@ export default function PaymentHistoryScreen() {
   const colors = getColors(themeMode, colorTheme);
   
   const [selectedFilter, setSelectedFilter] = useState('all');
-  const [paymentHistory] = useState<PaymentRecord[]>(mockPaymentHistory);
-  
-  logger.info('[PaymentHistory] Screen opened:', { 
-    userId: currentUser?.id, 
-    totalPayments: mockPaymentHistory.length,
-    filter: selectedFilter
+  const [refreshing, setRefreshing] = useState(false);
+
+  const walletQuery = trpc.payriff.getWallet.useQuery(undefined, {
+    // Keep the screen "live" without hammering the API.
+    // (If you want it more aggressive, reduce this interval.)
+    refetchInterval: 15000,
+    refetchIntervalInBackground: true,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      // Refetch when user navigates back to this screen.
+      walletQuery.refetch().catch(() => {
+        // swallow - UI handles error state
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
+
+  const toPaymentRecord = useCallback((t: PayriffWalletHistory): PaymentRecord | null => {
+    if (!t || typeof t.id !== 'number') return null;
+
+    const op = (t.operation || '').toString();
+    const opUpper = op.toUpperCase();
+    const description = typeof t.description === 'string' ? t.description : '';
+    const date = typeof t.createdAt === 'string' ? t.createdAt : new Date().toISOString();
+    const signedAmount = Number(t.amount || 0);
+    const descLower = description.toLowerCase();
+
+    const status: PaymentRecord['status'] =
+      opUpper.includes('REFUND') || description.toLowerCase().includes('refund')
+        ? 'refunded'
+        : t.active === false
+          ? 'pending'
+          : 'completed';
+
+    const method: PaymentRecord['method'] =
+      opUpper === 'BONUS' || descLower.includes('bonus')
+        ? 'bonus'
+        : descLower.includes('kart') || descLower.includes('card') || opUpper === 'TOPUP' || opUpper === 'PURCHASE'
+          ? 'card'
+          : descLower.includes('bank') || opUpper.includes('TRANSFER')
+            ? 'bank'
+            : 'wallet';
+
+    const type: PaymentRecord['type'] =
+      descLower.includes('mağaza') || descLower.includes('magaza')
+        ? 'store_renewal'
+        : descLower.includes('elan') || descLower.includes('tanıtım') || descLower.includes('tanitim')
+          ? 'listing_promotion'
+          : descLower.includes('baxış') || descLower.includes('baxis') || descLower.includes('view')
+            ? 'view_purchase'
+            : descLower.includes('premium')
+              ? 'premium_feature'
+              : opUpper === 'TOPUP' || opUpper === 'PURCHASE'
+        ? 'wallet_topup'
+        : opUpper.includes('TRANSFER')
+          ? 'transfer'
+          : 'wallet_operation';
+
+    return {
+      id: String(t.id),
+      date,
+      amount: Number.isFinite(signedAmount) ? signedAmount : 0,
+      description: description || (language === 'az' ? 'Ödəniş əməliyyatı' : 'Платежная операция'),
+      status,
+      method,
+      transactionId: `PAY-${t.id}`,
+      type,
+    };
+    // language is safe here for fallback description
+  }, [language]);
+
+  const paymentHistory = useMemo<PaymentRecord[]>(() => {
+    const history = walletQuery.data?.payload?.historyResponse || [];
+    const mapped = history
+      .map(toPaymentRecord)
+      .filter((p): p is PaymentRecord => Boolean(p))
+      .filter((p) => Math.abs(p.amount) > 0);
+
+    // Most recent first
+    mapped.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return mapped;
+  }, [toPaymentRecord, walletQuery.data?.payload?.historyResponse]);
+
+  logger.info('[PaymentHistory] Screen opened:', {
+    userId: currentUser?.id,
+    totalPayments: paymentHistory.length,
+    filter: selectedFilter,
+    source: 'payriff_wallet_history',
   });
 
   const filteredPayments = paymentHistory.filter(payment => {
@@ -153,8 +186,32 @@ export default function PaymentHistoryScreen() {
   });
 
   const totalSpent = paymentHistory
-    .filter(p => p.status === 'completed')
-    .reduce((sum, p) => sum + p.amount, 0);
+    .filter(p => p.status === 'completed' && p.amount < 0)
+    .reduce((sum, p) => sum + Math.abs(p.amount), 0);
+
+  const monthlyStats = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(start.getDate() - 30);
+
+    const monthPayments = paymentHistory.filter((p) => {
+      const d = new Date(p.date);
+      return !Number.isNaN(d.getTime()) && d >= start && d <= now;
+    });
+
+    const completed = monthPayments.filter((p) => p.status === 'completed');
+    const completedCount = completed.length;
+    const monthTotal = completed.reduce((sum, p) => sum + p.amount, 0);
+    const avg = completedCount > 0 ? monthTotal / completedCount : 0;
+    const successRate = monthPayments.length > 0 ? (completedCount / monthPayments.length) * 100 : 0;
+
+    return {
+      count: completedCount,
+      total: monthTotal,
+      avg,
+      successRate,
+    };
+  }, [paymentHistory]);
 
   const getStatusIcon = (status: PaymentRecord['status']) => {
     switch (status) {
@@ -264,10 +321,13 @@ export default function PaymentHistoryScreen() {
       return null;
     }
     
-    if (!payment.id || !payment.status || !payment.amount) {
+    if (!payment.id || !payment.status || typeof payment.amount !== 'number') {
       logger.warn('[PaymentHistory] Incomplete payment record:', { id: payment.id, status: payment.status });
       return null;
     }
+
+    const isCredit = payment.amount > 0;
+    const displayAmount = Math.abs(payment.amount);
     
     return (
       <TouchableOpacity
@@ -282,7 +342,7 @@ export default function PaymentHistoryScreen() {
           Alert.alert(
             language === 'az' ? 'Ödəniş Detalları' : 'Детали платежа',
             `${language === 'az' ? 'Transaksiya ID' : 'ID транзакции'}: ${payment.transactionId}\n` +
-            `${language === 'az' ? 'Məbləğ' : 'Сумма'}: ${payment.amount} AZN\n` +
+            `${language === 'az' ? 'Məbləğ' : 'Сумма'}: ${payment.amount < 0 ? '-' : '+'}${Math.abs(payment.amount)} AZN\n` +
             `${language === 'az' ? 'Status' : 'Статус'}: ${getStatusText(payment.status)}\n` +
             `${language === 'az' ? 'Tarix' : 'Дата'}: ${formatDate(payment.date)}`
           );
@@ -297,7 +357,7 @@ export default function PaymentHistoryScreen() {
               {payment.description}
             </Text>
             <Text style={styles.paymentType}>
-              {typeLabels[payment.type]}
+              {typeLabels[payment.type] || (language === 'az' ? 'Ödəniş' : 'Платеж')}
             </Text>
             <View style={styles.paymentMeta}>
               <Text style={styles.paymentDate}>
@@ -320,9 +380,14 @@ export default function PaymentHistoryScreen() {
         <View style={styles.paymentRight}>
           <Text style={[
             styles.paymentAmount,
-            { color: payment.status === 'refunded' ? colors.primary : colors.text }
+            {
+              color:
+                payment.status === 'refunded' || isCredit
+                  ? colors.success
+                  : colors.text
+            }
           ]}>
-            {payment.status === 'refunded' ? '+' : '-'}{payment.amount} AZN
+            {payment.status === 'refunded' || isCredit ? '+' : '-'}{displayAmount} AZN
           </Text>
           <View style={[
             styles.statusBadge,
@@ -341,6 +406,15 @@ export default function PaymentHistoryScreen() {
         </View>
       </TouchableOpacity>
     );
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await walletQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const styles = createStyles(colors);
@@ -371,17 +445,42 @@ export default function PaymentHistoryScreen() {
         }} 
       />
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {/* Summary Card */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
             <Text style={styles.summaryTitle}>Ümumi Xərc</Text>
             <DollarSign size={24} color={colors.primary} />
           </View>
-          <Text style={styles.summaryAmount}>{totalSpent} AZN</Text>
-          <Text style={styles.summarySubtitle}>
-            {filteredPayments.filter(p => p.status === 'completed').length} uğurlu ödəniş
-          </Text>
+          {walletQuery.isLoading ? (
+            <View style={styles.summaryLoadingRow}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.summaryLoadingText}>
+                {language === 'az' ? 'Yüklənir...' : 'Загрузка...'}
+              </Text>
+            </View>
+          ) : walletQuery.error ? (
+            <TouchableOpacity
+              style={styles.retryInline}
+              onPress={() => walletQuery.refetch()}
+            >
+              <RefreshCw size={16} color={colors.primary} />
+              <Text style={styles.retryInlineText}>
+                {language === 'az' ? 'Yenidən cəhd et' : 'Повторить'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <Text style={styles.summaryAmount}>{totalSpent} AZN</Text>
+              <Text style={styles.summarySubtitle}>
+                {paymentHistory.filter(p => p.status === 'completed' && p.amount < 0).length} uğurlu ödəniş
+              </Text>
+            </>
+          )}
         </View>
 
         {/* Filter Tabs */}
@@ -416,7 +515,32 @@ export default function PaymentHistoryScreen() {
 
         {/* Payment List */}
         <View style={styles.paymentList}>
-          {filteredPayments.length > 0 ? (
+          {walletQuery.isLoading ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.loadingStateText}>
+                {language === 'az' ? 'Ödəniş tarixçəsi yüklənir...' : 'Загрузка истории платежей...'}
+              </Text>
+            </View>
+          ) : walletQuery.error ? (
+            <View style={styles.emptyState}>
+              <AlertCircle size={48} color={colors.textSecondary} />
+              <Text style={styles.emptyStateTitle}>
+                {language === 'az' ? 'Xəta baş verdi' : 'Произошла ошибка'}
+              </Text>
+              <Text style={styles.emptyStateText}>
+                {language === 'az'
+                  ? 'Ödəniş tarixçəsi yüklənə bilmədi. Yenidən cəhd edin.'
+                  : 'Не удалось загрузить историю платежей. Попробуйте снова.'}
+              </Text>
+              <TouchableOpacity style={styles.retryButton} onPress={() => walletQuery.refetch()}>
+                <RefreshCw size={18} color={colors.primary} />
+                <Text style={styles.retryButtonText}>
+                  {language === 'az' ? 'Yenidən cəhd et' : 'Попробовать снова'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredPayments.length > 0 ? (
             filteredPayments.map(renderPaymentItem)
           ) : (
             <View style={styles.emptyState}>
@@ -434,19 +558,19 @@ export default function PaymentHistoryScreen() {
           <Text style={styles.sectionTitle}>Aylıq Xülasə</Text>
           <View style={styles.monthlyGrid}>
             <View style={styles.monthlyItem}>
-              <Text style={styles.monthlyValue}>3</Text>
-              <Text style={styles.monthlyLabel}>Bu ay</Text>
+              <Text style={styles.monthlyValue}>{monthlyStats.count}</Text>
+              <Text style={styles.monthlyLabel}>Son 30 gün</Text>
             </View>
             <View style={styles.monthlyItem}>
-              <Text style={styles.monthlyValue}>225 AZN</Text>
+              <Text style={styles.monthlyValue}>{monthlyStats.total.toFixed(0)} AZN</Text>
               <Text style={styles.monthlyLabel}>Ümumi məbləğ</Text>
             </View>
             <View style={styles.monthlyItem}>
-              <Text style={styles.monthlyValue}>75 AZN</Text>
+              <Text style={styles.monthlyValue}>{monthlyStats.avg.toFixed(0)} AZN</Text>
               <Text style={styles.monthlyLabel}>Orta ödəniş</Text>
             </View>
             <View style={styles.monthlyItem}>
-              <Text style={styles.monthlyValue}>100%</Text>
+              <Text style={styles.monthlyValue}>{monthlyStats.successRate.toFixed(0)}%</Text>
               <Text style={styles.monthlyLabel}>Uğur nisbəti</Text>
             </View>
           </View>
@@ -566,6 +690,28 @@ function createStyles(colors: any) {
       fontSize: 14,
       color: colors.textSecondary,
     },
+    summaryLoadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginTop: 8,
+    },
+    summaryLoadingText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    retryInline: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 10,
+    },
+    retryInlineText: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: '600',
+    },
     filterContainer: {
       backgroundColor: colors.card,
       paddingVertical: 16,
@@ -595,6 +741,16 @@ function createStyles(colors: any) {
     paymentList: {
       backgroundColor: colors.card,
       marginBottom: 8,
+    },
+    loadingState: {
+      alignItems: 'center',
+      padding: 28,
+      gap: 10,
+    },
+    loadingStateText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
     },
     paymentItem: {
       flexDirection: 'row',
@@ -690,6 +846,23 @@ function createStyles(colors: any) {
       color: colors.textSecondary,
       textAlign: 'center',
       lineHeight: 20,
+    },
+    retryButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 14,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: `${colors.primary}10`,
+    },
+    retryButtonText: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: '600',
     },
     monthlySection: {
       backgroundColor: colors.card,
