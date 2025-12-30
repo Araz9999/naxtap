@@ -120,6 +120,8 @@ export default function ModerationScreen() {
   const resolvedReports = actualReports?.filter((r: any) => r.status === 'resolved') || [];
   const openTickets = getTicketsByStatus('open'); // Still using local store for tickets
   const inProgressTickets = getTicketsByStatus('in_progress');
+  const pendingReportsCount = actualStats?.pendingReports ?? pendingReports.length ?? 0;
+  const resolvedReportsCount = actualStats?.resolvedReports ?? resolvedReports.length ?? 0;
 
   const StatCard = ({ 
     title, 
@@ -248,7 +250,7 @@ export default function ModerationScreen() {
           <View style={styles.statsGrid}>
             <StatCard
               title={language === 'az' ? 'Gözləyən şikayətlər' : 'Ожидающие жалобы'}
-              value={pendingReports?.length || 0}
+              value={pendingReportsCount}
               icon={Clock}
               color="#F59E0B"
               onPress={() => go('/admin-reports')}
@@ -280,7 +282,7 @@ export default function ModerationScreen() {
             />
             <StatCard
               title={language === 'az' ? 'Həll edilmiş' : 'Решенные'}
-              value={resolvedReports?.length || actualStats?.resolvedReports || 0}
+              value={resolvedReportsCount}
               icon={CheckCircle}
               color="#059669"
             />
@@ -299,12 +301,12 @@ export default function ModerationScreen() {
             <MenuCard
               title={language === 'az' ? 'Şikayətləri idarə et' : 'Управление жалобами'}
               subtitle={language === 'az' 
-                ? `${pendingReports?.length || 0} gözləyən şikayət` 
-                : `${pendingReports?.length || 0} ожидающих жалоб`
+                ? `${pendingReportsCount} gözləyən şikayət` 
+                : `${pendingReportsCount} ожидающих жалоб`
               }
               icon={Flag}
               onPress={() => go('/admin-reports')}
-              badge={pendingReports?.length || 0}
+              badge={pendingReportsCount}
               color="#EF4444"
             />
           )}

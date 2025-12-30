@@ -10,6 +10,10 @@ interface ModerationState {
   supportTickets: SupportTicket[];
   moderators: User[];
   stats: ModerationStats;
+
+  // Permission helpers
+  hasPermission: (moderatorId: string, permission: ModeratorPermission) => boolean;
+  checkPermission: (moderatorId: string, permission: ModeratorPermission) => void;
   
   // Report management
   createReport: (report: Omit<Report, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => void;

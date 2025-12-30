@@ -13,20 +13,23 @@ const reports: Map<string, Report> = new Map();
 const moderationActions: Map<string, ModerationAction> = new Map();
 const supportTickets: Map<string, SupportTicket> = new Map();
 
+const sortByCreatedAtDesc = <T extends { createdAt: string }>(items: T[]) =>
+  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
 export const moderationDb = {
   reports: {
-    getAll: () => Array.from(reports.values()).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ),
+    getAll: () => sortByCreatedAtDesc(Array.from(reports.values())),
     getById: (id: string) => reports.get(id) || null,
     getByStatus: (status: ReportStatus) => {
-      return Array.from(reports.values()).filter(r => r.status === status);
+      return sortByCreatedAtDesc(Array.from(reports.values()).filter(r => r.status === status));
     },
     getByModerator: (moderatorId: string) => {
-      return Array.from(reports.values()).filter(r => r.assignedModeratorId === moderatorId);
+      return sortByCreatedAtDesc(
+        Array.from(reports.values()).filter(r => r.assignedModeratorId === moderatorId)
+      );
     },
     getByReporter: (reporterId: string) => {
-      return Array.from(reports.values()).filter(r => r.reporterId === reporterId);
+      return sortByCreatedAtDesc(Array.from(reports.values()).filter(r => r.reporterId === reporterId));
     },
     create: (report: Report) => {
       logger.info('[ModerationDB] Creating report:', report.id);
