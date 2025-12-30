@@ -7,8 +7,10 @@ export const deleteUserProcedure = adminProcedure
   .input(z.object({ userId: z.string() }))
   .mutation(async ({ input, ctx }) => {
     try {
+      const actorId = (ctx.user as any).userId ?? (ctx.user as any).id;
+
       // Prevent admin from deleting themselves
-      if (ctx.user.id === input.userId) {
+      if (actorId === input.userId) {
         throw new Error('You cannot delete your own account');
       }
       
@@ -34,7 +36,7 @@ export const deleteUserProcedure = adminProcedure
         prisma.user.delete({ where: { id: input.userId } }),
       ]);
       
-      logger.info('[Admin] User deleted:', { userId: input.userId, deletedBy: ctx.user.id });
+      logger.info('[Admin] User deleted:', { userId: input.userId, deletedBy: actorId });
       
       return { success: true };
     } catch (error) {

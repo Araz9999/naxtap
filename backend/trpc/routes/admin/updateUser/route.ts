@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { adminProcedure } from '../../../create-context';
 import { prisma } from '../../../../db/client';
 import { logger } from '../../../../utils/logger';
-import type { Role } from '@prisma/client';
 
 export const updateUserProcedure = adminProcedure
   .input(
@@ -20,8 +19,11 @@ export const updateUserProcedure = adminProcedure
     try {
       const { userId, ...updates } = input;
       
+      const actorId = (ctx.user as any).userId ?? (ctx.user as any).id;
+      const actorRole = ((ctx.user as any).role || '').toString().toUpperCase();
+
       // Prevent admin from changing their own role
-      if (updates.role && ctx.user.id === userId && updates.role !== ctx.user.role) {
+      if (updates.role && actorId === userId && updates.role !== actorRole) {
         throw new Error('You cannot change your own role');
       }
       
@@ -61,7 +63,7 @@ export const updateUserProcedure = adminProcedure
         },
       });
       
-      logger.info('[Admin] User updated:', { userId, updatedBy: ctx.user.id });
+      logger.info('[Admin] User updated:', { userId, updatedBy: actorId });
       
       return updatedUser;
     } catch (error) {
