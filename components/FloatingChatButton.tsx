@@ -6,36 +6,43 @@ import {
   TouchableOpacity,
   Animated
 } from 'react-native';
-import { usePathname } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
-import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
 import { MessageCircle } from 'lucide-react-native';
-import LiveChatWidget from './LiveChatWidget';
+import { trpc } from '@/lib/trpc';
 
 
 
 import { logger } from '@/utils/logger';
 export default function FloatingChatButton() {
   const pathname = usePathname();
+  const router = useRouter();
   const { language } = useLanguageStore();
   const { themeMode, colorTheme } = useThemeStore();
   const { currentUser } = useUserStore();
-  const { liveChats, getAvailableOperators } = useSupportStore();
   const colors = getColors(themeMode, colorTheme);
 
-  const [showChat, setShowChat] = useState<boolean>(false);
   const [pulseAnim] = useState(new Animated.Value(1));
 
-  // Get user's active chats
-  const userChats = currentUser ? liveChats.filter(chat => 
-    chat.userId === currentUser.id && chat.status !== 'closed'
-  ) : [];
+  const presenceQuery = trpc.liveChat.getPresence.useQuery(undefined, {
+    refetchInterval: 10000,
+  });
 
-  const hasActiveChat = userChats.length > 0;
-  const availableOperators = getAvailableOperators();
+  const conversationsQuery = trpc.liveChat.getConversations.useQuery(
+    { userId: currentUser?.id || '' },
+    {
+      enabled: !!currentUser?.id,
+      refetchInterval: 5000,
+    }
+  );
+
+  const userConversations = conversationsQuery.data || [];
+  const activeConversations = userConversations.filter((c) => c.status !== 'closed');
+  const hasActiveChat = activeConversations.length > 0;
+  const availableCount = presenceQuery.data?.availableCount ?? 0;
 
   // Pulse animation for new messages
   React.useEffect(() => {
@@ -65,8 +72,8 @@ export default function FloatingChatButton() {
       logger.debug('[FloatingChatButton] User not logged in');
       return;
     }
-    logger.debug('[FloatingChatButton] Opening chat');
-    setShowChat(true);
+    logger.debug('[FloatingChatButton] Navigating to live chat');
+    router.push('/live-chat');
   };
 
   // Don't show on certain pages
@@ -101,12 +108,12 @@ export default function FloatingChatButton() {
           {/* Notification Badge */}
           {hasActiveChat && (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{userChats.length}</Text>
+              <Text style={styles.badgeText}>{activeConversations.length}</Text>
             </View>
           )}
           
           {/* Online Indicator */}
-          {availableOperators.length > 0 && (
+          {availableCount > 0 && (
             <View style={styles.onlineIndicator}>
               <View style={styles.onlineDot} />
             </View>
@@ -125,19 +132,13 @@ export default function FloatingChatButton() {
                 : 'Живая поддержка'
             }
           </Text>
-          {availableOperators.length > 0 && (
+          {availableCount > 0 && (
             <Text style={[styles.tooltipSubtext, { color: colors.textSecondary }]}>
-              {availableOperators.length} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
+              {availableCount} {language === 'az' ? 'operator onlayn' : 'операторов онлайн'}
             </Text>
           )}
         </View>
       </Animated.View>
-
-      <LiveChatWidget
-        visible={showChat}
-        onClose={() => setShowChat(false)}
-        chatId={hasActiveChat ? userChats[0].id : undefined}
-      />
     </>
   );
 }

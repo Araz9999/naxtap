@@ -8,6 +8,9 @@ export default publicProcedure
     userId: z.string(),
     userName: z.string(),
     userAvatar: z.string().optional(),
+    subject: z.string().trim().min(1).max(100).optional(),
+    category: z.string().trim().min(1).max(50).optional(),
+    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   }))
   .mutation(({ input }) => {
     const existingConversation = liveChatDb.conversations
@@ -28,6 +31,9 @@ export default publicProcedure
       userAvatar: input.userAvatar,
       supportAgentId: agent?.id,
       supportAgentName: agent?.name,
+      subject: input.subject,
+      category: input.category,
+      priority: input.priority,
       status: agent ? 'assigned' : 'open',
       unreadCount: 0,
       createdAt: new Date().toISOString(),

@@ -11,6 +11,7 @@ export default publicProcedure
     senderName: z.string(),
     senderAvatar: z.string().optional(),
     message: z.string(),
+    attachments: z.array(z.string()).optional(),
     isSupport: z.boolean(),
   }))
   .mutation(({ input }) => {
@@ -28,6 +29,7 @@ export default publicProcedure
       senderName: input.senderName,
       senderAvatar: input.senderAvatar,
       message: input.message,
+      attachments: input.attachments,
       timestamp: new Date().toISOString(),
       status: 'sent',
       isSupport: input.isSupport,
