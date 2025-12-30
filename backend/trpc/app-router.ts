@@ -44,6 +44,11 @@ import { getModeratorsProcedure } from "./routes/admin/getModerators/route";
 import { createModeratorProcedure } from "./routes/admin/createModerator/route";
 import { updateModeratorPermissionsProcedure } from "./routes/admin/updateModeratorPermissions/route";
 import { updateMeProcedure } from "./routes/user/updateMe/route";
+import { createTicketProcedure } from "./routes/support/createTicket/route";
+import { getMyTicketsProcedure } from "./routes/support/getMyTickets/route";
+import { getTicketsProcedure } from "./routes/support/getTickets/route";
+import { addTicketResponseProcedure } from "./routes/support/addTicketResponse/route";
+import { updateTicketStatusProcedure } from "./routes/support/updateTicketStatus/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -91,6 +96,13 @@ export const appRouter = createTRPCRouter({
     createReport: createReportProcedure,
     updateReportStatus: updateReportStatusProcedure,
     getStats: getStatsProcedure,
+  }),
+  support: createTRPCRouter({
+    createTicket: createTicketProcedure,
+    getMyTickets: getMyTicketsProcedure,
+    getTickets: getTicketsProcedure,
+    addTicketResponse: addTicketResponseProcedure,
+    updateTicketStatus: updateTicketStatusProcedure,
   }),
   admin: createTRPCRouter({
     getUsers: getUsersProcedure,

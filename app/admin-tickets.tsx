@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   Alert,
   Modal,
   TextInput,
@@ -18,6 +19,8 @@ import { useUserStore } from '@/store/userStore';
 import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
 import { Headphones, Clock, AlertCircle, CheckCircle, ChevronRight, ExternalLink, Send, StickyNote } from 'lucide-react-native';
+import { trpc } from '@/lib/trpc';
+import { logger } from '@/utils/logger';
 
 type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 type StatusFilter = 'all' | TicketStatus;
@@ -34,9 +37,11 @@ export default function AdminTicketsScreen() {
     currentUser?.role === 'admin' ||
     (currentUser?.role === 'moderator' && currentUser?.moderatorInfo?.permissions?.includes('manage_tickets' as any));
 
-  const { tickets, categories, addResponse, updateTicketStatus } = useSupportStore();
+  const { categories } = useSupportStore();
   const [filter, setFilter] = useState<StatusFilter>('open');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const limit = 20;
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
@@ -54,31 +59,60 @@ export default function AdminTicketsScreen() {
     };
   }, []);
 
-  const filtered = useMemo(() => {
-    const list = tickets || [];
-    const byStatus = filter === 'all' ? list : list.filter((t) => t.status === filter);
-    const q = search.trim().toLowerCase();
-    if (!q) return byStatus;
-    return byStatus.filter((t) => {
-      const hay = [
-        t?.id,
-        t?.userId,
-        t?.subject,
-        t?.message,
-        t?.category,
-        t?.priority,
-        t?.status,
-        t?.assignedModeratorId,
-        t?.moderatorNotes,
-        t?.resolution,
-        ...(t?.responses || []).map((r: any) => r?.message).filter(Boolean),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [tickets, filter, search]);
+  useEffect(() => {
+    setPage(1);
+  }, [filter, search]);
+
+  const ticketsQueryInput = useMemo(() => {
+    return {
+      page,
+      limit,
+      status: filter === 'all' ? undefined : filter,
+      search: search.trim() ? search.trim() : undefined,
+    };
+  }, [page, limit, filter, search]);
+
+  const utils = trpc.useUtils();
+  const ticketsQuery = trpc.support.getTickets.useQuery(ticketsQueryInput as any, {
+    enabled: canAccess && canManageTickets,
+    refetchInterval: 30000,
+  });
+
+  const updateStatusMutation = trpc.support.updateTicketStatus.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.support.getTickets.invalidate(),
+        utils.moderation.getStats.invalidate(),
+      ]);
+    },
+    onError: (e: any) => {
+      logger.error('[AdminTickets] update status failed:', e);
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        typeof e?.message === 'string' && e.message.trim()
+          ? e.message
+          : (language === 'az' ? 'Status yenilənmədi.' : 'Не удалось обновить статус.')
+      );
+    },
+  });
+
+  const addResponseMutation = trpc.support.addTicketResponse.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.support.getTickets.invalidate(),
+        utils.moderation.getStats.invalidate(),
+      ]);
+    },
+    onError: (e: any) => {
+      logger.error('[AdminTickets] add response failed:', e);
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        typeof e?.message === 'string' && e.message.trim()
+          ? e.message
+          : (language === 'az' ? 'Cavab göndərilmədi.' : 'Не удалось отправить ответ.')
+      );
+    },
+  });
 
   if (!canAccess) return null;
 
@@ -170,16 +204,14 @@ export default function AdminTicketsScreen() {
     if (!ensureLoggedInModerator()) return;
     const text = message.trim();
     if (!text) return;
-    addResponse(ticketId, {
+    addResponseMutation.mutate({
       ticketId,
-      userId: currentUser!.id,
       message: text,
-      isAdmin: true,
-    });
+    } as any);
     setReplyDraft('');
   };
 
-  const applyStatus = (next: TicketStatus) => {
+  const applyStatus = async (next: TicketStatus) => {
     if (!selected?.id) return;
     if (!ensureLoggedInModerator()) return;
 
@@ -194,14 +226,12 @@ export default function AdminTicketsScreen() {
       return;
     }
 
-    // Assign to the current moderator when taking into work
-    const moderatorId = currentUser!.id;
-
-    updateTicketStatus(selected.id, next, {
-      moderatorId,
+    await updateStatusMutation.mutateAsync({
+      ticketId: selected.id,
+      status: next,
       moderatorNotes: notes || undefined,
-      resolution: (next === 'resolved' || next === 'closed') ? resolution : undefined,
-    });
+      resolution: next === 'resolved' || next === 'closed' ? resolution : undefined,
+    } as any);
 
     // If no explicit reply is written, send a short system-like admin message on closing actions.
     if (next === 'resolved' || next === 'closed') {
@@ -305,13 +335,29 @@ export default function AdminTicketsScreen() {
                 onRefresh={() => {
                   if (refreshTimer.current) clearTimeout(refreshTimer.current);
                   setRefreshing(true);
+                  ticketsQuery.refetch();
                   refreshTimer.current = setTimeout(() => setRefreshing(false), 250);
                 }}
                 tintColor={colors.primary}
               />
             }
           >
-            {filtered.length === 0 ? (
+            {ticketsQuery.isLoading ? (
+              <View style={styles.center}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ marginTop: 10, color: colors.textSecondary }}>
+                  {language === 'az' ? 'Yüklənir...' : 'Загрузка...'}
+                </Text>
+              </View>
+            ) : ticketsQuery.error ? (
+              <View style={styles.center}>
+                <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
+                  {language === 'az'
+                    ? 'Məlumat alınmadı. Giriş icazəsi və ya şəbəkəni yoxlayın.'
+                    : 'Не удалось загрузить данные. Проверьте доступ или сеть.'}
+                </Text>
+              </View>
+            ) : ((ticketsQuery.data as any)?.tickets || []).length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
                 <Text style={{ color: colors.textSecondary }}>
                   {search.trim()
@@ -320,7 +366,7 @@ export default function AdminTicketsScreen() {
                 </Text>
               </View>
             ) : (
-              filtered.map((t) => {
+              ((ticketsQuery.data as any)?.tickets || []).map((t: any) => {
                 const c = statusColor(t.status as TicketStatus);
                 const Icon = t.status === 'open' ? Clock : t.status === 'in_progress' ? AlertCircle : CheckCircle;
                 return (

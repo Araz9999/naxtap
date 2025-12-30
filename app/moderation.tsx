@@ -6,7 +6,6 @@ import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
 import { useModerationStore } from '@/store/moderationStore';
-import { useSupportStore } from '@/store/supportStore';
 import { useModerationSettingsStore } from '@/store/moderationSettingsStore';
 import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
@@ -37,7 +36,6 @@ export default function ModerationScreen() {
     stats,
     getReportsByStatus,
   } = useModerationStore();
-  const { tickets: supportTickets } = useSupportStore();
   const { settings } = useModerationSettingsStore();
   const { addNotification } = useNotificationStore();
 
@@ -126,9 +124,9 @@ export default function ModerationScreen() {
   // ✅ Get reports by status from backend data
   const pendingReports = actualReports?.filter((r: any) => r.status === 'pending') || [];
   const resolvedReports = actualReports?.filter((r: any) => r.status === 'resolved') || [];
-  // ✅ Support tickets come from SupportStore (single source of truth)
-  const openTickets = (supportTickets || []).filter((t) => t.status === 'open');
-  const inProgressTickets = (supportTickets || []).filter((t) => t.status === 'in_progress');
+  // ✅ Support tickets counts come from backend stats (multi-device)
+  const openTicketsCount = actualStats?.openTickets || 0;
+  const inProgressTicketsCount = actualStats?.inProgressTickets || 0;
   const pendingReportsCount = actualStats?.pendingReports ?? pendingReports.length ?? 0;
   const resolvedReportsCount = actualStats?.resolvedReports ?? resolvedReports.length ?? 0;
 
@@ -316,7 +314,7 @@ export default function ModerationScreen() {
             />
             <StatCard
               title={language === 'az' ? 'Açıq biletlər' : 'Открытые тикеты'}
-              value={(openTickets?.length || 0) + (inProgressTickets?.length || 0)}
+              value={openTicketsCount + inProgressTicketsCount}
               icon={HelpCircle}
               color="#3B82F6"
               onPress={() => go('/admin-tickets')}
@@ -375,12 +373,12 @@ export default function ModerationScreen() {
             <MenuCard
               title={language === 'az' ? 'Dəstək biletləri' : 'Тикеты поддержки'}
               subtitle={language === 'az' 
-                ? `${(openTickets?.length || 0) + (inProgressTickets?.length || 0)} aktiv bilet` 
-                : `${(openTickets?.length || 0) + (inProgressTickets?.length || 0)} активных тикетов`
+                ? `${openTicketsCount + inProgressTicketsCount} aktiv bilet` 
+                : `${openTicketsCount + inProgressTicketsCount} активных тикетов`
               }
               icon={HelpCircle}
               onPress={() => go('/admin-tickets')}
-              badge={(openTickets?.length || 0) + (inProgressTickets?.length || 0)}
+              badge={openTicketsCount + inProgressTicketsCount}
               color="#3B82F6"
             />
           )}
