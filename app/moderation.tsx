@@ -88,11 +88,13 @@ export default function ModerationScreen() {
     return false;
   };
   
+  const isAdmin = currentUser?.role === 'admin';
   const canManageReports = hasPermission('manage_reports');
   const canManageTickets = hasPermission('manage_tickets');
-  const canManageUsers = hasPermission('manage_users');
-  const canManageModerators = hasPermission('manage_moderators');
-  const canViewAnalytics = hasPermission('view_analytics');
+  // Backend admin routes are admin-only; keep UI consistent
+  const canManageUsers = isAdmin;
+  const canManageModerators = isAdmin;
+  const canViewAnalytics = isAdmin;
 
   useEffect(() => {
     if (!canAccessModeration) {
@@ -181,20 +183,18 @@ export default function ModerationScreen() {
     </TouchableOpacity>
   );
 
-  const showComingSoon = (feature: string) => {
-    const message = language === 'az' 
-      ? 'Bu funksiya tezliklə əlavə ediləcək' 
-      : 'Эта функция скоро будет добавлена';
-    
-    // Use web-compatible alert
-    if (typeof window !== 'undefined') {
-      window.alert(`${feature}\n\n${message}`);
-    } else {
-      Alert.alert(feature, message);
+  const go = (path: string) => {
+    try {
+      router.push(path as any);
+    } catch (e) {
+      logger.error('[Moderation] Navigation error:', e);
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        language === 'az'
+          ? 'Səhifə açıla bilmədi. Zəhmət olmasa yenidən cəhd edin.'
+          : 'Не удалось открыть страницу. Пожалуйста, попробуйте снова.'
+      );
     }
-    
-    // Also log for debugging
-    logger.info('[Moderation] Coming soon feature clicked:', feature);
   };
 
   return (
@@ -251,21 +251,32 @@ export default function ModerationScreen() {
               value={pendingReports?.length || 0}
               icon={Clock}
               color="#F59E0B"
-              onPress={() => showComingSoon(language === 'az' ? 'Şikayətlər' : 'Жалобы')}
+              onPress={() => go('/admin-reports')}
             />
             <StatCard
               title={language === 'az' ? 'Açıq biletlər' : 'Открытые тикеты'}
               value={(openTickets?.length || 0) + (inProgressTickets?.length || 0)}
               icon={HelpCircle}
               color="#3B82F6"
-              onPress={() => showComingSoon(language === 'az' ? 'Dəstək biletləri' : 'Тикеты поддержки')}
+              onPress={() => go('/admin-tickets')}
             />
             <StatCard
               title={language === 'az' ? 'Moderatorlar' : 'Модераторы'}
               value={actualModerators?.length || 0} 
               icon={UserCheck}
               color="#10B981"
-              onPress={() => showComingSoon(language === 'az' ? 'Moderatorlar' : 'Модераторы')}
+              onPress={() => {
+                if (!isAdmin) {
+                  Alert.alert(
+                    language === 'az' ? 'Giriş məhduddur' : 'Доступ ограничен',
+                    language === 'az'
+                      ? 'Bu bölmə yalnız admin üçün nəzərdə tutulub.'
+                      : 'Этот раздел доступен только администратору.'
+                  );
+                  return;
+                }
+                go('/admin-moderators');
+              }}
             />
             <StatCard
               title={language === 'az' ? 'Həll edilmiş' : 'Решенные'}
@@ -292,7 +303,7 @@ export default function ModerationScreen() {
                 : `${pendingReports?.length || 0} ожидающих жалоб`
               }
               icon={Flag}
-              onPress={() => showComingSoon(language === 'az' ? 'Şikayətlər' : 'Жалобы')}
+              onPress={() => go('/admin-reports')}
               badge={pendingReports?.length || 0}
               color="#EF4444"
             />
@@ -307,7 +318,7 @@ export default function ModerationScreen() {
                 : `${(openTickets?.length || 0) + (inProgressTickets?.length || 0)} активных тикетов`
               }
               icon={HelpCircle}
-              onPress={() => showComingSoon(language === 'az' ? 'Dəstək biletləri' : 'Тикеты поддержки')}
+              onPress={() => go('/admin-tickets')}
               badge={(openTickets?.length || 0) + (inProgressTickets?.length || 0)}
               color="#3B82F6"
             />
@@ -322,7 +333,7 @@ export default function ModerationScreen() {
                 : 'Управляйте и модерируйте пользователей'
               }
               icon={Users}
-              onPress={() => showComingSoon(language === 'az' ? 'İstifadəçi idarəetməsi' : 'Управление пользователями')}
+              onPress={() => go('/admin-users')}
               color="#8B5CF6"
             />
           )}
@@ -336,7 +347,7 @@ export default function ModerationScreen() {
                 : `${actualModerators?.length || 0} активных модераторов`
               }
               icon={UserCheck}
-              onPress={() => showComingSoon(language === 'az' ? 'Moderator idarəetməsi' : 'Управление модераторами')}
+              onPress={() => go('/admin-moderators')}
               color="#10B981"
             />
           )}
@@ -350,7 +361,7 @@ export default function ModerationScreen() {
                 : 'Статистика модерации и отчеты'
               }
               icon={BarChart3}
-              onPress={() => showComingSoon(language === 'az' ? 'Analitika' : 'Аналитика')}
+              onPress={() => go('/admin-analytics')}
               color="#F59E0B"
             />
           )}
@@ -363,7 +374,7 @@ export default function ModerationScreen() {
               : 'Автоматические правила и настройки'
             }
             icon={Settings}
-            onPress={() => showComingSoon(language === 'az' ? 'Moderasiya tənzimləmələri' : 'Настройки модерации')}
+            onPress={() => go('/admin-moderation-settings')}
             color="#6B7280"
           />
           
