@@ -6,6 +6,7 @@ import { userRegistrationSchema } from '../../../../utils/validation';
 import { AuthenticationError, DatabaseError } from '../../../../utils/errors';
 import { logger } from '../../../../utils/logger';
 import { hashPassword, generateRandomToken } from '../../../../utils/password';
+import { sendWelcomeMessage } from '../../../../services/welcomeMessage';
 export const registerProcedure = publicProcedure
   .input(userRegistrationSchema)
   .mutation(async ({ input }) => {
@@ -86,6 +87,15 @@ export const registerProcedure = publicProcedure
       });
 
       logger.auth('User registered successfully', { userId: user.id });
+
+      // 🎉 Send welcome message to new user
+      try {
+        await sendWelcomeMessage(user.id, 'az'); // Default to Azerbaijani
+        logger.info('[Register] Welcome message sent to user:', { userId: user.id });
+      } catch (welcomeError) {
+        logger.error('[Register] Failed to send welcome message:', welcomeError);
+        // Don't fail registration if welcome message fails
+      }
 
       return {
         user: {
