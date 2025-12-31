@@ -12,7 +12,7 @@ import { locations } from '@/constants/locations';
 import { adPackages } from '@/constants/adPackages';
 import Colors from '@/constants/colors';
 import { Listing } from '@/types/listing';
-import { Category } from '@/types/category';
+import { Category, Subcategory } from '@/types/category';
 import { Camera, ChevronDown, Plus, Check, Clock, Award, Image as ImageIcon, MapPin, Info, AlertCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { sanitizeNumericInput } from '@/utils/inputValidation';
 
@@ -40,7 +40,7 @@ export default function CreateListingScreen() {
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
 
   // Category navigation state
-  const [categoryNavigationStack, setCategoryNavigationStack] = useState<Category[]>([]);
+  const [categoryNavigationStack, setCategoryNavigationStack] = useState<(Category | Subcategory)[]>([]);
   const [currentCategoryLevel, setCurrentCategoryLevel] = useState<'main' | 'sub' | 'subsub'>('main');
 
   // New states for ad package selection
@@ -637,7 +637,9 @@ export default function CreateListingScreen() {
   };
 
   // Category navigation functions
-  const handleCategoryPress = (category: Category) => {
+  const handleCategoryPress = (category: Category | Subcategory) => {
+    logger.info('[CategoryPress] Level:', currentCategoryLevel, 'Category:', category.name, 'Has subcategories:', !!category.subcategories, 'Count:', category.subcategories?.length || 0);
+    
     if (currentCategoryLevel === 'main') {
       // Əsas kateqoriya seçimi
       setSelectedCategory(category.id);
@@ -645,10 +647,12 @@ export default function CreateListingScreen() {
       setSelectedSubSubcategory(null);
       if (category.subcategories && category.subcategories.length > 0) {
         // Alt kateqoriyalar var, naviqasiyanı davam etdir
-        setCategoryNavigationStack([category]);
+        logger.info('[CategoryPress] Moving to sub level with', category.subcategories.length, 'subcategories');
+        setCategoryNavigationStack([category as Category]);
         setCurrentCategoryLevel('sub');
       } else {
         // Alt kateqoriya yoxdur, modal-ı bağla
+        logger.info('[CategoryPress] No subcategories, closing modal');
         setShowCategoryModal(false);
       }
     } else if (currentCategoryLevel === 'sub') {
@@ -657,14 +661,17 @@ export default function CreateListingScreen() {
       setSelectedSubSubcategory(null);
       if (category.subcategories && category.subcategories.length > 0) {
         // Daha alt kateqoriyalar var, naviqasiyanı davam etdir
-        setCategoryNavigationStack([...categoryNavigationStack, category]);
+        logger.info('[CategoryPress] Moving to subsub level with', category.subcategories.length, 'subcategories');
+        setCategoryNavigationStack([...categoryNavigationStack, category as Subcategory]);
         setCurrentCategoryLevel('subsub');
       } else {
         // Daha alt kateqoriya yoxdur, modal-ı bağla
+        logger.info('[CategoryPress] No more subcategories, closing modal');
         setShowCategoryModal(false);
       }
     } else if (currentCategoryLevel === 'subsub') {
       // Daha alt kateqoriya seçimi (3-cü səviyyə)
+      logger.info('[CategoryPress] Selecting final subcategory');
       setSelectedSubSubcategory(category.id);
       setShowCategoryModal(false);
     }
@@ -690,7 +697,7 @@ export default function CreateListingScreen() {
   };
 
   const renderCategoryModal = () => {
-    let currentCategories = [];
+    let currentCategories: Category[] | Subcategory[] = [];
     let title = language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию';
 
     if (currentCategoryLevel === 'main') {
@@ -700,11 +707,15 @@ export default function CreateListingScreen() {
       const parentCategory = categoryNavigationStack[0];
       currentCategories = parentCategory?.subcategories || [];
       title = parentCategory?.name[language] || '';
+      logger.info('[CategoryModal] Sub level - Parent:', parentCategory?.name, 'Subcategories:', currentCategories.length, 'Stack length:', categoryNavigationStack.length);
     } else if (currentCategoryLevel === 'subsub') {
       const parentSubcategory = categoryNavigationStack[categoryNavigationStack.length - 1];
       currentCategories = parentSubcategory?.subcategories || [];
       title = parentSubcategory?.name[language] || '';
+      logger.info('[CategoryModal] SubSub level - Parent:', parentSubcategory?.name, 'Subcategories:', currentCategories.length, 'Stack length:', categoryNavigationStack.length);
     }
+
+    logger.info('[CategoryModal] Rendering - Level:', currentCategoryLevel, 'Categories:', currentCategories.length, 'Navigation stack:', categoryNavigationStack.map(c => c.name[language]).join(' > '));
 
     return (
       <Modal
@@ -765,19 +776,27 @@ export default function CreateListingScreen() {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.categoriesContainer}
             >
-              {currentCategories.map((item: Category) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.modalItem}
-                  onPress={() => handleCategoryPress(item)}
-                >
-                  <Text style={styles.modalItemText}>{item.name[language]}</Text>
-                  {((currentCategoryLevel === 'main' && item.subcategories?.length > 0) ||
-                    (currentCategoryLevel === 'sub' && item.subcategories?.length > 0)) && (
-                    <ChevronRight size={20} color={Colors.textSecondary} />
-                  )}
-                </TouchableOpacity>
-              ))}
+              {currentCategories.length === 0 ? (
+                <View style={styles.emptySearchContainer}>
+                  <Text style={styles.emptySearchText}>
+                    {language === 'az' ? 'Heç bir kateqoriya tapılmadı' : 'Категорий не найдено'}
+                  </Text>
+                </View>
+              ) : (
+                currentCategories.map((item: Category) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.modalItem}
+                    onPress={() => handleCategoryPress(item)}
+                  >
+                    <Text style={styles.modalItemText}>{item.name[language]}</Text>
+                    {((currentCategoryLevel === 'main' && item.subcategories?.length > 0) ||
+                      (currentCategoryLevel === 'sub' && item.subcategories?.length > 0)) && (
+                      <ChevronRight size={20} color={Colors.textSecondary} />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
             </ScrollView>
 
             {/* Breadcrumb */}
@@ -1090,9 +1109,11 @@ export default function CreateListingScreen() {
             <TouchableOpacity
               style={styles.pickerButton}
               onPress={() => {
-                setCurrentCategoryLevel('sub');
-                setCategoryNavigationStack([selectedCategoryData]);
-                setShowCategoryModal(true);
+                if (selectedCategoryData) {
+                  setCurrentCategoryLevel('sub');
+                  setCategoryNavigationStack([selectedCategoryData]);
+                  setShowCategoryModal(true);
+                }
               }}
             >
               <Text style={styles.pickerText}>
@@ -1111,10 +1132,12 @@ export default function CreateListingScreen() {
             <TouchableOpacity
               style={styles.pickerButton}
               onPress={() => {
-                setCurrentCategoryLevel('subsub');
                 const selectedSubcategoryData = selectedCategoryData?.subcategories.find(s => s.id === selectedSubcategory);
-                setCategoryNavigationStack([selectedCategoryData, selectedSubcategoryData]);
-                setShowCategoryModal(true);
+                if (selectedCategoryData && selectedSubcategoryData) {
+                  setCurrentCategoryLevel('subsub');
+                  setCategoryNavigationStack([selectedCategoryData, selectedSubcategoryData]);
+                  setShowCategoryModal(true);
+                }
               }}
             >
               <Text style={styles.pickerText}>
