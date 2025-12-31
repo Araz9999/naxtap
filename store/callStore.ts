@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { Audio } from 'expo-av';
 import { trpcClient } from '@/lib/trpc';
+import { realtimeService } from '@/lib/realtime';
 
 interface CallStore {
   calls: Call[];
@@ -45,6 +46,10 @@ interface CallStore {
   // Notifications
   simulateIncomingCall: () => void;
   pollIncomingCalls: (currentUserId: string) => Promise<void>;
+  
+  // WebSocket integration
+  initializeRealtimeListeners: () => void;
+  cleanupRealtimeListeners: () => void;
 }
 
 // Mock initial calls
@@ -183,6 +188,17 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
     // Play dial tone for outgoing call
     await get().playDialTone();
+
+    // Emit via WebSocket if available
+    if (realtimeService.isAvailable()) {
+      realtimeService.send('call:initiate', {
+        callId,
+        receiverId,
+        type,
+        listingId,
+      });
+      logger.info('[CallStore] Call initiate emitted via WebSocket');
+    }
 
     // Simulate call being answered after 3 seconds
     const answerTimeout = setTimeout(() => {
@@ -749,5 +765,105 @@ export const useCallStore = create<CallStore>((set, get) => ({
     } catch (e) {
       logger.debug?.('[CallStore] pollIncomingCalls failed', e);
     }
+  },
+
+  // Initialize WebSocket realtime listeners for calls
+  initializeRealtimeListeners: () => {
+    logger.info('[CallStore] Initializing realtime listeners');
+
+    if (!realtimeService.isAvailable()) {
+      logger.info('[CallStore] Realtime service not available, using polling mode');
+      return;
+    }
+
+    // Listen for incoming calls
+    realtimeService.on('call:incoming', (data) => {
+      logger.info('[CallStore] Incoming call via WebSocket:', data.callId);
+
+      const incomingCall: Call = {
+        id: data.callId,
+        callerId: data.callerId,
+        receiverId: get().calls[0]?.receiverId || 'user1', // fallback
+        listingId: data.listingId || '',
+        type: data.type,
+        status: 'incoming',
+        startTime: new Date().toISOString(),
+        isRead: false,
+      };
+
+      set((s) => ({
+        calls: [incomingCall, ...s.calls],
+        incomingCall,
+      }));
+
+      // Play ringtone
+      get().playRingtone().catch(() => undefined);
+
+      // Send notification
+      if (Platform.OS !== 'web') {
+        (async () => {
+          try {
+            const { notificationService } = await import('@/services/notificationService');
+            await notificationService.sendLocalNotification({
+              title: data.type === 'video' ? 'Gələn video zəng' : 'Gələn zəng',
+              body: `Sizə ${data.type === 'video' ? 'video ' : ''}zəng gəlir`,
+              sound: true,
+              data: {
+                callId: data.callId,
+                type: 'incoming_call',
+                callerId: data.callerId,
+              },
+            });
+          } catch (error) {
+            logger.warn('[CallStore] Notifications not available:', error);
+          }
+        })();
+      }
+    });
+
+    // Listen for answered calls
+    realtimeService.on('call:answered', (data) => {
+      logger.info('[CallStore] Call answered via WebSocket:', data.callId);
+
+      set((state) => ({
+        calls: state.calls.map(call =>
+          call.id === data.callId
+            ? { ...call, status: 'active' as CallStatus }
+            : call
+        ),
+      }));
+
+      get().stopAllSounds();
+    });
+
+    // Listen for declined calls
+    realtimeService.on('call:declined', (data) => {
+      logger.info('[CallStore] Call declined via WebSocket:', data.callId);
+
+      set((state) => ({
+        calls: state.calls.map(call =>
+          call.id === data.callId
+            ? { ...call, status: 'declined' as CallStatus, endTime: new Date().toISOString() }
+            : call
+        ),
+      }));
+
+      get().stopAllSounds();
+    });
+
+    // Listen for ended calls
+    realtimeService.on('call:ended', (data) => {
+      logger.info('[CallStore] Call ended via WebSocket:', data.callId);
+
+      get().endCall(data.callId);
+    });
+
+    logger.info('[CallStore] Realtime listeners initialized');
+  },
+
+  // Cleanup WebSocket listeners
+  cleanupRealtimeListeners: () => {
+    logger.info('[CallStore] Cleaning up realtime listeners');
+    // Cleanup is handled by realtimeService internally
   },
 }));
