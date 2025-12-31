@@ -20,6 +20,10 @@ interface ListingState {
   userUnusedViews: { [userId: string]: number };
   isLoading: boolean;
   error: string | null;
+  
+  // ✅ Timeout tracking for cleanup
+  notificationTimeouts: Map<string, ReturnType<typeof setTimeout>>;
+  
   fetchListings: () => Promise<void>;
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (categoryId: number | null) => void;
@@ -49,6 +53,9 @@ interface ListingState {
   ) => Promise<void>;
   getUserUnusedViews: (userId: string) => number;
   transferUnusedViewsToNewListing: (userId: string, listingId: string) => void;
+  
+  // ✅ Cleanup
+  cleanupTimeouts: () => void;
 }
 
 let expiringListingsInterval: ReturnType<typeof setInterval> | null = null;
@@ -84,6 +91,9 @@ export const useListingStore = create<ListingState>((set, get) =>
     userUnusedViews: {},
     isLoading: false,
     error: null,
+    
+    // ✅ Initialize timeout map
+    notificationTimeouts: new Map(),
 
     fetchListings: async () => {
       try {
@@ -302,7 +312,9 @@ export const useListingStore = create<ListingState>((set, get) =>
       if (unusedViews > 0) {
         get().transferUnusedViewsToNewListing(listing.userId, listing.id);
 
-        setTimeout(() => {
+        // ✅ Track timeout for cleanup
+        const timeoutKey = `transfer_notification_${listing.id}_${Date.now()}`;
+        const timeout = setTimeout(() => {
           try {
             const { sendNotification } = useThemeStore.getState();
             if (sendNotification && typeof sendNotification === 'function') {
@@ -314,7 +326,17 @@ export const useListingStore = create<ListingState>((set, get) =>
           } catch (err) {
             logger.error('[ListingStore] Failed to send notification after transferring views:', err);
           }
+          
+          // ✅ Remove from timeout map after execution
+          const newTimeouts = new Map(get().notificationTimeouts);
+          newTimeouts.delete(timeoutKey);
+          set({ notificationTimeouts: newTimeouts });
         }, 100);
+        
+        // ✅ Store timeout for cleanup
+        set((state) => ({
+          notificationTimeouts: new Map(state.notificationTimeouts).set(timeoutKey, timeout),
+        }));
       }
 
       get().applyFilters();
@@ -542,7 +564,9 @@ export const useListingStore = create<ListingState>((set, get) =>
               updatedListing.isFeatured = false;
               updatedListing.targetViewsForFeatured = undefined;
 
-              setTimeout(() => {
+              // ✅ Track timeout for cleanup
+              const timeoutKey = `view_target_notification_${id}_${Date.now()}`;
+              const timeout = setTimeout(() => {
                 try {
                   const { sendNotification } = useThemeStore.getState();
                   if (sendNotification && typeof sendNotification === 'function') {
@@ -558,7 +582,17 @@ export const useListingStore = create<ListingState>((set, get) =>
                 } catch (error) {
                   logger.error('[incrementViewCount] Failed to send notification:', error);
                 }
+                
+                // ✅ Remove from timeout map after execution
+                const newTimeouts = new Map(get().notificationTimeouts);
+                newTimeouts.delete(timeoutKey);
+                set({ notificationTimeouts: newTimeouts });
               }, 100);
+              
+              // ✅ Store timeout for cleanup
+              set((state) => ({
+                notificationTimeouts: new Map(state.notificationTimeouts).set(timeoutKey, timeout),
+              }));
             }
 
             return updatedListing;
@@ -1134,6 +1168,23 @@ export const useListingStore = create<ListingState>((set, get) =>
         logger.error('[getExpiringListings] Error:', error);
         return [];
       }
+    },
+    
+    // ✅ Cleanup all pending timeouts
+    cleanupTimeouts: () => {
+      const { notificationTimeouts } = get();
+
+      try {
+        notificationTimeouts.forEach((timeout) => clearTimeout(timeout));
+      } catch (error) {
+        logger.debug('[ListingStore] cleanupTimeouts encountered an error:', error);
+      }
+
+      set({
+        notificationTimeouts: new Map(),
+      });
+
+      logger.debug('[ListingStore] Timeouts cleaned up');
     },
   } as ListingState),
 );

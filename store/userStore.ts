@@ -22,6 +22,10 @@ interface UserState {
   reportedUsers: string[];
   subscribedUsers: string[];
   userNotes: Record<string, string>; // userId -> note
+  
+  // ✅ Timeout tracking for cleanup
+  favoriteTimeouts: Map<string, ReturnType<typeof setTimeout>>;
+  
   login: (user: User) => void;
   logout: () => void;
   toggleFavorite: (listingId: string) => void;
@@ -63,6 +67,9 @@ interface UserState {
   removeUserNote: (userId: string) => void;
   getUserNote: (userId: string) => string | null;
   deleteUserAccount: () => Promise<void>;
+  
+  // ✅ Cleanup
+  cleanupTimeouts: () => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -78,6 +85,9 @@ export const useUserStore = create<UserState>()(
       blockedUsers: [],
       nudgeHistory: {},
       mutedUsers: [],
+      
+      // ✅ Initialize timeout map (not persisted)
+      favoriteTimeouts: new Map(),
       followedUsers: [],
       favoriteUsers: [],
       trustedUsers: [],
@@ -134,12 +144,20 @@ export const useUserStore = create<UserState>()(
 
         // Also update the listing-level favorites counter (local real-time analytics).
         // Dynamic import avoids hard circular dependency issues (listingStore imports userStore).
-        setTimeout(async () => {
+        // ✅ Track timeout for cleanup
+        const timeoutKey = `favorite_update_${listingId}_${Date.now()}`;
+        const timeout = setTimeout(async () => {
           try {
             const listingStoreModule = await import('@/store/listingStore');
             const listingState = listingStoreModule.useListingStore.getState();
             const listing = listingState.listings.find((l: Listing) => l?.id === listingId);
-            if (!listing) return;
+            if (!listing) {
+              // Remove from timeout map
+              const newTimeouts = new Map(get().favoriteTimeouts);
+              newTimeouts.delete(timeoutKey);
+              set({ favoriteTimeouts: newTimeouts });
+              return;
+            }
 
             const currentCount = typeof listing.favorites === 'number' && isFinite(listing.favorites) ? listing.favorites : 0;
             const nextCount = Math.max(0, currentCount + (isCurrentlyFavorite ? -1 : 1));
@@ -147,7 +165,17 @@ export const useUserStore = create<UserState>()(
           } catch (err) {
             logger.error('[UserStore] Failed to update listing favorites counter:', err);
           }
+          
+          // ✅ Remove from timeout map after execution
+          const newTimeouts = new Map(get().favoriteTimeouts);
+          newTimeouts.delete(timeoutKey);
+          set({ favoriteTimeouts: newTimeouts });
         }, 0);
+        
+        // ✅ Store timeout for cleanup
+        set((state) => ({
+          favoriteTimeouts: new Map(state.favoriteTimeouts).set(timeoutKey, timeout),
+        }));
       },
       canPostFreeAd: () => {
         const { freeAdsThisMonth, lastFreeAdDate } = get();
@@ -920,10 +948,32 @@ export const useUserStore = create<UserState>()(
           throw error;
         }
       },
+      
+      // ✅ Cleanup all pending timeouts
+      cleanupTimeouts: () => {
+        const { favoriteTimeouts } = get();
+
+        try {
+          favoriteTimeouts.forEach((timeout) => clearTimeout(timeout));
+        } catch (error) {
+          logger.debug('[UserStore] cleanupTimeouts encountered an error:', error);
+        }
+
+        set({
+          favoriteTimeouts: new Map(),
+        });
+
+        logger.debug('[UserStore] Timeouts cleaned up');
+      },
     }),
     {
       name: 'user-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      // ✅ Don't persist timeout map
+      partialize: (state) => {
+        const { favoriteTimeouts, ...rest } = state;
+        return rest;
+      },
     },
   ),
 );

@@ -4,6 +4,7 @@ import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { getColors } from '@/constants/colors';
 import { Search, Plus, MessageCircle, User, Star, Store } from 'lucide-react-native';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 
 export default function TabLayout() {
@@ -14,7 +15,7 @@ export default function TabLayout() {
   const language = languageStore?.language || 'az';
 
   return (
-    <>
+    <ErrorBoundary>
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: colors.primary,
@@ -82,6 +83,6 @@ export default function TabLayout() {
         }}
       /> */}
       </Tabs>
-    </>
+    </ErrorBoundary>
   );
 }
