@@ -1063,6 +1063,27 @@ export const translations = {
     ru: 'Начните разговор с командой поддержки',
     en: 'Start a conversation with our support team',
   },
+  // 🎉 Welcome message translations
+  welcomeMessageTitle: {
+    az: '🎉 Xoş gəlmisiniz!',
+    ru: '🎉 Добро пожаловать!',
+    en: '🎉 Welcome!',
+  },
+  welcomeMessageBody: {
+    az: 'Naxtap-a xoş gəldiniz! Biz sizin burada olduğunuza çox şadıq! Naxtap Azərbaycanın ən böyük elan platformasıdır.',
+    ru: 'Добро пожаловать в Naxtap! Мы очень рады, что вы здесь! Naxtap - крупнейшая платформа объявлений Азербайджана.',
+    en: 'Welcome to Naxtap! We\'re so glad you\'re here! Naxtap is Azerbaijan\'s largest classified ads platform.',
+  },
+  systemMessage: {
+    az: 'Sistem mesajı',
+    ru: 'Системное сообщение',
+    en: 'System message',
+  },
+  welcomeBonus: {
+    az: '🎁 Xüsusi bonus: İlk elanınız tamamilə pulsuzdur!',
+    ru: '🎁 Специальный бонус: Ваше первое объявление полностью бесплатно!',
+    en: '🎁 Special bonus: Your first ad is completely free!',
+  },
 };
 
 export function t(key: keyof typeof translations, language: Language): string {

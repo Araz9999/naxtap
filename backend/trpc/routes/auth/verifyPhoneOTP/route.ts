@@ -6,6 +6,7 @@ import { generateTokenPair } from '../../../../utils/jwt';
 import { logger } from '../../../../utils/logger';
 import { validatePhone } from '../../../../utils/validation';
 import { phoneOtpStore } from '../phoneOtpStore';
+import { sendWelcomeMessage } from '../../../../services/welcomeMessage';
 
 export const verifyPhoneOTPProcedure = publicProcedure
   .input(
@@ -67,6 +68,15 @@ export const verifyPhoneOTPProcedure = publicProcedure
       });
 
       logger.info(`[Phone Registration] User created: ${user.id}`);
+
+      // 🎉 Send welcome message to new user
+      try {
+        await sendWelcomeMessage(user.id, 'az'); // Default to Azerbaijani
+        logger.info('[Phone Registration] Welcome message sent to user:', { userId: user.id });
+      } catch (welcomeError) {
+        logger.error('[Phone Registration] Failed to send welcome message:', welcomeError);
+        // Don't fail registration if welcome message fails
+      }
 
       return {
         user: {
