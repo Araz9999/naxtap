@@ -17,6 +17,8 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { initializeServices } from '@/services';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc, trpcClient } from '@/lib/trpc';
+import { realtimeService } from '@/lib/realtime';
+import config from '@/constants/config';
 
 import { logger } from '@/utils/logger';
 export const unstable_settings = {
@@ -145,6 +147,35 @@ function RootLayoutNav() {
       if (__DEV__) logger.error('Failed to initialize services:', error);
     });
   }, []);
+
+  // Initialize WebSocket/Realtime connection
+  useEffect(() => {
+    const backendUrl = config.BACKEND_URL || 'http://localhost:3000';
+    
+    logger.info('[App] Initializing realtime service:', backendUrl);
+    
+    realtimeService.initialize({
+      url: backendUrl,
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    }).catch((error) => {
+      logger.warn('[App] Realtime service initialization failed (will use polling):', error);
+    });
+
+    // Setup global realtime event listeners
+    if (currentUser?.id) {
+      // Join user's personal room
+      realtimeService.joinRoom(`user:${currentUser.id}`);
+      
+      logger.info('[App] Joined user room:', currentUser.id);
+    }
+
+    return () => {
+      realtimeService.disconnect();
+    };
+  }, [currentUser?.id]);
 
   // Local real-time managers (store availability + listing expiration checks)
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Message } from '@/types/message';
 import { useUserStore } from './userStore';
+import { realtimeService } from '@/lib/realtime';
 
 import { logger } from '@/utils/logger';
 export interface Conversation {
@@ -24,6 +25,8 @@ interface MessageStore {
   getFilteredConversations: () => Conversation[];
   deleteMessage: (conversationId: string, messageId: string) => void;
   deleteAllMessagesFromUser: (userId: string) => void;
+  initializeRealtimeListeners: () => void;
+  cleanupRealtimeListeners: () => void;
 }
 
 // Mock initial conversations with messages
@@ -500,5 +503,65 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
         conversations: updatedConversations.map(conv => ({ ...conv })),
       };
     });
+  },
+
+  // Initialize WebSocket realtime listeners
+  initializeRealtimeListeners: () => {
+    logger.info('[MessageStore] Initializing realtime listeners');
+
+    if (!realtimeService.isAvailable()) {
+      logger.info('[MessageStore] Realtime service not available, using polling mode');
+      return;
+    }
+
+    // Listen for new messages
+    realtimeService.on('message:new', (data) => {
+      logger.info('[MessageStore] Received new message via WebSocket:', data.conversationId);
+      
+      const state = get();
+      const conversation = state.conversations.find(c => c.id === data.conversationId);
+      
+      if (conversation) {
+        get().addMessage(data.conversationId, data.message);
+      }
+    });
+
+    // Listen for read receipts
+    realtimeService.on('message:read', (data) => {
+      logger.info('[MessageStore] Messages marked as read via WebSocket:', data.conversationId);
+      
+      set((state) => ({
+        conversations: state.conversations.map(conv => {
+          if (conv.id === data.conversationId) {
+            return {
+              ...conv,
+              messages: conv.messages.map(msg => {
+                if (data.messageIds.includes(msg.id)) {
+                  return { ...msg, isRead: true };
+                }
+                return msg;
+              }),
+            };
+          }
+          return conv;
+        }),
+      }));
+    });
+
+    // Listen for typing indicators
+    realtimeService.on('message:typing', (data) => {
+      logger.debug('[MessageStore] User typing:', data.userId, data.isTyping);
+      // Can be used to show typing indicator in UI
+    });
+
+    logger.info('[MessageStore] Realtime listeners initialized');
+  },
+
+  // Cleanup WebSocket listeners
+  cleanupRealtimeListeners: () => {
+    logger.info('[MessageStore] Cleaning up realtime listeners');
+    
+    // Note: realtimeService handles cleanup internally when disconnecting
+    // This is just a placeholder for future custom cleanup logic
   },
 }));

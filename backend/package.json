@@ -1,3 +1,7 @@
 {
-  "name": "naxtap-backend"
+  "name": "naxtap-backend",
+  "dependencies": {
+    "@types/node": "^25.0.3",
+    "socket.io": "^4.8.3"
+  }
 }

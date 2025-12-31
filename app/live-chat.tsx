@@ -28,6 +28,7 @@ import {
 import FileAttachmentPicker, { FileAttachment } from '@/components/FileAttachmentPicker';
 import WebTextInput, { WebTextInputRef } from '@/components/WebTextInput';
 import { trpc } from '@/lib/trpc';
+import { realtimeService } from '@/lib/realtime';
 
 import { logger } from '@/utils/logger';
 const { width } = Dimensions.get('window');
@@ -106,6 +107,50 @@ export default function LiveChatScreen() {
     // Mark as read periodically while open
     markAsReadMutation.mutate({ conversationId, viewerType: 'user' });
   }, [conversationId, markAsReadMutation]);
+
+  // WebSocket: Join live chat room and listen for events
+  useEffect(() => {
+    if (!conversationId || !realtimeService.isAvailable()) return;
+
+    logger.info('[LiveChat] Joining WebSocket room:', conversationId);
+    realtimeService.joinRoom(conversationId);
+
+    // Listen for new messages
+    const handleNewMessage = (data: { conversationId: string; message: any }) => {
+      if (data.conversationId === conversationId) {
+        logger.info('[LiveChat] Received new message via WebSocket');
+        utils.liveChat.getMessages.invalidate({ conversationId });
+      }
+    };
+
+    // Listen for operator assignment
+    const handleAssigned = (data: { conversationId: string; agentId: string; agentName: string }) => {
+      if (data.conversationId === conversationId) {
+        logger.info('[LiveChat] Operator assigned via WebSocket:', data.agentName);
+        utils.liveChat.getConversations.invalidate({ userId: currentUser?.id });
+      }
+    };
+
+    // Listen for chat closed
+    const handleClosed = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        logger.info('[LiveChat] Chat closed via WebSocket');
+        utils.liveChat.getConversations.invalidate({ userId: currentUser?.id });
+      }
+    };
+
+    realtimeService.on('liveChat:message', handleNewMessage);
+    realtimeService.on('liveChat:assigned', handleAssigned);
+    realtimeService.on('liveChat:closed', handleClosed);
+
+    return () => {
+      logger.info('[LiveChat] Leaving WebSocket room:', conversationId);
+      realtimeService.leaveRoom(conversationId);
+      realtimeService.off('liveChat:message', handleNewMessage);
+      realtimeService.off('liveChat:assigned', handleAssigned);
+      realtimeService.off('liveChat:closed', handleClosed);
+    };
+  }, [conversationId, currentUser?.id, utils]);
 
   useEffect(() => {
     const messageCount = (messagesQuery.data || []).length;
@@ -206,9 +251,21 @@ export default function LiveChatScreen() {
           isSupport: false,
         },
         {
-          onSuccess: async () => {
+          onSuccess: async (result) => {
             await utils.liveChat.getMessages.invalidate({ conversationId });
             await utils.liveChat.getConversations.invalidate({ userId: currentUser.id });
+
+            // Emit via WebSocket if available
+            if (realtimeService.isAvailable()) {
+              realtimeService.send('liveChat:message', {
+                conversationId,
+                message: {
+                  ...result,
+                  message: messageText,
+                },
+              });
+              logger.debug('[LiveChat] Message emitted via WebSocket');
+            }
           },
         },
       );

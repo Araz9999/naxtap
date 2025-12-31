@@ -45,6 +45,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Audio } from 'expo-av';
 import UserActionModal from '@/components/UserActionModal';
 import { trpc } from '@/lib/trpc';
+import { realtimeService } from '@/lib/realtime';
 
 import { logger } from '@/utils/logger';
 const { width: screenWidth } = Dimensions.get('window');
@@ -286,6 +287,50 @@ export default function ConversationScreen() {
     }
   }, [conversation?.id, getMessagesQuery.data?.unreadCount]);
 
+  // WebSocket: Join conversation room and listen for events
+  useEffect(() => {
+    if (!conversationId || !realtimeService.isAvailable()) return;
+
+    logger.info('[Conversation] Joining WebSocket room:', conversationId);
+    realtimeService.joinRoom(conversationId);
+
+    // Listen for new messages in this conversation
+    const handleNewMessage = (data: { conversationId: string; message: any }) => {
+      if (data.conversationId === conversationId) {
+        logger.info('[Conversation] Received new message via WebSocket');
+        trpcUtils.chat.getMessages.invalidate({ conversationId });
+      }
+    };
+
+    // Listen for typing indicators
+    const handleTyping = (data: { conversationId: string; userId: string; isTyping: boolean }) => {
+      if (data.conversationId === conversationId && data.userId !== currentUser?.id) {
+        // Show typing indicator (can be implemented in UI)
+        logger.debug('[Conversation] Other user typing:', data.isTyping);
+      }
+    };
+
+    // Listen for read receipts
+    const handleRead = (data: { conversationId: string; messageIds: string[] }) => {
+      if (data.conversationId === conversationId) {
+        logger.info('[Conversation] Messages marked as read via WebSocket');
+        trpcUtils.chat.getMessages.invalidate({ conversationId });
+      }
+    };
+
+    realtimeService.on('message:new', handleNewMessage);
+    realtimeService.on('message:typing', handleTyping);
+    realtimeService.on('message:read', handleRead);
+
+    return () => {
+      logger.info('[Conversation] Leaving WebSocket room:', conversationId);
+      realtimeService.leaveRoom(conversationId);
+      realtimeService.off('message:new', handleNewMessage);
+      realtimeService.off('message:typing', handleTyping);
+      realtimeService.off('message:read', handleRead);
+    };
+  }, [conversationId, currentUser?.id, trpcUtils]);
+
   // ✅ Proper cleanup for audio and recording
   useEffect(() => {
     return () => {
@@ -387,6 +432,15 @@ export default function ConversationScreen() {
 
       logger.debug('[Conversation] Message sent:', res.message.id);
       setInputText('');
+
+      // Emit via WebSocket if available
+      if (realtimeService.isAvailable() && conversation?.id) {
+        realtimeService.send('message:send', {
+          conversationId: conversation.id,
+          message: res.message,
+        });
+        logger.debug('[Conversation] Message emitted via WebSocket');
+      }
 
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
