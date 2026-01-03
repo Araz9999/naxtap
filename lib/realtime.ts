@@ -29,7 +29,11 @@ interface RealtimeEvents {
   'message:typing': (data: { conversationId: string; userId: string; isTyping: boolean }) => void;
 
   // Zənglər
+< cursor/call-feature-verification-and-fix-4af4
+  'call:incoming': (data: { callId: string; callerId: string; type: 'voice' | 'video'; listingId?: string }) => void;
+=======
   'call:incoming': (data: { callId: string; callerId: string; type: 'voice' | 'video'; listingId?: string; receiverId?: string }) => void;
+> main
   'call:answered': (data: { callId: string }) => void;
   'call:declined': (data: { callId: string }) => void;
   'call:ended': (data: { callId: string }) => void;

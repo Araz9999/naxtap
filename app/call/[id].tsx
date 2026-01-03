@@ -67,6 +67,7 @@ function CallRoomView({
   onToggleMute,
   onToggleSpeaker,
   onToggleVideo,
+  onHangup,
   otherUserAvatar,
   otherUserName,
   listingTitle,
@@ -80,6 +81,7 @@ function CallRoomView({
   onToggleMute: () => void;
   onToggleSpeaker: () => void;
   onToggleVideo: () => void;
+  onHangup: () => void;
   otherUserAvatar?: string;
   otherUserName?: string;
   listingTitle?: string;
@@ -259,6 +261,7 @@ function CallRoomView({
               setEgressId(null);
             }
             room?.disconnect();
+            onHangup();
             router.back();
           }}
           testID="end-call-button"
@@ -289,6 +292,9 @@ export default function CallScreen() {
   const { activeCall, endCall, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
+< cursor/call-feature-verification-and-fix-4af4
+  const listings = useListingStore((s) => s.listings);
+=======
   const { listings } = useListingStore();
 
   const otherUserId = useMemo(() => {
@@ -301,11 +307,35 @@ export default function CallScreen() {
     { enabled: !!otherUserId },
   );
   const otherUser = otherUserQuery.data as { id: string; name?: string; avatar?: string } | undefined;
+>main
 
   const tokenMutation = trpc.call.getToken.useMutation();
   const [lkToken, setLkToken] = useState<string | undefined>(undefined);
   const [lkServerUrl, setLkServerUrl] = useState<string | undefined>(undefined);
   const [lkRoomName, setLkRoomName] = useState<string | undefined>(undefined);
+
+  const otherUserId = useMemo(() => {
+    if (!activeCall || !currentUser?.id) return undefined;
+    return activeCall.callerId === currentUser.id ? activeCall.receiverId : activeCall.callerId;
+  }, [activeCall?.callerId, activeCall?.receiverId, currentUser?.id, activeCall]);
+
+  const otherUserQuery = trpc.user.getUser.useQuery(
+    { id: otherUserId || '' },
+    { enabled: !!otherUserId },
+  );
+
+  const listingFromStore = useMemo(() => {
+    if (!activeCall?.listingId) return undefined;
+    return listings.find((l) => l.id === activeCall.listingId);
+  }, [activeCall?.listingId, listings]);
+
+  const listingQuery = trpc.listing.getById.useQuery(
+    { id: activeCall?.listingId || '' },
+    { enabled: !!activeCall?.listingId && !listingFromStore },
+  );
+
+  const otherUser = otherUserQuery.data;
+  const listing = listingFromStore ?? listingQuery.data;
 
   useEffect(() => {
     if (!activeCall || activeCall.id !== callId) {
@@ -313,12 +343,15 @@ export default function CallScreen() {
     }
   }, [activeCall, callId]);
 
+< cursor/call-feature-verification-and-fix-4af4
+
   // Navigate back if call is invalid
   useEffect(() => {
     if (!activeCall || !callId) return;
     if (otherUserId && otherUserQuery.isError) router.back();
   }, [activeCall, callId, otherUserId, otherUserQuery.isError]);
 
+> main
   // Fetch LiveKit token once per call (requires backend env LIVEKIT_*)
   useEffect(() => {
     if (!callId || !activeCall || !currentUser?.id) return;
@@ -354,21 +387,7 @@ export default function CallScreen() {
     return null;
   }
 
-  const listing = listings.find(l => l.id === activeCall.listingId);
-
   // Validate other user exists
-  if (!otherUser) {
-    logger.error('Other user not found');
-    return (
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.permissionText}>
-            {language === 'az' ? 'İstifadəçi tapılmadı' : 'Пользователь не найден'}
-          </Text>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -380,7 +399,7 @@ export default function CallScreen() {
       <LiveKitRoom
         serverUrl={lkServerUrl}
         token={lkToken}
-        connect={true}
+        connect={!!lkServerUrl && !!lkToken}
         audio={true}
         video={activeCall.type === 'video'}
         options={{
@@ -401,8 +420,9 @@ export default function CallScreen() {
           onToggleMute={toggleMute}
           onToggleSpeaker={toggleSpeaker}
           onToggleVideo={toggleVideo}
-          otherUserAvatar={otherUser.avatar}
-          otherUserName={otherUser.name}
+          onHangup={() => endCall(callId)}
+          otherUserAvatar={otherUser?.avatar}
+          otherUserName={otherUser?.name}
           listingTitle={listing?.title ? (typeof listing.title === 'string' ? listing.title : listing.title[language]) : ''}
         />
       </LiveKitRoom>

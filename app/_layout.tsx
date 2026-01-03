@@ -19,6 +19,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc, trpcClient } from '@/lib/trpc';
 import { realtimeService } from '@/lib/realtime';
 import config from '@/constants/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { logger } from '@/utils/logger';
 export const unstable_settings = {
@@ -77,7 +78,7 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { themeMode, colorTheme } = useThemeStore();
   const { loadRatings } = useRatingStore();
-  const { initializeSounds, pollIncomingCalls } = useCallStore();
+  const { initializeSounds, pollIncomingCalls, initializeRealtimeListeners, setSelfUserId } = useCallStore();
   const { currentUser } = useUserStore();
   const { fetchListings } = useListingStore();
   const { fetchStores, fetchUserStore } = useStoreStore();
@@ -164,6 +165,8 @@ function RootLayoutNav() {
       logger.warn('[App] Realtime service initialization failed (will use polling):', error);
     });
 
+< cursor/call-feature-verification-and-fix-4af4
+
     // Setup global realtime event listeners
     if (currentUser?.id) {
       // Join user's personal room
@@ -172,10 +175,58 @@ function RootLayoutNav() {
       logger.info('[App] Joined user room:', currentUser.id);
     }
 
+> main
     return () => {
       realtimeService.disconnect();
     };
-  }, [currentUser?.id]);
+  }, []);
+
+  // Authenticate realtime socket and initialize call listeners when user is available
+  useEffect(() => {
+    setSelfUserId(currentUser?.id ?? null);
+
+    // Initialize call event listeners (no-op if realtime not available)
+    initializeRealtimeListeners();
+
+    if (!currentUser?.id) return;
+
+    let disposed = false;
+
+    const authenticate = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('auth_tokens');
+        const token = raw ? JSON.parse(raw)?.accessToken : undefined;
+        if (!token || typeof token !== 'string') return;
+        if (disposed) return;
+
+        realtimeService.send('authenticate', { userId: currentUser.id, token });
+        // After authenticate, join personal room (server requires auth)
+        realtimeService.joinRoom(`user:${currentUser.id}`);
+      } catch (e) {
+        logger.debug?.('[App] Realtime authenticate failed (will keep polling):', e);
+      }
+    };
+
+    const onConnect = () => {
+      authenticate().catch(() => undefined);
+    };
+
+    const onReconnect = () => {
+      authenticate().catch(() => undefined);
+    };
+
+    realtimeService.on('connection', onConnect);
+    realtimeService.on('reconnect', onReconnect as any);
+
+    // Try immediately (in case already connected)
+    authenticate().catch(() => undefined);
+
+    return () => {
+      disposed = true;
+      realtimeService.off('connection', onConnect);
+      realtimeService.off('reconnect', onReconnect as any);
+    };
+  }, [currentUser?.id, initializeRealtimeListeners, setSelfUserId]);
 
   // Local real-time managers (store availability + listing expiration checks)
   useEffect(() => {
