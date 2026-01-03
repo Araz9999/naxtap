@@ -168,7 +168,8 @@ export const appRouter = createTRPCRouter({
     getUser: userGetUserProcedure,
     getAllUsers: getAllUsersProcedure,
   }),
-  call: createTRPCRouter({
+  // NOTE: `call` is a reserved word in tRPC router keys (v11+). Use `calls`.
+  calls: createTRPCRouter({
     create: createCallProcedure,
     getIncoming: getIncomingCallsProcedure,
     answer: answerCallProcedure,

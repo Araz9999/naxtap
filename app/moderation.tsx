@@ -34,6 +34,7 @@ export default function ModerationScreen() {
   const {
     moderators,
     stats,
+    reports,
     getReportsByStatus,
   } = useModerationStore();
   const { settings } = useModerationSettingsStore();
@@ -68,7 +69,8 @@ export default function ModerationScreen() {
 
   // ✅ Use backend data if available, fallback to local store
   const actualStats = backendStats || stats;
-  const actualReports = allReports || getReportsByStatus('pending');
+  // If backend reports are unavailable, fallback to local store reports (not just 'pending')
+  const actualReports = allReports || reports || getReportsByStatus('pending');
   const actualModerators = backendModerators || moderators || [];
 
   const isLoading = statsLoading || reportsLoading || moderatorsLoading;

@@ -91,8 +91,8 @@ function CallRoomView({
 
   const [callDuration, setCallDuration] = useState<number>(0);
 
-  const startRecordingMutation = trpc.call.startRecording.useMutation();
-  const stopRecordingMutation = trpc.call.stopRecording.useMutation();
+  const startRecordingMutation = trpc.calls.startRecording.useMutation();
+  const stopRecordingMutation = trpc.calls.stopRecording.useMutation();
   const [egressId, setEgressId] = useState<string | null>(null);
   const isRecording = !!egressId && startRecordingMutation.status === 'success';
 
@@ -302,7 +302,7 @@ export default function CallScreen() {
   );
   const otherUser = otherUserQuery.data as { id: string; name?: string; avatar?: string } | undefined;
 
-  const tokenMutation = trpc.call.getToken.useMutation();
+  const tokenMutation = trpc.calls.getToken.useMutation();
   const [lkToken, setLkToken] = useState<string | undefined>(undefined);
   const [lkServerUrl, setLkServerUrl] = useState<string | undefined>(undefined);
   const [lkRoomName, setLkRoomName] = useState<string | undefined>(undefined);

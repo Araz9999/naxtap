@@ -109,7 +109,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     // Create a server-side call invite so the receiver can join the same LiveKit room.
     let callId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     try {
-      const res = await trpcClient.call.create.mutate({
+      const res = await trpcClient.calls.create.mutate({
         callerId: currentUserId,
         receiverId,
         listingId,
@@ -224,7 +224,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     get().stopAllSounds();
 
     // Inform server that call invite was accepted (clears pending invite)
-    trpcClient.call.answer.mutate({ callId }).catch(() => undefined);
+    trpcClient.calls.answer.mutate({ callId }).catch(() => undefined);
 
     // Ensure native call audio session is active (ringtone stops, call audio starts)
     (async () => {
@@ -280,7 +280,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     get().stopAllSounds();
 
     // Inform server that call invite was declined (clears pending invite)
-    trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
+    trpcClient.calls.decline.mutate({ callId }).catch(() => undefined);
 
     // Stop native call audio session if it was started
     (async () => {
@@ -625,7 +625,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
   pollIncomingCalls: async (currentUserId: string) => {
     if (!currentUserId || typeof currentUserId !== 'string') return;
     try {
-      const res = await trpcClient.call.getIncoming.query({ userId: currentUserId });
+      const res = await trpcClient.calls.getIncoming.query({ userId: currentUserId });
       const next = res?.calls?.[0];
       if (!next) return;
 
