@@ -12,6 +12,8 @@ import {
   Dimensions,
   Platform,
   Keyboard,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -69,10 +71,13 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
   const [isScrolling, setIsScrolling] = useState<boolean>(false);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showAttachments, setShowAttachments] = useState<boolean>(false);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [inputHeight, setInputHeight] = useState<number>(44);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const slideAnim = useRef(new Animated.Value(height)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const keyboardAnimRef = useRef(new Animated.Value(0)).current;
 
   const currentChat = currentChatId ? liveChats.find(chat => chat.id === currentChatId) : undefined;
   const operator = currentChat?.operatorId ? operators.find(op => op.id === currentChat.operatorId) : undefined;
@@ -102,30 +107,51 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
 
   useEffect(() => {
     if (currentChat?.messages.length && shouldScrollToEnd && !isScrolling) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      // Disable auto scroll - only manual scroll
+      // setTimeout(() => {
+      //   scrollViewRef.current?.scrollToEnd({ animated: true });
+      // }, 100);
     }
   }, [currentChat?.messages.length, shouldScrollToEnd, isScrolling]);
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setShouldScrollToEnd(false);
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        const keyboardHeight = e.endCoordinates.height;
+        setKeyboardHeight(keyboardHeight);
+        
+        // Animate keyboard space
+        Animated.timing(keyboardAnimRef, {
+          toValue: keyboardHeight,
+          duration: Platform.OS === 'ios' ? e.duration || 250 : 250,
+          useNativeDriver: false,
+        }).start();
+        
+        // Scroll to bottom after a short delay
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 50);
       },
     );
 
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setShouldScrollToEnd(true);
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      (e) => {
+        setKeyboardHeight(0);
+        
+        // Animate keyboard space back
+        Animated.timing(keyboardAnimRef, {
+          toValue: 0,
+          duration: Platform.OS === 'ios' ? e.duration || 250 : 250,
+          useNativeDriver: false,
+        }).start();
       },
     );
 
     return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
     };
   }, []);
 
@@ -169,18 +195,14 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
     setMessage('');
     setAttachments([]);
     setShowAttachments(false);
-    setShouldScrollToEnd(true);
-
-    // Scroll to end after message is sent
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
 
     // Clear typing indicator
     if (typingTimeout) {
       clearTimeout(typingTimeout);
     }
     setTyping(currentChatId, 'user', false);
+    
+    // Don't auto scroll after sending - let user control scroll
   };
 
   const handleTyping = (text: string) => {
@@ -446,18 +468,27 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       transparent
       animationType="none"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <View style={styles.overlay}>
-        <Animated.View
-          style={[
-            styles.chatContainer,
-            {
-              backgroundColor: colors.background,
-              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-            },
-            isMinimized && styles.minimizedContainer,
-          ]}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <View style={styles.overlay}>
+              <Animated.View
+                style={[
+                  styles.chatContainer,
+                  {
+                    backgroundColor: colors.background,
+                    transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+                    marginBottom: Platform.OS === 'android' ? keyboardAnimRef : 0,
+                  },
+                  isMinimized && styles.minimizedContainer,
+                ]}
+              >
           {/* Header */}
           <View style={[styles.header, { backgroundColor: colors.primary }]}>
             <View style={styles.headerLeft}>
@@ -521,15 +552,13 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                     style={styles.messagesContainer}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="interactive"
-                    contentContainerStyle={{ paddingBottom: 10 }}
-                    maintainVisibleContentPosition={{
-                      minIndexForVisible: 0,
-                      autoscrollToTopThreshold: 10,
-                    }}
+                    keyboardDismissMode="on-drag"
+                    contentContainerStyle={{ paddingBottom: 10, flexGrow: 1 }}
                     onContentSizeChange={() => {
-                      if (!isScrolling && shouldScrollToEnd) {
-                        scrollViewRef.current?.scrollToEnd({ animated: false });
+                      if (shouldScrollToEnd && !isScrolling) {
+                        requestAnimationFrame(() => {
+                          scrollViewRef.current?.scrollToEnd({ animated: false });
+                        });
                       }
                     }}
                     onScrollBeginDrag={() => {
@@ -603,6 +632,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                               backgroundColor: colors.background,
                               color: colors.text,
                               borderColor: colors.border,
+                              height: 44, // Fixed height
                             },
                           ]}
                           placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите сообщение...'}
@@ -619,7 +649,6 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                           autoCapitalize="sentences"
                           enablesReturnKeyAutomatically={false}
                           scrollEnabled={false}
-                          onContentSizeChange={() => {}}
                           keyboardAppearance={Platform.OS === 'ios' ? (themeMode === 'dark' ? 'dark' : 'light') : 'default'}
                           maxLength={1000}
                         />
@@ -668,10 +697,13 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                   </Text>
                 </View>
               )}
-            </>
-          )}
-        </Animated.View>
-      </View>
+              </>
+            )}
+          </Animated.View>
+        </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -688,6 +720,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     overflow: 'hidden',
     maxHeight: height * 0.8,
+    width: '100%',
   },
   minimizedContainer: {
     height: 60,
@@ -820,11 +853,15 @@ const styles = StyleSheet.create({
   },
   chatContentWrapper: {
     flex: 1,
+    position: 'relative',
   },
   inputSection: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.1)',
-    backgroundColor: 'transparent',
+    position: 'relative',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   messagesContainer: {
     flex: 1,
@@ -908,19 +945,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 12,
-    minHeight: 68,
+    paddingBottom: Platform.OS === 'ios' ? 12 : 12,
+    height: 68, // Fixed height
   },
   messageInput: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingVertical: 0, // Remove vertical padding
     fontSize: 16,
-    height: 44,
-    lineHeight: Platform.OS === 'android' ? 20 : 22,
+    height: 44, // Fixed height
+    lineHeight: 20,
     marginHorizontal: 8,
     includeFontPadding: false,
     textAlignVertical: 'center',
