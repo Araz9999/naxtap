@@ -11,27 +11,36 @@ import {
 } from 'react-native';
 import { useCallStore } from '@/store/callStore';
 import { useLanguageStore } from '@/store/languageStore';
-import { users } from '@/mocks/users';
-import { listings } from '@/mocks/listings';
+import { useListingStore } from '@/store/listingStore';
 import Colors from '@/constants/colors';
 import { Phone, PhoneOff, Video } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { trpc } from '@/lib/trpc';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const IncomingCallModal = React.memo(function IncomingCallModal() {
   const { incomingCall, answerCall, declineCall } = useCallStore();
   const { language } = useLanguageStore();
+  const listings = useListingStore((s) => s.listings);
 
-  const caller = React.useMemo(
-    () => incomingCall ? users.find(user => user.id === incomingCall.callerId) : undefined,
-    [incomingCall],
+  const callerQuery = trpc.user.getUser.useQuery(
+    { id: incomingCall?.callerId || '' },
+    { enabled: !!incomingCall?.callerId },
   );
 
   const listing = React.useMemo(
     () => incomingCall ? listings.find(l => l.id === incomingCall.listingId) : undefined,
-    [incomingCall],
+    [incomingCall?.listingId, listings],
   );
+
+  const listingQuery = trpc.listing.getById.useQuery(
+    { id: incomingCall?.listingId || '' },
+    { enabled: !!incomingCall?.listingId && !listing },
+  );
+
+  const caller = callerQuery.data;
+  const resolvedListing = listing ?? listingQuery.data;
 
   const handleAnswer = React.useCallback(() => {
     if (!incomingCall) return;
@@ -62,13 +71,24 @@ const IncomingCallModal = React.memo(function IncomingCallModal() {
           </Text>
 
           <View style={styles.callerInfo}>
-            <Image
-              source={{ uri: caller?.avatar }}
-              style={styles.callerAvatar}
-            />
-            <Text style={styles.callerName}>{caller?.name}</Text>
+            {caller?.avatar ? (
+              <Image
+                source={{ uri: caller.avatar }}
+                style={styles.callerAvatar}
+              />
+            ) : (
+              <View style={[styles.callerAvatar, styles.callerAvatarFallback]}>
+                <Text style={styles.callerAvatarFallbackText}>
+                  {(caller?.name || '?').slice(0, 1).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.callerName}>{caller?.name || (language === 'az' ? 'İstifadəçi' : 'Пользователь')}</Text>
             <Text style={styles.listingTitle}>
-              {listing?.title ? (typeof listing.title === 'string' ? listing.title : listing.title[language]) : ''}
+              {resolvedListing?.title
+                ? (typeof resolvedListing.title === 'string' ? resolvedListing.title : resolvedListing.title[language])
+                : ''
+              }
             </Text>
             <Text style={styles.callTypeText}>
               {incomingCall.type === 'video'
@@ -149,6 +169,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 4,
     borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  callerAvatarFallback: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  callerAvatarFallbackText: {
+    color: '#fff',
+    fontSize: 56,
+    fontWeight: '700',
   },
   callerName: {
     fontSize: 32,

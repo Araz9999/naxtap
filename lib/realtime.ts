@@ -29,7 +29,7 @@ interface RealtimeEvents {
   'message:typing': (data: { conversationId: string; userId: string; isTyping: boolean }) => void;
   
   // Zənglər
-  'call:incoming': (data: { callId: string; callerId: string; type: 'voice' | 'video' }) => void;
+  'call:incoming': (data: { callId: string; callerId: string; type: 'voice' | 'video'; listingId?: string }) => void;
   'call:answered': (data: { callId: string }) => void;
   'call:declined': (data: { callId: string }) => void;
   'call:ended': (data: { callId: string }) => void;

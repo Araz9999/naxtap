@@ -196,10 +196,14 @@ export default function UserProfileScreen() {
           style={[styles.actionButton, styles.callButton]}
           onPress={async () => {
             try {
+              if (!currentUser?.id) {
+                router.push('/auth/login');
+                return;
+              }
               // Check if user has hidden phone number
               if (user.privacySettings?.hidePhoneNumber) {
                 // Use in-app calling
-                const callId = await initiateCall(user.id, '', 'voice', 'video');
+                const callId = await initiateCall(currentUser.id, user.id, '', 'voice');
                 router.push(`/call/${callId}`);
               } else {
                 // Use regular phone call

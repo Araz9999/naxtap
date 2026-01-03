@@ -10,12 +10,16 @@ interface CallStore {
   calls: Call[];
   activeCall: ActiveCall | null;
   incomingCall: Call | null;
+  selfUserId: string | null;
   ringtoneSound: Audio.Sound | null;
   dialToneSound: Audio.Sound | null;
   ringtoneInterval: NodeJS.Timeout | null;
   dialToneInterval: NodeJS.Timeout | null;
   incomingCallTimeouts: Map<string, NodeJS.Timeout>; // ✅ Track timeouts for cleanup
   outgoingCallTimeouts: Map<string, NodeJS.Timeout>; // ✅ Track outgoing call timeouts
+
+  // Identity (for correct caller/receiver resolution)
+  setSelfUserId: (userId: string | null) => void;
 
   // Call actions
   initiateCall: (currentUserId: string, receiverId: string, listingId: string, type: CallType) => Promise<string>;
@@ -96,12 +100,17 @@ export const useCallStore = create<CallStore>((set, get) => ({
   calls: initialCalls,
   activeCall: null,
   incomingCall: null,
+  selfUserId: null,
   ringtoneSound: null,
   dialToneSound: null,
   ringtoneInterval: null,
   dialToneInterval: null,
   incomingCallTimeouts: new Map(), // ✅ Initialize timeout map
   outgoingCallTimeouts: new Map(), // ✅ Initialize outgoing call timeout map
+
+  setSelfUserId: (userId: string | null) => {
+    set({ selfUserId: userId });
+  },
 
   initiateCall: async (currentUserId: string, receiverId: string, listingId: string, type: CallType) => {
     logger.info('CallStore - initiating call to:', receiverId);
@@ -122,7 +131,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
     const newCall: Call = {
       id: callId,
-      callerId: 'user1', // Current user
+      callerId: currentUserId, // ✅ Use actual current user ID
       receiverId,
       listingId,
       type,
@@ -150,6 +159,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     };
 
     set({ activeCall });
+    set({ selfUserId: currentUserId });
 
     // Play dial tone for outgoing call
     await get().playDialTone();
@@ -165,41 +175,34 @@ export const useCallStore = create<CallStore>((set, get) => ({
       logger.info('[CallStore] Call initiate emitted via WebSocket');
     }
 
-    // Simulate call being answered after 3 seconds
-    const answerTimeout = setTimeout(() => {
-      const currentState = get();
-      if (currentState.activeCall?.id === callId) {
-        get().stopAllSounds();
-        (async () => {
-          const InCallManager = await getInCallManager();
-          if (InCallManager?.start) {
-            try {
-              // Route audio properly and keep audio session active during call
-              InCallManager.start({ media: 'audio' });
-            } catch (e) {
-              logger.debug?.('[CallStore] InCallManager.start failed', e);
-            }
-          }
-        })();
-        set((state) => ({
-          calls: state.calls.map(call =>
-            call.id === callId
-              ? { ...call, status: 'active' as CallStatus }
+    // If nobody answers within a reasonable time, mark as missed (realistic behavior).
+    const ringTimeout = setTimeout(() => {
+      const state = get();
+      const call = state.calls.find((c) => c.id === callId);
+      if (!call) return;
+      if (call.status !== 'outgoing') return;
 
-              : call,
-          ),
-        }));
-      }
+      state.stopAllSounds().catch(() => undefined);
 
-      // ✅ Remove from timeout map after execution
+      set((s) => ({
+        calls: s.calls.map((c) =>
+          c.id === callId
+            ? { ...c, status: 'missed' as CallStatus, endTime: new Date().toISOString() }
+            : c,
+        ),
+        activeCall: s.activeCall?.id === callId ? null : s.activeCall,
+      }));
+
+      // Best-effort: clear pending invite so receiver doesn't get stale ring
+      trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
+
       const newTimeouts = new Map(get().outgoingCallTimeouts);
       newTimeouts.delete(callId);
       set({ outgoingCallTimeouts: newTimeouts });
-    }, 3000);
+    }, 45_000);
 
-    // ✅ Store timeout for potential cleanup
     set((state) => ({
-      outgoingCallTimeouts: new Map(state.outgoingCallTimeouts).set(callId, answerTimeout as unknown as NodeJS.Timeout),
+      outgoingCallTimeouts: new Map(state.outgoingCallTimeouts).set(callId, ringTimeout as unknown as NodeJS.Timeout),
     }));
 
     return callId;
@@ -225,6 +228,11 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
     // Inform server that call invite was accepted (clears pending invite)
     trpcClient.call.answer.mutate({ callId }).catch(() => undefined);
+
+    // Notify caller in realtime (removes "fake auto-answer" behavior)
+    if (realtimeService.isAvailable()) {
+      realtimeService.send('call:answer', { callId, callerId: call.callerId });
+    }
 
     // Ensure native call audio session is active (ringtone stops, call audio starts)
     (async () => {
@@ -261,7 +269,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
       isVideoEnabled: call.type === 'video',
     };
 
-    set({ activeCall });
+    set({ activeCall, selfUserId: call.receiverId });
   },
 
   declineCall: (callId: string) => {
@@ -281,6 +289,12 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
     // Inform server that call invite was declined (clears pending invite)
     trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
+
+    // Notify caller in realtime
+    const call = get().calls.find((c) => c.id === callId);
+    if (call && realtimeService.isAvailable()) {
+      realtimeService.send('call:decline', { callId, callerId: call.callerId });
+    }
 
     // Stop native call audio session if it was started
     (async () => {
@@ -302,6 +316,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
       ),
       incomingCall: null,
     }));
+
+    if (call?.receiverId) {
+      set({ selfUserId: call.receiverId });
+    }
   },
 
   endCall: (callId: string) => {
@@ -350,6 +368,21 @@ export const useCallStore = create<CallStore>((set, get) => ({
       ),
       activeCall: null,
     }));
+
+    // Best-effort: clear pending invite if call ended before answer
+    trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
+
+    // Notify other participant (so their UI can end the call)
+    if (realtimeService.isAvailable()) {
+      const selfId = get().selfUserId;
+      const otherUserId =
+        selfId && activeCall.callerId === selfId ? activeCall.receiverId
+          : selfId && activeCall.receiverId === selfId ? activeCall.callerId
+            : activeCall.receiverId; // fallback
+      if (otherUserId) {
+        realtimeService.send('call:end', { callId, otherUserId });
+      }
+    }
   },
 
   setCallRecording: (callId: string, recording: Partial<CallRecording>) => {
@@ -669,11 +702,12 @@ export const useCallStore = create<CallStore>((set, get) => ({
     realtimeService.on('call:incoming', (data) => {
       logger.info('[CallStore] Incoming call via WebSocket:', data.callId);
 
+      const receiverId = get().selfUserId ?? '';
       const incomingCall: Call = {
         id: data.callId,
         callerId: data.callerId,
-        receiverId: get().calls[0]?.receiverId || 'user1', // fallback
-        listingId: data.listingId || '',
+        receiverId,
+        listingId: (data as any).listingId || '',
         type: data.type,
         status: 'incoming',
         startTime: new Date().toISOString(),
@@ -723,6 +757,15 @@ export const useCallStore = create<CallStore>((set, get) => ({
       }));
 
       get().stopAllSounds();
+
+      // Clear ring timeout if it exists
+      const t = get().outgoingCallTimeouts.get(data.callId);
+      if (t) {
+        clearTimeout(t);
+        const newTimeouts = new Map(get().outgoingCallTimeouts);
+        newTimeouts.delete(data.callId);
+        set({ outgoingCallTimeouts: newTimeouts });
+      }
     });
 
     // Listen for declined calls
@@ -735,9 +778,19 @@ export const useCallStore = create<CallStore>((set, get) => ({
             ? { ...call, status: 'declined' as CallStatus, endTime: new Date().toISOString() }
             : call
         ),
+        activeCall: state.activeCall?.id === data.callId ? null : state.activeCall,
       }));
 
       get().stopAllSounds();
+
+      // Clear ring timeout if it exists
+      const t = get().outgoingCallTimeouts.get(data.callId);
+      if (t) {
+        clearTimeout(t);
+        const newTimeouts = new Map(get().outgoingCallTimeouts);
+        newTimeouts.delete(data.callId);
+        set({ outgoingCallTimeouts: newTimeouts });
+      }
     });
 
     // Listen for ended calls
