@@ -79,29 +79,101 @@ payriffWebhook.post('/callback', async (c) => {
     if (status.toLowerCase() === 'approved') {
       logger.info(`[PayriffWebhook] ✅ Payment approved: Order ${orderId}, Transaction ${transactionId}`);
 
-      // TODO: Update database with payment success
-      // await updateOrderStatus(orderId, 'paid');
-      // await notifyUser(orderId, 'payment_success');
+      // ✅ FIXED: Update order status and wallet balance
+      try {
+        const { prisma } = await import('../db/client');
+        
+        // Update transaction record if it exists
+        await prisma.transaction.updateMany({
+          where: { orderId },
+          data: { 
+            status: 'COMPLETED',
+            transactionId,
+            completedAt: new Date(),
+          },
+        });
+
+        // Update user wallet balance if this is a topup
+        if (body.type === 'topup' && body.userId && amount) {
+          await prisma.user.update({
+            where: { id: body.userId },
+            data: {
+              balance: { increment: amount },
+            },
+          });
+          logger.info(`[PayriffWebhook] User ${body.userId} balance increased by ${amount}`);
+        }
+      } catch (dbError) {
+        logger.error('[PayriffWebhook] Database update failed:', dbError);
+      }
 
     } else if (status.toLowerCase() === 'declined') {
       logger.info(`[PayriffWebhook] ❌ Payment declined: Order ${orderId}, Transaction ${transactionId}`);
 
-      // TODO: Update database with payment failure
-      // await updateOrderStatus(orderId, 'failed');
-      // await notifyUser(orderId, 'payment_failed');
+      // ✅ FIXED: Update order status to failed
+      try {
+        const { prisma } = await import('../db/client');
+        await prisma.transaction.updateMany({
+          where: { orderId },
+          data: { 
+            status: 'FAILED',
+            transactionId,
+          },
+        });
+      } catch (dbError) {
+        logger.error('[PayriffWebhook] Database update failed:', dbError);
+      }
 
     } else if (status.toLowerCase() === 'cancelled') {
       logger.info(`[PayriffWebhook] 🚫 Payment cancelled: Order ${orderId}, Transaction ${transactionId}`);
 
-      // TODO: Update database with payment cancellation
-      // await updateOrderStatus(orderId, 'cancelled');
+      // ✅ FIXED: Update order status to cancelled
+      try {
+        const { prisma } = await import('../db/client');
+        await prisma.transaction.updateMany({
+          where: { orderId },
+          data: { 
+            status: 'CANCELLED',
+            transactionId,
+          },
+        });
+      } catch (dbError) {
+        logger.error('[PayriffWebhook] Database update failed:', dbError);
+      }
 
     } else if (status.toLowerCase() === 'refunded') {
       logger.info(`[PayriffWebhook] 💰 Payment refunded: Order ${orderId}, Transaction ${transactionId}`);
 
-      // TODO: Update database with refund
-      // await updateOrderStatus(orderId, 'refunded');
-      // await processRefund(orderId);
+      // ✅ FIXED: Handle refund
+      try {
+        const { prisma } = await import('../db/client');
+        
+        const transaction = await prisma.transaction.findFirst({
+          where: { orderId },
+        });
+
+        if (transaction && transaction.userId && amount) {
+          // Refund to user wallet
+          await prisma.user.update({
+            where: { id: transaction.userId },
+            data: {
+              balance: { increment: amount },
+            },
+          });
+
+          // Update transaction status
+          await prisma.transaction.update({
+            where: { id: transaction.id },
+            data: { 
+              status: 'REFUNDED',
+            },
+          });
+
+          logger.info(`[PayriffWebhook] Refund of ${amount} processed for user ${transaction.userId}`);
+        }
+      } catch (dbError) {
+        logger.error('[PayriffWebhook] Database update failed:', dbError);
+      }
     }
 
     // ===== WEBHOOK PROCESSING END =====

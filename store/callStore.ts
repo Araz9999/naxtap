@@ -52,44 +52,9 @@ interface CallStore {
   cleanupRealtimeListeners: () => void;
 }
 
-// Mock initial calls
-const initialCalls: Call[] = [
-  {
-    id: '1',
-    callerId: 'user2',
-    receiverId: 'user1',
-    listingId: '2',
-    type: 'voice',
-    status: 'ended',
-    startTime: '2023-06-20T15:30:00.000Z',
-    endTime: '2023-06-20T15:35:00.000Z',
-    duration: 300,
-    isRead: true,
-  },
-  {
-    id: '2',
-    callerId: 'user1',
-    receiverId: 'user3',
-    listingId: '3',
-    type: 'voice',
-    status: 'missed',
-    startTime: '2023-06-19T11:15:00.000Z',
-    duration: 0,
-    isRead: false,
-  },
-  {
-    id: '3',
-    callerId: 'user4',
-    receiverId: 'user1',
-    listingId: '1',
-    type: 'voice',
-    status: 'ended',
-    startTime: '2023-06-18T19:20:00.000Z',
-    endTime: '2023-06-18T19:22:00.000Z',
-    duration: 120,
-    isRead: true,
-  },
-];
+// ✅ FIXED: Load call history from backend instead of mock data
+// Initial calls will be loaded dynamically from API
+const initialCalls: Call[] = [];
 
 async function getInCallManager(): Promise<any | null> {
   if (Platform.OS === 'web') return null;
@@ -651,86 +616,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   simulateIncomingCall: async () => {
-    const callers = ['user2', 'user3', 'user4'];
-    const listings = ['1', '2', '3'];
-    const callTypes: CallType[] = ['voice', 'video'];
-    const randomCaller = callers[Math.floor(Math.random() * callers.length)];
-    const randomListing = listings[Math.floor(Math.random() * listings.length)];
-    const randomCallType = callTypes[Math.floor(Math.random() * callTypes.length)];
-
-    // ✅ Generate unique ID with random component
-    const callId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const incomingCall: Call = {
-      id: callId,
-      callerId: randomCaller,
-      receiverId: 'user1',
-      listingId: randomListing,
-      type: randomCallType,
-      status: 'incoming',
-      startTime: new Date().toISOString(),
-      isRead: false,
-    };
-
-    // Add to call history
-    set((state) => ({
-      calls: [incomingCall, ...state.calls],
-      incomingCall,
-    }));
-
-    // Play ringtone for incoming call
-    if (Platform.OS !== 'web') {
-      get().playRingtone();
-    }
-
-    // Send notification if supported
-    if (Platform.OS !== 'web') {
-      (async () => {
-        try {
-          const { notificationService } = await import('@/services/notificationService');
-          const caller = users.find(u => u.id === randomCaller);
-
-          await notificationService.sendLocalNotification({
-            title: incomingCall.type === 'video' ? 'Gələn video zəng' : 'Gələn zəng',
-            body: `${caller?.name || 'Naməlum istifadəçi'} sizə ${incomingCall.type === 'video' ? 'video ' : ''}zəng edir`,
-            sound: true,
-            data: {
-              callId,
-              type: 'incoming_call',
-              callerId: randomCaller,
-            },
-          });
-        } catch (error) {
-          logger.warn('Notifications not available:', error);
-        }
-      })();
-    }
-
-    // ✅ Auto-decline after 30 seconds if not answered
-    const timeout = setTimeout(() => {
-      const currentState = get();
-      if (currentState.incomingCall?.id === callId) {
-        get().declineCall(callId);
-
-        // Mark as missed
-        set((state) => ({
-          calls: state.calls.map(call =>
-            call.id === callId
-              ? { ...call, status: 'missed' as CallStatus }
-              : call,
-          ),
-        }));
-      }
-
-      // ✅ Remove from timeout map
-      const newTimeouts = new Map(get().incomingCallTimeouts);
-      newTimeouts.delete(callId);
-      set({ incomingCallTimeouts: newTimeouts });
-    }, 30000);
-
-    // ✅ Store timeout for potential cleanup
-    set((state) => ({
-      incomingCallTimeouts: new Map(state.incomingCallTimeouts).set(callId, timeout as unknown as NodeJS.Timeout),
-    }));
+    // ✅ REMOVED SIMULATION: This function should not be used in production
+    // Use real incoming calls via WebSocket or polling instead
+    logger.warn('[CallStore] simulateIncomingCall called - this should not be used in production');
+    logger.warn('[CallStore] Use initializeRealtimeListeners() or pollIncomingCalls() instead');
   },
 
   pollIncomingCalls: async (currentUserId: string) => {

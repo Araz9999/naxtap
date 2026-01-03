@@ -29,94 +29,9 @@ interface MessageStore {
   cleanupRealtimeListeners: () => void;
 }
 
-// Mock initial conversations with messages
-const initialConversations: Conversation[] = [
-  {
-    id: '1',
-    participants: ['user1', 'user2'],
-    listingId: '2',
-    lastMessage: 'Əlavə şəkillər göndərə bilərsinizmi?',
-    lastMessageDate: '2023-06-20T14:35:00.000Z',
-    unreadCount: 1,
-    messages: [
-      {
-        id: '1',
-        senderId: 'user2',
-        receiverId: 'user1',
-        listingId: '2',
-        text: 'Salam, bu mənzil hələ satılırmı?',
-        type: 'text',
-        createdAt: '2023-06-20T14:30:00.000Z',
-        isRead: true,
-        isDelivered: true,
-      },
-      {
-        id: '2',
-        senderId: 'user1',
-        receiverId: 'user2',
-        listingId: '2',
-        text: 'Salam! Bəli, hələ satılır.',
-        type: 'text',
-        createdAt: '2023-06-20T14:32:00.000Z',
-        isRead: true,
-        isDelivered: true,
-      },
-      {
-        id: '3',
-        senderId: 'user2',
-        receiverId: 'user1',
-        listingId: '2',
-        text: 'Əlavə şəkillər göndərə bilərsinizmi?',
-        type: 'text',
-        createdAt: '2023-06-20T14:35:00.000Z',
-        isRead: false,
-        isDelivered: true,
-      },
-    ],
-  },
-  {
-    id: '2',
-    participants: ['user1', 'user3'],
-    listingId: '3',
-    lastMessage: 'Qiymətdə endirim mümkündürmü?',
-    lastMessageDate: '2023-06-19T10:15:00.000Z',
-    unreadCount: 0,
-    messages: [
-      {
-        id: '4',
-        senderId: 'user3',
-        receiverId: 'user1',
-        listingId: '3',
-        text: 'Qiymətdə endirim mümkündürmü?',
-        type: 'text',
-        createdAt: '2023-06-19T10:15:00.000Z',
-        isRead: true,
-        isDelivered: true,
-      },
-    ],
-  },
-  {
-    id: '3',
-    participants: ['user1', 'user4'],
-    listingId: '1',
-    lastMessage: 'Telefon hələ satılırmı?',
-    lastMessageDate: '2023-06-18T18:45:00.000Z',
-    unreadCount: 0,
-    messages: [
-      {
-        id: '5',
-        senderId: 'user4',
-        receiverId: 'user1',
-        listingId: '1',
-        text: 'Telefon hələ satılırmı?',
-        type: 'text',
-        createdAt: '2023-06-18T18:45:00.000Z',
-        isRead: true,
-        isDelivered: true,
-      },
-    ],
-  },
-];
+// ✅ FIXED: Load conversations from backend instead of mock data
+// Initial conversations will be loaded dynamically from API
+const initialConversations: Conversation[] = [];
 
 export const useMessageStore = create<MessageStore>((set, get) => ({
   conversations: initialConversations,
@@ -281,38 +196,10 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
   },
 
   simulateIncomingMessage: () => {
-    const incomingMessages = [
-      'Salam, bu elan hələ aktualdırmı?',
-      'Qiymət barədə danışa bilərikmi?',
-      'Şəkillər çox gözəldir, görüşə bilərəmmi?',
-      'Bu məhsul hələ satılırmı?',
-      'Endirim mümkündürmü?',
-      'Çatdırılma xidmətiniz varmı?',
-      'Əlavə məlumat verə bilərsinizmi?',
-      'Bu qiymət son qiymətdirmi?',
-    ];
-
-    const state = get();
-    const randomConversation = state.conversations[Math.floor(Math.random() * state.conversations.length)];
-    const randomMessage = incomingMessages[Math.floor(Math.random() * incomingMessages.length)];
-    const currentUserId = useUserStore.getState().currentUser?.id || 'user1';
-    const otherUserId = randomConversation.participants.find(id => id !== currentUserId);
-
-    if (randomConversation && otherUserId) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        senderId: otherUserId,
-        receiverId: currentUserId,
-        listingId: randomConversation.listingId,
-        text: randomMessage,
-        type: 'text',
-        createdAt: new Date().toISOString(),
-        isRead: false,
-        isDelivered: true,
-      };
-
-      get().addMessage(randomConversation.id, newMessage);
-    }
+    // ✅ REMOVED SIMULATION: This function should not be used in production
+    // Use real incoming messages via WebSocket or tRPC instead
+    logger.warn('[MessageStore] simulateIncomingMessage called - this should not be used in production');
+    logger.warn('[MessageStore] Use initializeRealtimeListeners() instead');
   },
 
   getFilteredConversations: () => {
