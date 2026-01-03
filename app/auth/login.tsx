@@ -203,7 +203,15 @@ export default function LoginScreen() {
 
   const handleRegister = () => {
     logger.info('[Login] Navigating to /auth/register');
-    router.push('/auth/register');
+    console.log('[Login] Register button clicked - navigating to /auth/register');
+    
+    try {
+      router.push('/auth/register');
+    } catch (error) {
+      console.error('[Login] Navigation error:', error);
+      // Fallback navigation
+      router.replace('/auth/register');
+    }
   };
 
   const handleForgotPassword = () => {
@@ -480,16 +488,21 @@ export default function LoginScreen() {
 
           <View style={styles.registerSection}>
             <Text style={styles.footerText}>
-              {t('noAccount')}
+              {t('noAccount') || 'Hesabınız yoxdur?'}
             </Text>
-            {/* Use Link for reliable client-side navigation on web */}
-            <Link href="/auth/register" asChild>
-              <TouchableOpacity onPress={handleRegister} disabled={isLoading}>
-                <Text style={styles.registerText}>
-                  {t('registerNow')}
-                </Text>
-              </TouchableOpacity>
-            </Link>
+            <TouchableOpacity 
+              onPress={() => {
+                console.log('[Login] Register link clicked!');
+                handleRegister();
+              }} 
+              disabled={isLoading}
+              style={styles.registerButtonWrapper}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.registerText}>
+                {t('registerNow') || 'Qeydiyyatdan keçin'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -505,6 +518,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 20,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'flex-end',
@@ -590,8 +604,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   footer: {
-    marginTop: 'auto',
+    marginTop: 30,
     paddingVertical: 20,
+    paddingHorizontal: 10,
   },
   termsNotice: {
     marginBottom: 16,
@@ -611,16 +626,30 @@ const styles = StyleSheet.create({
   registerSection: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  registerButtonWrapper: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    minHeight: 30,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.textSecondary,
-    marginRight: 4,
+    marginRight: 6,
   },
   registerText: {
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.primary,
-    fontWeight: '500',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   divider: {
     flexDirection: 'row',
