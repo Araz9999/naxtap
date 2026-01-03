@@ -46,7 +46,7 @@ interface CallStore {
   // Notifications
   simulateIncomingCall: () => void;
   pollIncomingCalls: (currentUserId: string) => Promise<void>;
-  
+
   // WebSocket integration
   initializeRealtimeListeners: () => void;
   cleanupRealtimeListeners: () => void;
@@ -718,7 +718,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
         calls: state.calls.map(call =>
           call.id === data.callId
             ? { ...call, status: 'active' as CallStatus }
-            : call
+            : call,
         ),
       }));
 
@@ -733,7 +733,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
         calls: state.calls.map(call =>
           call.id === data.callId
             ? { ...call, status: 'declined' as CallStatus, endTime: new Date().toISOString() }
-            : call
+            : call,
         ),
       }));
 

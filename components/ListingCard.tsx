@@ -175,7 +175,7 @@ const ListingCard = React.memo(function ListingCard({
   useEffect(() => {
     const loadSeller = async () => {
       if (!listing.userId) return;
-      
+
       // Check cache first
       if (userCache.has(listing.userId)) {
         setSeller(userCache.get(listing.userId));

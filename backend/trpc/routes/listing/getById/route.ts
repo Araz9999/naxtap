@@ -11,7 +11,7 @@ export const getListingByIdProcedure = publicProcedure
   )
   .query(async ({ input }) => {
     const listing = await listingDB.findById(input.id);
-    
+
     if (!listing) {
       throw new TRPCError({
         code: 'NOT_FOUND',

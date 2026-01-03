@@ -64,7 +64,7 @@ global.fetch = jest.fn(() =>
     ok: true,
     json: () => Promise.resolve({}),
     text: () => Promise.resolve(''),
-  })
+  }),
 );
 
 // Set up global crypto for Node.js environment

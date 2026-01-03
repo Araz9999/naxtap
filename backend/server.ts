@@ -12,7 +12,7 @@ const httpServer = createServer((req, res) => {
   // Convert Node.js request to fetch Request
   const url = `http://${req.headers.host}${req.url}`;
   const headers = new Headers();
-  
+
   for (const [key, value] of Object.entries(req.headers)) {
     if (value) {
       if (Array.isArray(value)) {
@@ -31,7 +31,7 @@ const httpServer = createServer((req, res) => {
 
   app.fetch(fetchRequest).then(async (fetchResponse) => {
     res.statusCode = fetchResponse.status;
-    
+
     fetchResponse.headers.forEach((value, key) => {
       res.setHeader(key, value);
     });
@@ -58,7 +58,7 @@ httpServer.listen(port, '0.0.0.0', () => {
   logger.info(`✅ Server running at http://0.0.0.0:${port}`);
   logger.info(`✅ tRPC API: http://0.0.0.0:${port}/api/trpc`);
   logger.info(`✅ REST API: http://0.0.0.0:${port}/api`);
-  
+
   if (process.env.ENABLE_WEBSOCKET !== 'false') {
     logger.info(`✅ Socket.io: ws://0.0.0.0:${port}`);
   }

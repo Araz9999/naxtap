@@ -35,14 +35,14 @@ export interface DBListing {
   discountPercentage?: number;
   hasDiscount?: boolean;
   discountEndDate?: string;
-  creativeEffects?: Array<{
+  creativeEffects?: {
     id: string;
     name: { az: string; ru: string };
     type: string;
     color: string;
     endDate: string;
     isActive: boolean;
-  }>;
+  }[];
 }
 
 class ListingDatabase {

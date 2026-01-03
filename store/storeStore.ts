@@ -131,15 +131,15 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const stores = await trpcClient.store.getAll.query();
-      set({ 
-        stores: stores as Store[], 
-        isLoading: false 
+      set({
+        stores: stores as Store[],
+        isLoading: false,
       });
     } catch (error) {
       logger.error('[StoreStore] Failed to fetch stores:', error);
-      set({ 
+      set({
         error: 'Failed to load stores',
-        isLoading: false 
+        isLoading: false,
       });
     }
   },
@@ -148,15 +148,15 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const store = await trpcClient.store.getByUserId.query({ userId });
-      set({ 
-        userStore: store as Store | null, 
-        isLoading: false 
+      set({
+        userStore: store as Store | null,
+        isLoading: false,
       });
     } catch (error) {
       logger.error('[StoreStore] Failed to fetch user store:', error);
-      set({ 
+      set({
         error: 'Failed to load user store',
-        isLoading: false 
+        isLoading: false,
       });
     }
   },
@@ -197,7 +197,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
         stores: [...state.stores, newStore as Store],
         isLoading: false,
       }));
-      
+
       logger.info('[StoreStore] Store created successfully:', newStore);
     } catch (error) {
       logger.error('[StoreStore] Failed to create store:', error);

@@ -639,7 +639,7 @@ export default function CreateListingScreen() {
   // Category navigation functions
   const handleCategoryPress = (category: Category | Subcategory) => {
     logger.info('[CategoryPress] Level:', currentCategoryLevel, 'Category:', category.name, 'Has subcategories:', !!category.subcategories, 'Count:', category.subcategories?.length || 0);
-    
+
     if (currentCategoryLevel === 'main') {
       // Əsas kateqoriya seçimi
       setSelectedCategory(category.id);

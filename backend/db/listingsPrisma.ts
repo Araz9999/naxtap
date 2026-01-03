@@ -37,14 +37,14 @@ export interface DBListing {
   discountPercentage?: number | null;
   hasDiscount?: boolean;
   discountEndDate?: string | null;
-  creativeEffects?: Array<{
+  creativeEffects?: {
     id: string;
     name: { az: string; ru: string };
     type: string;
     color: string;
     endDate: string;
     isActive: boolean;
-  }>;
+  }[];
 }
 
 class ListingDatabase {
@@ -77,7 +77,7 @@ class ListingDatabase {
       });
 
       logger.info(`[ListingDB] Created listing: ${listing.id}`);
-      
+
       return {
         ...listing,
         title: listing.title as { az: string; ru: string },
@@ -183,7 +183,7 @@ class ListingDatabase {
       });
 
       logger.info(`[ListingDB] Updated listing: ${id}`);
-      
+
       return {
         ...listing,
         title: listing.title as { az: string; ru: string },
