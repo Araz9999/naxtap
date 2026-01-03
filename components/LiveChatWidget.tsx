@@ -120,14 +120,14 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       (e) => {
         const keyboardHeight = e.endCoordinates.height;
         setKeyboardHeight(keyboardHeight);
-        
+
         // Animate keyboard space
         Animated.timing(keyboardAnimRef, {
           toValue: keyboardHeight,
           duration: Platform.OS === 'ios' ? e.duration || 250 : 250,
           useNativeDriver: false,
         }).start();
-        
+
         // Scroll to bottom after a short delay
         setTimeout(() => {
           scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -139,7 +139,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       (e) => {
         setKeyboardHeight(0);
-        
+
         // Animate keyboard space back
         Animated.timing(keyboardAnimRef, {
           toValue: 0,
@@ -201,7 +201,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       clearTimeout(typingTimeout);
     }
     setTyping(currentChatId, 'user', false);
-    
+
     // Don't auto scroll after sending - let user control scroll
   };
 
@@ -489,220 +489,220 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                   isMinimized && styles.minimizedContainer,
                 ]}
               >
-          {/* Header */}
-          <View style={[styles.header, { backgroundColor: colors.primary }]}>
-            <View style={styles.headerLeft}>
-              <View style={styles.headerIcon}>
-                <Headphones size={20} color="#fff" />
-              </View>
-              <View style={styles.headerInfo}>
-                <Text style={styles.headerTitle}>
-                  {language === 'az' ? 'Canlı Dəstək' : 'Живая поддержка'}
-                </Text>
-                {currentChat && (
-                  <View style={styles.statusContainer}>
-                    <View style={[
-                      styles.statusDot,
-                      { backgroundColor: getStatusColor(currentChat.status) },
-                    ]} />
-                    <Text style={styles.statusText}>
-                      {language === 'az'
-                        ? currentChat.status === 'waiting' ? 'Gözləyir'
-                          : currentChat.status === 'active' ? 'Aktiv'
-                            : 'Bağlı'
-                        : currentChat.status === 'waiting' ? 'Ожидание'
-                          : currentChat.status === 'active' ? 'Активен'
-                            : 'Закрыт'
-                      }
-                    </Text>
-                    {operator && (
-                      <Text style={styles.operatorText}>
-                        • {operator.name}
+                {/* Header */}
+                <View style={[styles.header, { backgroundColor: colors.primary }]}>
+                  <View style={styles.headerLeft}>
+                    <View style={styles.headerIcon}>
+                      <Headphones size={20} color="#fff" />
+                    </View>
+                    <View style={styles.headerInfo}>
+                      <Text style={styles.headerTitle}>
+                        {language === 'az' ? 'Canlı Dəstək' : 'Живая поддержка'}
                       </Text>
-                    )}
-                  </View>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.headerActions}>
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={() => setIsMinimized(!isMinimized)}
-              >
-                <Minimize2 size={18} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={handleCloseChat}
-              >
-                <X size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {!isMinimized && (
-            <>
-              {showStartForm ? (
-                <StartChatForm />
-              ) : currentChat ? (
-                <View style={styles.chatContentWrapper}>
-                  <ScrollView
-                    ref={scrollViewRef}
-                    style={styles.messagesContainer}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="on-drag"
-                    contentContainerStyle={{ paddingBottom: 10, flexGrow: 1 }}
-                    onContentSizeChange={() => {
-                      if (shouldScrollToEnd && !isScrolling) {
-                        requestAnimationFrame(() => {
-                          scrollViewRef.current?.scrollToEnd({ animated: false });
-                        });
-                      }
-                    }}
-                    onScrollBeginDrag={() => {
-                      setIsScrolling(true);
-                      setShouldScrollToEnd(false);
-                    }}
-                    onScrollEndDrag={() => {
-                      setIsScrolling(false);
-                    }}
-                    onMomentumScrollEnd={(event) => {
-                      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-                      const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 50;
-                      setShouldScrollToEnd(isAtBottom);
-                      setIsScrolling(false);
-                    }}
-                  >
-                    {currentChat.messages.map((msg) => (
-                      <MessageBubble key={msg.id} msg={msg} />
-                    ))}
-
-                    {currentChat.operatorTyping && (
-                      <View style={styles.typingIndicator}>
-                        <View style={[styles.typingBubble, { backgroundColor: colors.card }]}>
-                          <View style={styles.typingDots}>
-                            <View style={[styles.typingDot, { backgroundColor: colors.textSecondary }]} />
-                            <View style={[styles.typingDot, { backgroundColor: colors.textSecondary }]} />
-                            <View style={[styles.typingDot, { backgroundColor: colors.textSecondary }]} />
-                          </View>
-                        </View>
-                      </View>
-                    )}
-                  </ScrollView>
-
-                  {currentChat.status !== 'closed' ? (
-                    <View style={[styles.inputSection, { backgroundColor: colors.background }]}>
-                      {showAttachments && (
-                        <View style={[styles.attachmentsSection, { backgroundColor: colors.card }]}>
-                          <FileAttachmentPicker
-                            attachments={attachments}
-                            onAttachmentsChange={(newAttachments) => {
-                              logger.debug('Attachments changed:', newAttachments);
-                              setAttachments(newAttachments);
-                            }}
-                            maxFiles={3}
-                          />
+                      {currentChat && (
+                        <View style={styles.statusContainer}>
+                          <View style={[
+                            styles.statusDot,
+                            { backgroundColor: getStatusColor(currentChat.status) },
+                          ]} />
+                          <Text style={styles.statusText}>
+                            {language === 'az'
+                              ? currentChat.status === 'waiting' ? 'Gözləyir'
+                                : currentChat.status === 'active' ? 'Aktiv'
+                                  : 'Bağlı'
+                              : currentChat.status === 'waiting' ? 'Ожидание'
+                                : currentChat.status === 'active' ? 'Активен'
+                                  : 'Закрыт'
+                            }
+                          </Text>
+                          {operator && (
+                            <Text style={styles.operatorText}>
+                        • {operator.name}
+                            </Text>
+                          )}
                         </View>
                       )}
+                    </View>
+                  </View>
 
-                      <View style={[
-                        styles.inputContainer,
-                        { backgroundColor: colors.background },
-                      ]}>
-                        <TouchableOpacity
-                          style={[
-                            styles.attachButton,
-                            {
-                              backgroundColor: showAttachments ? colors.primary : colors.card,
-                              borderColor: colors.border,
-                            },
-                          ]}
-                          onPress={() => setShowAttachments(!showAttachments)}
-                        >
-                          <Paperclip size={18} color={showAttachments ? '#fff' : colors.textSecondary} />
-                        </TouchableOpacity>
+                  <View style={styles.headerActions}>
+                    <TouchableOpacity
+                      style={styles.headerButton}
+                      onPress={() => setIsMinimized(!isMinimized)}
+                    >
+                      <Minimize2 size={18} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.headerButton}
+                      onPress={handleCloseChat}
+                    >
+                      <X size={18} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
-                        <TextInput
-                          testID="livechat-widget-input"
-                          style={[
-                            styles.messageInput,
-                            {
-                              backgroundColor: colors.background,
-                              color: colors.text,
-                              borderColor: colors.border,
-                              height: 44, // Fixed height
-                            },
-                          ]}
-                          placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите сообщение...'}
-                          placeholderTextColor={colors.textSecondary}
-                          value={message}
-                          onChangeText={handleTyping}
-                          multiline={false}
-                          numberOfLines={1}
-                          textAlignVertical="center"
-                          returnKeyType="send"
-                          onSubmitEditing={handleSendMessage}
-                          blurOnSubmit={false}
-                          autoCorrect={false}
-                          autoCapitalize="sentences"
-                          enablesReturnKeyAutomatically={false}
-                          scrollEnabled={false}
-                          keyboardAppearance={Platform.OS === 'ios' ? (themeMode === 'dark' ? 'dark' : 'light') : 'default'}
-                          maxLength={1000}
-                        />
-
-                        <TouchableOpacity
-                          style={[
-                            styles.sendButton,
-                            {
-                              backgroundColor: (message.trim() || attachments.length > 0) ? colors.primary : colors.border,
-                            },
-                          ]}
-                          onPress={() => {
-                            logger.debug('Send button pressed. Message:', message, 'Attachments:', attachments.length);
-                            handleSendMessage();
+                {!isMinimized && (
+                  <>
+                    {showStartForm ? (
+                      <StartChatForm />
+                    ) : currentChat ? (
+                      <View style={styles.chatContentWrapper}>
+                        <ScrollView
+                          ref={scrollViewRef}
+                          style={styles.messagesContainer}
+                          showsVerticalScrollIndicator={false}
+                          keyboardShouldPersistTaps="handled"
+                          keyboardDismissMode="on-drag"
+                          contentContainerStyle={{ paddingBottom: 10, flexGrow: 1 }}
+                          onContentSizeChange={() => {
+                            if (shouldScrollToEnd && !isScrolling) {
+                              requestAnimationFrame(() => {
+                                scrollViewRef.current?.scrollToEnd({ animated: false });
+                              });
+                            }
                           }}
-                          disabled={!message.trim() && attachments.length === 0}
+                          onScrollBeginDrag={() => {
+                            setIsScrolling(true);
+                            setShouldScrollToEnd(false);
+                          }}
+                          onScrollEndDrag={() => {
+                            setIsScrolling(false);
+                          }}
+                          onMomentumScrollEnd={(event) => {
+                            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                            const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 50;
+                            setShouldScrollToEnd(isAtBottom);
+                            setIsScrolling(false);
+                          }}
                         >
-                          <Send size={18} color={(message.trim() || attachments.length > 0) ? '#fff' : colors.textSecondary} />
-                        </TouchableOpacity>
+                          {currentChat.messages.map((msg) => (
+                            <MessageBubble key={msg.id} msg={msg} />
+                          ))}
+
+                          {currentChat.operatorTyping && (
+                            <View style={styles.typingIndicator}>
+                              <View style={[styles.typingBubble, { backgroundColor: colors.card }]}>
+                                <View style={styles.typingDots}>
+                                  <View style={[styles.typingDot, { backgroundColor: colors.textSecondary }]} />
+                                  <View style={[styles.typingDot, { backgroundColor: colors.textSecondary }]} />
+                                  <View style={[styles.typingDot, { backgroundColor: colors.textSecondary }]} />
+                                </View>
+                              </View>
+                            </View>
+                          )}
+                        </ScrollView>
+
+                        {currentChat.status !== 'closed' ? (
+                          <View style={[styles.inputSection, { backgroundColor: colors.background }]}>
+                            {showAttachments && (
+                              <View style={[styles.attachmentsSection, { backgroundColor: colors.card }]}>
+                                <FileAttachmentPicker
+                                  attachments={attachments}
+                                  onAttachmentsChange={(newAttachments) => {
+                                    logger.debug('Attachments changed:', newAttachments);
+                                    setAttachments(newAttachments);
+                                  }}
+                                  maxFiles={3}
+                                />
+                              </View>
+                            )}
+
+                            <View style={[
+                              styles.inputContainer,
+                              { backgroundColor: colors.background },
+                            ]}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.attachButton,
+                                  {
+                                    backgroundColor: showAttachments ? colors.primary : colors.card,
+                                    borderColor: colors.border,
+                                  },
+                                ]}
+                                onPress={() => setShowAttachments(!showAttachments)}
+                              >
+                                <Paperclip size={18} color={showAttachments ? '#fff' : colors.textSecondary} />
+                              </TouchableOpacity>
+
+                              <TextInput
+                                testID="livechat-widget-input"
+                                style={[
+                                  styles.messageInput,
+                                  {
+                                    backgroundColor: colors.background,
+                                    color: colors.text,
+                                    borderColor: colors.border,
+                                    height: 44, // Fixed height
+                                  },
+                                ]}
+                                placeholder={language === 'az' ? 'Mesajınızı yazın...' : 'Напишите сообщение...'}
+                                placeholderTextColor={colors.textSecondary}
+                                value={message}
+                                onChangeText={handleTyping}
+                                multiline={false}
+                                numberOfLines={1}
+                                textAlignVertical="center"
+                                returnKeyType="send"
+                                onSubmitEditing={handleSendMessage}
+                                blurOnSubmit={false}
+                                autoCorrect={false}
+                                autoCapitalize="sentences"
+                                enablesReturnKeyAutomatically={false}
+                                scrollEnabled={false}
+                                keyboardAppearance={Platform.OS === 'ios' ? (themeMode === 'dark' ? 'dark' : 'light') : 'default'}
+                                maxLength={1000}
+                              />
+
+                              <TouchableOpacity
+                                style={[
+                                  styles.sendButton,
+                                  {
+                                    backgroundColor: (message.trim() || attachments.length > 0) ? colors.primary : colors.border,
+                                  },
+                                ]}
+                                onPress={() => {
+                                  logger.debug('Send button pressed. Message:', message, 'Attachments:', attachments.length);
+                                  handleSendMessage();
+                                }}
+                                disabled={!message.trim() && attachments.length === 0}
+                              >
+                                <Send size={18} color={(message.trim() || attachments.length > 0) ? '#fff' : colors.textSecondary} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        ) : (
+                          <View style={[styles.closedChatContainer, { backgroundColor: colors.card }]}>
+                            <Text style={[styles.closedChatText, { color: colors.textSecondary }]}>
+                              {language === 'az'
+                                ? 'Bu söhbət bağlanıb. Yenidən yazmaq üçün yeni söhbət başladın.'
+                                : 'Этот чат закрыт. Начните новый чат, чтобы написать снова.'
+                              }
+                            </Text>
+                            <TouchableOpacity
+                              style={[styles.reopenButton, { backgroundColor: colors.primary }]}
+                              onPress={handleReopenChat}
+                            >
+                              <RefreshCw size={16} color="#fff" />
+                              <Text style={styles.reopenButtonText}>
+                                {language === 'az' ? 'Yeni Söhbət' : 'Новый чат'}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
-                    </View>
-                  ) : (
-                    <View style={[styles.closedChatContainer, { backgroundColor: colors.card }]}>
-                      <Text style={[styles.closedChatText, { color: colors.textSecondary }]}>
-                        {language === 'az'
-                          ? 'Bu söhbət bağlanıb. Yenidən yazmaq üçün yeni söhbət başladın.'
-                          : 'Этот чат закрыт. Начните новый чат, чтобы написать снова.'
-                        }
-                      </Text>
-                      <TouchableOpacity
-                        style={[styles.reopenButton, { backgroundColor: colors.primary }]}
-                        onPress={handleReopenChat}
-                      >
-                        <RefreshCw size={16} color="#fff" />
-                        <Text style={styles.reopenButtonText}>
-                          {language === 'az' ? 'Yeni Söhbət' : 'Новый чат'}
+                    ) : (
+                      <View style={styles.errorContainer}>
+                        <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+                          {language === 'az' ? 'Söhbət tapılmadı' : 'Чат не найден'}
                         </Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              ) : (
-                <View style={styles.errorContainer}>
-                  <Text style={[styles.errorText, { color: colors.textSecondary }]}>
-                    {language === 'az' ? 'Söhbət tapılmadı' : 'Чат не найден'}
-                  </Text>
-                </View>
-              )}
-              </>
-            )}
-          </Animated.View>
-        </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+                      </View>
+                    )}
+                  </>
+                )}
+              </Animated.View>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </Modal>
   );

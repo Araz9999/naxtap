@@ -232,7 +232,7 @@ export default function CallHistoryScreen() {
     }
 
     const otherUserId = callToDelete?.callerId === currentUser?.id ? callToDelete?.receiverId : callToDelete?.callerId;
-    const otherUser = users.find(u => u.id === otherUserId);
+    const otherUser = otherUserId ? users.get(otherUserId) : undefined;
 
     logger.info('[CallHistory] Showing delete confirmation:', {
       callId,

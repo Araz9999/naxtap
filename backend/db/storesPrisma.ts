@@ -60,7 +60,7 @@ class StoreDatabase {
       });
 
       logger.info(`[StoreDB] Created store: ${store.id}`);
-      
+
       return {
         ...store,
         contactInfo: store.contactInfo as any,
@@ -187,7 +187,7 @@ class StoreDatabase {
       });
 
       logger.info(`[StoreDB] Updated store: ${id}`);
-      
+
       return {
         ...store,
         contactInfo: store.contactInfo as any,
@@ -230,7 +230,7 @@ class StoreDatabase {
       const followers = store.followers;
       if (!followers.includes(userId)) {
         followers.push(userId);
-        
+
         await prisma.store.update({
           where: { id: storeId },
           data: { followers },
@@ -238,7 +238,7 @@ class StoreDatabase {
 
         logger.info(`[StoreDB] User ${userId} followed store ${storeId}`);
       }
-      
+
       return true;
     } catch (error) {
       logger.error('[StoreDB] Failed to follow store:', error);
@@ -255,7 +255,7 @@ class StoreDatabase {
       if (!store) return false;
 
       const followers = store.followers.filter(id => id !== userId);
-      
+
       await prisma.store.update({
         where: { id: storeId },
         data: { followers },

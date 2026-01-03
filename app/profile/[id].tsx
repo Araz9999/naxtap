@@ -46,7 +46,7 @@ export default function UserProfileScreen() {
         setLoading(false);
       }
     };
-    
+
     if (id) {
       loadUser();
     }

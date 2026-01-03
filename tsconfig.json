@@ -1,12 +1,12 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "jsx": "react",
+    "baseUrl": ".",
+    "jsx": "react-jsx",
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      ".prisma/*": ["node_modules/.prisma/*"]
     },
   "moduleResolution": "bundler",
     "module": "esnext",
@@ -29,6 +29,9 @@
   "exclude": [
     "node_modules",
     "**/*.spec.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "**/*.spec.tsx",
+    "**/*.test.tsx",
+    "**/__tests__/**"
   ]
 }

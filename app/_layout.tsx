@@ -91,21 +91,21 @@ function RootLayoutNav() {
     const initializeAppData = async () => {
       try {
         logger.info('[App] Initializing application data...');
-        
+
         // Load all listings
         await fetchListings();
         logger.info('[App] Listings loaded successfully');
-        
+
         // Load all stores
         await fetchStores();
         logger.info('[App] Stores loaded successfully');
-        
+
         // Load user's store if authenticated
         if (currentUser) {
           await fetchUserStore(currentUser.id);
           logger.info('[App] User store loaded successfully');
         }
-        
+
         logger.info('[App] Application data initialized successfully');
       } catch (error) {
         logger.error('[App] Failed to initialize application data:', error);
@@ -152,9 +152,9 @@ function RootLayoutNav() {
   // Initialize WebSocket/Realtime connection
   useEffect(() => {
     const backendUrl = config.BACKEND_URL || 'http://localhost:3000';
-    
+
     logger.info('[App] Initializing realtime service:', backendUrl);
-    
+
     realtimeService.initialize({
       url: backendUrl,
       autoConnect: true,
@@ -165,6 +165,17 @@ function RootLayoutNav() {
       logger.warn('[App] Realtime service initialization failed (will use polling):', error);
     });
 
+< cursor/call-feature-verification-and-fix-4af4
+
+    // Setup global realtime event listeners
+    if (currentUser?.id) {
+      // Join user's personal room
+      realtimeService.joinRoom(`user:${currentUser.id}`);
+
+      logger.info('[App] Joined user room:', currentUser.id);
+    }
+
+> main
     return () => {
       realtimeService.disconnect();
     };

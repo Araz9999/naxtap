@@ -11,7 +11,7 @@ export const getStoreByIdProcedure = publicProcedure
   )
   .query(async ({ input }) => {
     const store = await storeDB.findById(input.id);
-    
+
     if (!store) {
       throw new TRPCError({
         code: 'NOT_FOUND',

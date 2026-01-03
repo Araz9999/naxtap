@@ -152,7 +152,7 @@ export default function AdminUsersScreen() {
     };
   }, []);
 
-  const roleTitle = (r: string) => {
+  const roleTitle = (r?: string) => {
     if (language === 'az') {
       if (r === 'ADMIN') return 'Admin';
       if (r === 'MODERATOR') return 'Moderator';

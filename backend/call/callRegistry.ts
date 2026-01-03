@@ -1,4 +1,4 @@
-import type { CallType } from '../../types/call';
+import type { CallType } from '../types/call';
 
 export type PendingCall = {
   callId: string;

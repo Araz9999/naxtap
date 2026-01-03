@@ -11,7 +11,7 @@ export const getUserProcedure = publicProcedure
   )
   .query(async ({ input }) => {
     const user = await userDB.findById(input.id);
-    
+
     if (!user) {
       throw new TRPCError({
         code: 'NOT_FOUND',
@@ -27,7 +27,7 @@ export const getUserProcedure = publicProcedure
 export const getAllUsersProcedure = publicProcedure
   .query(async () => {
     const users = await userDB.getAllUsers();
-    
+
     // Don't expose sensitive information
     return users.map(user => {
       const { passwordHash, verificationToken, passwordResetToken, ...safeUser } = user;

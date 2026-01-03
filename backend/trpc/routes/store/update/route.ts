@@ -28,7 +28,7 @@ export const updateStoreProcedure = protectedProcedure
   )
   .mutation(async ({ input, ctx }) => {
     const { id, ...updates } = input;
-    
+
     const existing = await storeDB.findById(id);
     if (!existing) {
       throw new TRPCError({
