@@ -289,6 +289,18 @@ export default function CallScreen() {
   const { activeCall, endCall, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
+  const { listings } = useListingStore();
+
+  const otherUserId = useMemo(() => {
+    if (!activeCall || !currentUser?.id) return undefined;
+    return activeCall.callerId === currentUser.id ? activeCall.receiverId : activeCall.callerId;
+  }, [activeCall, currentUser?.id]);
+
+  const otherUserQuery = trpc.user.getUser.useQuery(
+    { id: otherUserId ?? '' },
+    { enabled: !!otherUserId },
+  );
+  const otherUser = otherUserQuery.data as { id: string; name?: string; avatar?: string } | undefined;
 
   const tokenMutation = trpc.call.getToken.useMutation();
   const [lkToken, setLkToken] = useState<string | undefined>(undefined);
@@ -301,13 +313,11 @@ export default function CallScreen() {
     }
   }, [activeCall, callId]);
 
-  // Navigate back if other user can't be resolved (avoid conditional hooks)
+  // Navigate back if call is invalid
   useEffect(() => {
-    if (!activeCall || !callId || !otherUser) return;
-    if (!otherUser) {
-      router.back();
-    }
-  }, [activeCall, callId, otherUser]);
+    if (!activeCall || !callId) return;
+    if (otherUserId && otherUserQuery.isError) router.back();
+  }, [activeCall, callId, otherUserId, otherUserQuery.isError]);
 
   // Fetch LiveKit token once per call (requires backend env LIVEKIT_*)
   useEffect(() => {

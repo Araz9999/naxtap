@@ -204,7 +204,7 @@ export default function LoginScreen() {
   const handleRegister = () => {
     logger.info('[Login] Navigating to /auth/register');
     console.log('[Login] Register button clicked - navigating to /auth/register');
-    
+
     try {
       router.push('/auth/register');
     } catch (error) {
@@ -490,11 +490,11 @@ export default function LoginScreen() {
             <Text style={styles.footerText}>
               {t('noAccount') || 'Hesabınız yoxdur?'}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
                 console.log('[Login] Register link clicked!');
                 handleRegister();
-              }} 
+              }}
               disabled={isLoading}
               style={styles.registerButtonWrapper}
               activeOpacity={0.7}

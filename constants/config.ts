@@ -8,6 +8,12 @@ export const API_CONFIG = {
     default: 'https://naxtap.az/api',
   }),
 
+  // Backend base (used for realtime / socket connections, etc.)
+  BACKEND_URL: Platform.select({
+    web: typeof window !== 'undefined' && window.location ? window.location.origin : 'https://naxtap.az',
+    default: 'https://naxtap.az',
+  }),
+
   // AI Services
   OPENAI_API_KEY: '',
 

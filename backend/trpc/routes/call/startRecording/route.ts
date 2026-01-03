@@ -66,7 +66,7 @@ export const startCallRecordingProcedure = publicProcedure
       fileType: EncodedFileType.MP4,
       filepath: input.callId
         ? `calls/${input.callId}/{room_name}-{time}`
-        : `calls/{room_name}-{time}`,
+        : 'calls/{room_name}-{time}',
       output: { case: 's3', value: s3 },
     });
 

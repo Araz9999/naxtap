@@ -21,7 +21,7 @@ export const getCallTokenProcedure = publicProcedure
       type: z.enum(['voice', 'video']).optional(),
     }),
   )
-  .mutation(({ input }) => {
+  .mutation(async ({ input }) => {
     const apiKey = getRequiredEnv('LIVEKIT_API_KEY');
     const apiSecret = getRequiredEnv('LIVEKIT_API_SECRET');
     const serverUrl = getRequiredEnv('LIVEKIT_URL'); // e.g. wss://<domain>.livekit.cloud
@@ -43,10 +43,12 @@ export const getCallTokenProcedure = publicProcedure
       canPublishData: true,
     });
 
+    const jwt = await token.toJwt();
+
     return {
       serverUrl,
       roomName,
-      token: token.toJwt(),
+      token: jwt,
     };
   });
 

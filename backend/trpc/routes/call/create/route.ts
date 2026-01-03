@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
-import { createPendingCall } from '../../../../backend/call/callRegistry';
+import { createPendingCall } from '../../../../call/callRegistry';
 
 export const createCallProcedure = publicProcedure
   .input(z.object({

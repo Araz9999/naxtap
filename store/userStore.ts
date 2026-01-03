@@ -22,10 +22,10 @@ interface UserState {
   reportedUsers: string[];
   subscribedUsers: string[];
   userNotes: Record<string, string>; // userId -> note
-  
+
   // ✅ Timeout tracking for cleanup
   favoriteTimeouts: Map<string, ReturnType<typeof setTimeout>>;
-  
+
   login: (user: User) => void;
   logout: () => void;
   toggleFavorite: (listingId: string) => void;
@@ -67,7 +67,7 @@ interface UserState {
   removeUserNote: (userId: string) => void;
   getUserNote: (userId: string) => string | null;
   deleteUserAccount: () => Promise<void>;
-  
+
   // ✅ Cleanup
   cleanupTimeouts: () => void;
 }
@@ -85,7 +85,7 @@ export const useUserStore = create<UserState>()(
       blockedUsers: [],
       nudgeHistory: {},
       mutedUsers: [],
-      
+
       // ✅ Initialize timeout map (not persisted)
       favoriteTimeouts: new Map(),
       followedUsers: [],
@@ -165,13 +165,13 @@ export const useUserStore = create<UserState>()(
           } catch (err) {
             logger.error('[UserStore] Failed to update listing favorites counter:', err);
           }
-          
+
           // ✅ Remove from timeout map after execution
           const newTimeouts = new Map(get().favoriteTimeouts);
           newTimeouts.delete(timeoutKey);
           set({ favoriteTimeouts: newTimeouts });
         }, 0);
-        
+
         // ✅ Store timeout for cleanup
         set((state) => ({
           favoriteTimeouts: new Map(state.favoriteTimeouts).set(timeoutKey, timeout),
@@ -948,7 +948,7 @@ export const useUserStore = create<UserState>()(
           throw error;
         }
       },
-      
+
       // ✅ Cleanup all pending timeouts
       cleanupTimeouts: () => {
         const { favoriteTimeouts } = get();

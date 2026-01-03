@@ -106,7 +106,7 @@ class StoreDatabase {
   async findByUserId(userId: string): Promise<DBStore | null> {
     const userStoreIds = this.userIndex.get(userId);
     if (!userStoreIds || userStoreIds.size === 0) return null;
-    
+
     const storeId = Array.from(userStoreIds)[0];
     return this.stores.get(storeId) || null;
   }
@@ -133,7 +133,7 @@ class StoreDatabase {
 
     // Remove from indexes
     this.userIndex.get(store.userId)?.delete(id);
-    
+
     // Remove from followers' indexes
     store.followers.forEach(followerId => {
       this.followerIndex.get(followerId)?.delete(id);

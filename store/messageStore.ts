@@ -404,10 +404,10 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     // Listen for new messages
     realtimeService.on('message:new', (data) => {
       logger.info('[MessageStore] Received new message via WebSocket:', data.conversationId);
-      
+
       const state = get();
       const conversation = state.conversations.find(c => c.id === data.conversationId);
-      
+
       if (conversation) {
         get().addMessage(data.conversationId, data.message);
       }
@@ -416,7 +416,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     // Listen for read receipts
     realtimeService.on('message:read', (data) => {
       logger.info('[MessageStore] Messages marked as read via WebSocket:', data.conversationId);
-      
+
       set((state) => ({
         conversations: state.conversations.map(conv => {
           if (conv.id === data.conversationId) {
@@ -447,7 +447,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
   // Cleanup WebSocket listeners
   cleanupRealtimeListeners: () => {
     logger.info('[MessageStore] Cleaning up realtime listeners');
-    
+
     // Note: realtimeService handles cleanup internally when disconnecting
     // This is just a placeholder for future custom cleanup logic
   },

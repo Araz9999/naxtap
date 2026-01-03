@@ -37,7 +37,7 @@ export const updateListingProcedure = protectedProcedure
   )
   .mutation(async ({ input, ctx }) => {
     const { id, ...updates } = input;
-    
+
     const existing = await listingDB.findById(id);
     if (!existing) {
       throw new TRPCError({

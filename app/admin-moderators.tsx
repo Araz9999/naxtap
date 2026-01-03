@@ -47,7 +47,16 @@ export default function AdminModeratorsScreen() {
     updatedAt?: string;
   };
   const [selected, setSelected] = useState<ModeratorItem | null>(null);
-  const [permissionsDraft, setPermissionsDraft] = useState<string[]>([]);
+  type ModeratorPermission =
+    | 'manage_reports'
+    | 'manage_users'
+    | 'manage_listings'
+    | 'manage_stores'
+    | 'manage_tickets'
+    | 'view_analytics'
+    | 'manage_moderators';
+
+  const [permissionsDraft, setPermissionsDraft] = useState<ModeratorPermission[]>([]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -170,7 +179,7 @@ export default function AdminModeratorsScreen() {
 
   const openDetails = (m: ModeratorItem) => {
     setSelected(m);
-    setPermissionsDraft((m?.moderatorPermissions || []) as string[]);
+    setPermissionsDraft((m?.moderatorPermissions || []) as ModeratorPermission[]);
     setDetailsOpen(true);
   };
 
@@ -181,7 +190,7 @@ export default function AdminModeratorsScreen() {
   };
 
   const permissionDefs = useMemo(() => {
-    const az: Record<string, string> = {
+    const az: Record<ModeratorPermission, string> = {
       manage_reports: 'Şikayətləri idarə et',
       manage_tickets: 'Dəstək biletləri',
       manage_users: 'İstifadəçiləri idarə et',
@@ -190,7 +199,7 @@ export default function AdminModeratorsScreen() {
       view_analytics: 'Analitikaya bax',
       manage_moderators: 'Moderatorları idarə et',
     };
-    const ru: Record<string, string> = {
+    const ru: Record<ModeratorPermission, string> = {
       manage_reports: 'Управление жалобами',
       manage_tickets: 'Тикеты поддержки',
       manage_users: 'Управление пользователями',
@@ -200,13 +209,13 @@ export default function AdminModeratorsScreen() {
       manage_moderators: 'Управление модераторами',
     };
     const map = language === 'az' ? az : ru;
-    return (Object.keys(az) as (keyof typeof az)[]).map((key) => ({
+    return (Object.keys(az) as ModeratorPermission[]).map((key) => ({
       key,
       label: map[key],
     }));
   }, [language]);
 
-  const togglePerm = (p: string) => {
+  const togglePerm = (p: ModeratorPermission) => {
     setPermissionsDraft((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
   };
 

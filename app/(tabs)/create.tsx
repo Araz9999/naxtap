@@ -639,7 +639,7 @@ export default function CreateListingScreen() {
   // Category navigation functions
   const handleCategoryPress = (category: Category | Subcategory) => {
     logger.info('[CategoryPress] Level:', currentCategoryLevel, 'Category:', category.name, 'Has subcategories:', !!category.subcategories, 'Count:', category.subcategories?.length || 0);
-    
+
     if (currentCategoryLevel === 'main') {
       // Əsas kateqoriya seçimi
       setSelectedCategory(category.id);
@@ -697,7 +697,7 @@ export default function CreateListingScreen() {
   };
 
   const renderCategoryModal = () => {
-    let currentCategories: Category[] | Subcategory[] = [];
+    let currentCategories: Array<Category | Subcategory> = [];
     let title = language === 'az' ? 'Kateqoriya seçin' : 'Выберите категорию';
 
     if (currentCategoryLevel === 'main') {
@@ -783,15 +783,15 @@ export default function CreateListingScreen() {
                   </Text>
                 </View>
               ) : (
-                currentCategories.map((item: Category) => (
+                currentCategories.map((item) => (
                   <TouchableOpacity
                     key={item.id}
                     style={styles.modalItem}
                     onPress={() => handleCategoryPress(item)}
                   >
                     <Text style={styles.modalItemText}>{item.name[language]}</Text>
-                    {((currentCategoryLevel === 'main' && item.subcategories?.length > 0) ||
-                      (currentCategoryLevel === 'sub' && item.subcategories?.length > 0)) && (
+                    {((currentCategoryLevel === 'main' && (item.subcategories?.length ?? 0) > 0) ||
+                      (currentCategoryLevel === 'sub' && (item.subcategories?.length ?? 0) > 0)) && (
                       <ChevronRight size={20} color={Colors.textSecondary} />
                     )}
                   </TouchableOpacity>

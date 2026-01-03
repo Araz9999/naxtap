@@ -498,7 +498,10 @@ export default function AdminReportsScreen() {
 
               <TouchableOpacity
                 style={[styles.targetBtn, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
-                onPress={() => goToTarget(selectedReport)}
+                onPress={() => {
+                  if (!selectedReport) return;
+                  goToTarget(selectedReport);
+                }}
               >
                 <ExternalLink size={16} color={colors.primary} />
                 <Text style={[styles.targetBtnText, { color: colors.primary }]}>

@@ -5,7 +5,7 @@
 
 import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
-import { logger } from './utils/logger';
+import { logger } from '../utils/logger';
 
 interface SocketUser {
   userId: string;
@@ -45,13 +45,13 @@ class RealtimeServer {
           // ✅ FIXED: Verify JWT token before authenticating
           const { verifyToken } = await import('../utils/jwt');
           const decoded = await verifyToken(data.token);
-          
+
           if (!decoded || decoded.userId !== data.userId) {
             logger.error('[Realtime] Invalid token or userId mismatch');
             socket.emit('error', { message: 'Authentication failed' });
             return;
           }
-          
+
           const userId = decoded.userId;
 
           this.connectedUsers.set(socket.id, {

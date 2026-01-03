@@ -20,10 +20,10 @@ interface ListingState {
   userUnusedViews: { [userId: string]: number };
   isLoading: boolean;
   error: string | null;
-  
+
   // ✅ Timeout tracking for cleanup
   notificationTimeouts: Map<string, ReturnType<typeof setTimeout>>;
-  
+
   fetchListings: () => Promise<void>;
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (categoryId: number | null) => void;
@@ -53,7 +53,7 @@ interface ListingState {
   ) => Promise<void>;
   getUserUnusedViews: (userId: string) => number;
   transferUnusedViewsToNewListing: (userId: string, listingId: string) => void;
-  
+
   // ✅ Cleanup
   cleanupTimeouts: () => void;
 }
@@ -91,7 +91,7 @@ export const useListingStore = create<ListingState>((set, get) =>
     userUnusedViews: {},
     isLoading: false,
     error: null,
-    
+
     // ✅ Initialize timeout map
     notificationTimeouts: new Map(),
 
@@ -99,17 +99,17 @@ export const useListingStore = create<ListingState>((set, get) =>
       try {
         set({ isLoading: true, error: null });
         const listings = await trpcClient.listing.getAll.query();
-        set({ 
-          listings: listings as Listing[], 
+        set({
+          listings: listings as Listing[],
           filteredListings: listings as Listing[],
-          isLoading: false 
+          isLoading: false,
         });
         get().applyFilters();
       } catch (error) {
         logger.error('[ListingStore] Failed to fetch listings:', error);
-        set({ 
+        set({
           error: 'Failed to load listings',
-          isLoading: false 
+          isLoading: false,
         });
       }
     },
@@ -326,13 +326,13 @@ export const useListingStore = create<ListingState>((set, get) =>
           } catch (err) {
             logger.error('[ListingStore] Failed to send notification after transferring views:', err);
           }
-          
+
           // ✅ Remove from timeout map after execution
           const newTimeouts = new Map(get().notificationTimeouts);
           newTimeouts.delete(timeoutKey);
           set({ notificationTimeouts: newTimeouts });
         }, 100);
-        
+
         // ✅ Store timeout for cleanup
         set((state) => ({
           notificationTimeouts: new Map(state.notificationTimeouts).set(timeoutKey, timeout),
@@ -582,13 +582,13 @@ export const useListingStore = create<ListingState>((set, get) =>
                 } catch (error) {
                   logger.error('[incrementViewCount] Failed to send notification:', error);
                 }
-                
+
                 // ✅ Remove from timeout map after execution
                 const newTimeouts = new Map(get().notificationTimeouts);
                 newTimeouts.delete(timeoutKey);
                 set({ notificationTimeouts: newTimeouts });
               }, 100);
-              
+
               // ✅ Store timeout for cleanup
               set((state) => ({
                 notificationTimeouts: new Map(state.notificationTimeouts).set(timeoutKey, timeout),
@@ -1169,7 +1169,7 @@ export const useListingStore = create<ListingState>((set, get) =>
         return [];
       }
     },
-    
+
     // ✅ Cleanup all pending timeouts
     cleanupTimeouts: () => {
       const { notificationTimeouts } = get();

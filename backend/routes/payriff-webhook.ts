@@ -82,11 +82,11 @@ payriffWebhook.post('/callback', async (c) => {
       // ✅ FIXED: Update order status and wallet balance
       try {
         const { prisma } = await import('../db/client');
-        
+
         // Update transaction record if it exists
         await prisma.transaction.updateMany({
           where: { orderId },
-          data: { 
+          data: {
             status: 'COMPLETED',
             transactionId,
             completedAt: new Date(),
@@ -115,7 +115,7 @@ payriffWebhook.post('/callback', async (c) => {
         const { prisma } = await import('../db/client');
         await prisma.transaction.updateMany({
           where: { orderId },
-          data: { 
+          data: {
             status: 'FAILED',
             transactionId,
           },
@@ -132,7 +132,7 @@ payriffWebhook.post('/callback', async (c) => {
         const { prisma } = await import('../db/client');
         await prisma.transaction.updateMany({
           where: { orderId },
-          data: { 
+          data: {
             status: 'CANCELLED',
             transactionId,
           },
@@ -147,7 +147,7 @@ payriffWebhook.post('/callback', async (c) => {
       // ✅ FIXED: Handle refund
       try {
         const { prisma } = await import('../db/client');
-        
+
         const transaction = await prisma.transaction.findFirst({
           where: { orderId },
         });
@@ -164,7 +164,7 @@ payriffWebhook.post('/callback', async (c) => {
           // Update transaction status
           await prisma.transaction.update({
             where: { id: transaction.id },
-            data: { 
+            data: {
               status: 'REFUNDED',
             },
           });
