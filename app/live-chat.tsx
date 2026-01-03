@@ -584,7 +584,7 @@ export default function LiveChatScreen() {
       ) : conversationId ? (
         <KeyboardAvoidingView
           style={styles.chatContent}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
         >
           <ScrollView
@@ -592,11 +592,13 @@ export default function LiveChatScreen() {
             style={styles.messagesContainer}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
+            keyboardDismissMode="on-drag"
             contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }}
             onContentSizeChange={() => {
               if (shouldScrollToEnd && !isScrolling) {
-                scrollViewRef.current?.scrollToEnd({ animated: false });
+                requestAnimationFrame(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: false });
+                });
               }
             }}
             onScrollBeginDrag={() => {
@@ -848,21 +850,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    paddingBottom: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.1)',
-    minHeight: 76,
+    height: 76,
   },
   messageInput: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingVertical: 0,
     fontSize: 16,
     height: 44,
-    lineHeight: Platform.OS === 'android' ? 20 : 22,
+    lineHeight: 20,
     marginRight: 12,
     includeFontPadding: false,
     textAlignVertical: 'center',
