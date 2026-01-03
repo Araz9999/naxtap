@@ -40,10 +40,19 @@ class RealtimeServer {
       logger.info(`[Realtime] Client connected: ${socket.id}`);
 
       // Authentication
-      socket.on('authenticate', (data: { userId: string; token: string }) => {
+      socket.on('authenticate', async (data: { userId: string; token: string }) => {
         try {
-          // TODO: Verify JWT token
-          const userId = data.userId;
+          // ✅ FIXED: Verify JWT token before authenticating
+          const { verifyToken } = await import('../utils/jwt');
+          const decoded = await verifyToken(data.token);
+          
+          if (!decoded || decoded.userId !== data.userId) {
+            logger.error('[Realtime] Invalid token or userId mismatch');
+            socket.emit('error', { message: 'Authentication failed' });
+            return;
+          }
+          
+          const userId = decoded.userId;
 
           this.connectedUsers.set(socket.id, {
             userId,

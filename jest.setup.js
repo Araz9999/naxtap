@@ -1,54 +1,74 @@
-/**
- * Jest setup file - runs before all tests
- * Configure global test utilities and mocks here
- */
-
 // Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
-
-// Mock Expo modules
-jest.mock('expo-router', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-  }),
-  useLocalSearchParams: () => ({}),
-  Stack: () => null,
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  setItem: jest.fn(() => Promise.resolve()),
+  getItem: jest.fn(() => Promise.resolve(null)),
+  removeItem: jest.fn(() => Promise.resolve()),
+  clear: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('expo-image-picker', () => ({
-  launchImageLibraryAsync: jest.fn(),
-  launchCameraAsync: jest.fn(),
-  MediaTypeOptions: {
-    Images: 'Images',
+// Mock expo modules
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(),
+  notificationAsync: jest.fn(),
+  selectionAsync: jest.fn(),
+  ImpactFeedbackStyle: {
+    Light: 'light',
+    Medium: 'medium',
+    Heavy: 'heavy',
+  },
+  NotificationFeedbackType: {
+    Success: 'success',
+    Warning: 'warning',
+    Error: 'error',
   },
 }));
 
 jest.mock('expo-av', () => ({
   Audio: {
     Sound: {
-      createAsync: jest.fn(),
+      createAsync: jest.fn(() => Promise.resolve({
+        sound: {
+          playAsync: jest.fn(),
+          stopAsync: jest.fn(),
+          unloadAsync: jest.fn(),
+        },
+      })),
     },
-    Recording: jest.fn(),
+    setAudioModeAsync: jest.fn(() => Promise.resolve()),
   },
 }));
 
-// Mock React Native Animated helper (path differs across RN versions)
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}), { virtual: true });
+// Mock React Navigation
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+    setOptions: jest.fn(),
+  }),
+  useRoute: () => ({
+    params: {},
+  }),
+}));
 
-// Set up global test utilities
+// Silence console warnings in tests
 global.console = {
   ...console,
-  error: jest.fn(), // Suppress error logs in tests
-  warn: jest.fn(),  // Suppress warning logs in tests
+  warn: jest.fn(),
+  error: jest.fn(),
+  log: jest.fn(),
 };
 
-// Mock environment variables
-process.env.JWT_SECRET = 'test-secret-key-for-testing-only';
-process.env.NODE_ENV = 'test';
+// Set up global fetch mock
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve(''),
+  })
+);
 
-// Increase timeout for async operations
-jest.setTimeout(10000);
+// Set up global crypto for Node.js environment
+if (!global.crypto) {
+  global.crypto = require('crypto').webcrypto;
+}
+
