@@ -12,6 +12,7 @@ import {
   Dimensions,
   Platform,
   Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -69,6 +70,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
   const [isScrolling, setIsScrolling] = useState<boolean>(false);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showAttachments, setShowAttachments] = useState<boolean>(false);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const slideAnim = useRef(new Animated.Value(height)).current;
@@ -109,23 +111,28 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
   }, [currentChat?.messages.length, shouldScrollToEnd, isScrolling]);
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setShouldScrollToEnd(false);
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+        setShouldScrollToEnd(true);
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       },
     );
 
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
+        setKeyboardHeight(0);
         setShouldScrollToEnd(true);
       },
     );
 
     return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
     };
   }, []);
 
@@ -447,17 +454,22 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       animationType="none"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <Animated.View
-          style={[
-            styles.chatContainer,
-            {
-              backgroundColor: colors.background,
-              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-            },
-            isMinimized && styles.minimizedContainer,
-          ]}
-        >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+      >
+        <View style={styles.overlay}>
+          <Animated.View
+            style={[
+              styles.chatContainer,
+              {
+                backgroundColor: colors.background,
+                transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+              },
+              isMinimized && styles.minimizedContainer,
+            ]}
+          >
           {/* Header */}
           <View style={[styles.header, { backgroundColor: colors.primary }]}>
             <View style={styles.headerLeft}>
@@ -523,13 +535,11 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="interactive"
                     contentContainerStyle={{ paddingBottom: 10 }}
-                    maintainVisibleContentPosition={{
-                      minIndexForVisible: 0,
-                      autoscrollToTopThreshold: 10,
-                    }}
                     onContentSizeChange={() => {
-                      if (!isScrolling && shouldScrollToEnd) {
-                        scrollViewRef.current?.scrollToEnd({ animated: false });
+                      if (shouldScrollToEnd) {
+                        setTimeout(() => {
+                          scrollViewRef.current?.scrollToEnd({ animated: true });
+                        }, 50);
                       }
                     }}
                     onScrollBeginDrag={() => {
@@ -672,6 +682,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
           )}
         </Animated.View>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -824,7 +835,6 @@ const styles = StyleSheet.create({
   inputSection: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.1)',
-    backgroundColor: 'transparent',
   },
   messagesContainer: {
     flex: 1,
@@ -908,7 +918,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 12,
+    paddingBottom: Platform.OS === 'ios' ? 12 : 12,
     minHeight: 68,
   },
   messageInput: {
