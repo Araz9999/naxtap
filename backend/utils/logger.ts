@@ -16,12 +16,10 @@ interface LoggerConfig {
 
 // Determine dev mode in both React Native / web (__DEV__) and Node.js
 const IS_TEST: boolean = process.env.NODE_ENV === 'test';
-const IS_DEV: boolean =
-  // @ts-ignore - __DEV__ is provided by React Native / Expo on the client
-  !IS_TEST &&
-  (typeof __DEV__ !== 'undefined'
-    ? __DEV__
-    : process.env.NODE_ENV !== 'production');
+const DEV_FLAG = (globalThis as unknown as { __DEV__?: boolean }).__DEV__;
+const IS_DEV: boolean = !IS_TEST && (typeof DEV_FLAG !== 'undefined'
+  ? Boolean(DEV_FLAG)
+  : process.env.NODE_ENV !== 'production');
 
 const LOG_LEVELS: Record<LogLevel, number> = {
   debug: 0,

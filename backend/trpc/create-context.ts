@@ -5,12 +5,13 @@ import { verifyToken } from '../utils/jwt';
 import { logger } from '../utils/logger';
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
   const authHeader = opts.req.headers.get('authorization');
-  let user = null;
+  let user: (Awaited<ReturnType<typeof verifyToken>> & { id: string }) | null = null;
 
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
     try {
-      user = await verifyToken(token);
+      const verified = await verifyToken(token);
+      user = verified ? { ...verified, id: verified.userId } : null;
     } catch (error) {
       logger.error('[Context] Token verification failed:', error);
     }

@@ -156,7 +156,7 @@ export default function AdminTicketsScreen() {
 
   if (!canAccess) return null;
 
-  const formatDateTime = (d?: Date) => {
+  const formatDateTime = (d?: Date | string | null) => {
     if (!d) return '-';
     const date = d instanceof Date ? d : new Date(d);
     if (Number.isNaN(date.getTime())) return '-';
@@ -521,7 +521,7 @@ export default function AdminTicketsScreen() {
                     {language === 'az' ? 'Hələ cavab yoxdur.' : 'Пока нет ответов.'}
                   </Text>
                 ) : (
-                  (selected.responses ?? [])
+                  (selected?.responses ?? [])
                     .slice()
                     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
                     .slice(0, 8)

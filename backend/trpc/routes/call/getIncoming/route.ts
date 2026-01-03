@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
-import { getPendingCallsForReceiver } from '../../../../backend/call/callRegistry';
+import { getPendingCallsForReceiver } from '../../../../call/callRegistry';
 
 export const getIncomingCallsProcedure = publicProcedure
   .input(z.object({ userId: z.string().min(1) }))

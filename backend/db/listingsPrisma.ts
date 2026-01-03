@@ -47,6 +47,20 @@ export interface DBListing {
   }[];
 }
 
+function normalizeCreativeEffects(value: unknown): DBListing['creativeEffects'] {
+  if (!value) return undefined;
+  if (Array.isArray(value)) return value as DBListing['creativeEffects'];
+  if (typeof value === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed as DBListing['creativeEffects'];
+    } catch {
+      // ignore invalid JSON
+    }
+  }
+  return undefined;
+}
+
 class ListingDatabase {
   async createListing(listingData: Omit<DBListing, 'id' | 'createdAt' | 'views' | 'favorites'>): Promise<DBListing> {
     try {
@@ -87,6 +101,7 @@ class ListingDatabase {
         expiresAt: listing.expiresAt.toISOString(),
         archivedAt: listing.archivedAt?.toISOString(),
         discountEndDate: listing.discountEndDate?.toISOString(),
+        creativeEffects: normalizeCreativeEffects(listing.creativeEffects),
         adType: listing.adType.toLowerCase(),
       };
     } catch (error) {
@@ -112,6 +127,7 @@ class ListingDatabase {
         expiresAt: listing.expiresAt.toISOString(),
         archivedAt: listing.archivedAt?.toISOString(),
         discountEndDate: listing.discountEndDate?.toISOString(),
+        creativeEffects: normalizeCreativeEffects(listing.creativeEffects),
         adType: listing.adType.toLowerCase(),
       };
     } catch (error) {
@@ -148,6 +164,7 @@ class ListingDatabase {
         expiresAt: listing.expiresAt.toISOString(),
         archivedAt: listing.archivedAt?.toISOString(),
         discountEndDate: listing.discountEndDate?.toISOString(),
+        creativeEffects: normalizeCreativeEffects(listing.creativeEffects),
         adType: listing.adType.toLowerCase(),
       }));
     } catch (error) {
@@ -193,6 +210,7 @@ class ListingDatabase {
         expiresAt: listing.expiresAt.toISOString(),
         archivedAt: listing.archivedAt?.toISOString(),
         discountEndDate: listing.discountEndDate?.toISOString(),
+        creativeEffects: normalizeCreativeEffects(listing.creativeEffects),
         adType: listing.adType.toLowerCase(),
       };
     } catch (error) {

@@ -29,7 +29,7 @@ interface RealtimeEvents {
   'message:typing': (data: { conversationId: string; userId: string; isTyping: boolean }) => void;
 
   // Zənglər
-  'call:incoming': (data: { callId: string; callerId: string; type: 'voice' | 'video' }) => void;
+  'call:incoming': (data: { callId: string; callerId: string; type: 'voice' | 'video'; listingId?: string; receiverId?: string }) => void;
   'call:answered': (data: { callId: string }) => void;
   'call:declined': (data: { callId: string }) => void;
   'call:ended': (data: { callId: string }) => void;
@@ -51,8 +51,8 @@ class RealtimeService {
   private isConnected: boolean = false;
   private config: RealtimeConfig | null = null;
   private eventHandlers: Map<keyof RealtimeEvents, Set<SocketEventHandler>> = new Map();
-  private reconnectTimer: NodeJS.Timeout | null = null;
-  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   /**
    * WebSocket connection-u initialize edir

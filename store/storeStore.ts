@@ -6,6 +6,28 @@ import { trpcClient } from '@/lib/trpc';
 
 let storeStatusInterval: ReturnType<typeof setInterval> | null = null;
 
+function getFallbackPlan(maxAds?: number): StorePlan {
+  return storePlans[0] ?? {
+    id: 'basic',
+    name: { az: 'Əsas Paket', ru: 'Базовый пакет' },
+    price: 0,
+    maxAds: typeof maxAds === 'number' ? maxAds : 0,
+    duration: 30,
+    features: [],
+  };
+}
+
+function normalizeStore(raw: any): Store {
+  const plan: StorePlan = raw?.plan && typeof raw.plan === 'object'
+    ? (raw.plan as StorePlan)
+    : (storePlans.find(p => p.id === raw?.planId) ?? getFallbackPlan(raw?.maxAds));
+
+  return {
+    ...raw,
+    plan,
+  } as Store;
+}
+
 export const initStoreStoreInterval = () => {
   // Ensure only one interval is active
   if (storeStatusInterval) {
@@ -44,7 +66,7 @@ interface StoreState {
   stores: Store[];
   userStore: Store | null;
   activeStoreId: string | null;
-  userStoreSettings: Record<string, Record<string, unknown>>; // userId -> storeId -> settings
+  userStoreSettings: Record<string, Record<string, Record<string, unknown>>>; // userId -> storeId -> settings
   followers: StoreFollower[];
   notifications: StoreNotification[];
   isLoading: boolean;
@@ -132,7 +154,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
       set({ isLoading: true, error: null });
       const stores = await trpcClient.store.getAll.query();
       set({
-        stores: stores as Store[],
+        stores: Array.isArray(stores) ? (stores as any[]).map(normalizeStore) : [],
         isLoading: false,
       });
     } catch (error) {
@@ -149,7 +171,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
       set({ isLoading: true, error: null });
       const store = await trpcClient.store.getByUserId.query({ userId });
       set({
-        userStore: store as Store | null,
+        userStore: store ? normalizeStore(store) : null,
         isLoading: false,
       });
     } catch (error) {
@@ -168,6 +190,12 @@ export const useStoreStore = create<StoreState>((set, get) => ({
       if (!storeData.userId || !storeData.name || !storeData.plan) {
         throw new Error('Missing required store data');
       }
+      const categoryName = storeData.categoryName;
+      const address = storeData.address;
+      const description = storeData.description;
+      if (!categoryName || !address || !description) {
+        throw new Error('Missing required store fields');
+      }
 
       // BUG FIX: Check if user already has a store
       const existingStore = get().stores.find(s =>
@@ -182,10 +210,10 @@ export const useStoreStore = create<StoreState>((set, get) => ({
       // Create store via API
       const newStore = await trpcClient.store.create.mutate({
         name: storeData.name,
-        categoryName: storeData.categoryName,
-        address: storeData.address,
-        contactInfo: storeData.contactInfo,
-        description: storeData.description,
+        categoryName,
+        address,
+        contactInfo: storeData.contactInfo ?? {},
+        description,
         logo: storeData.logo,
         coverImage: storeData.coverImage,
         planId: storeData.plan.id,
@@ -194,7 +222,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
       });
 
       set(state => ({
-        stores: [...state.stores, newStore as Store],
+        stores: [...state.stores, normalizeStore(newStore)],
         isLoading: false,
       }));
 

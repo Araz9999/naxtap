@@ -603,7 +603,7 @@ export default function MyListingsScreen() {
                 {language === 'az' ? 'Güzəştli Təkliflər' : 'Скидки'}
               </Text>
               <Text style={styles.quickActionValue}>
-                {getExpiringListings(currentUser.id, 7).length} {language === 'az' ? 'təklif' : 'предложений'}
+                {(currentUser?.id ? getExpiringListings(currentUser.id, 7).length : 0)} {language === 'az' ? 'təklif' : 'предложений'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -620,7 +620,7 @@ export default function MyListingsScreen() {
                 {language === 'az' ? 'Arxiv' : 'Архив'}
               </Text>
               <Text style={styles.quickActionValue}>
-                {getArchivedListings(currentUser.id).length} {language === 'az' ? 'elan' : 'объявлений'}
+                {(currentUser?.id ? getArchivedListings(currentUser.id).length : 0)} {language === 'az' ? 'elan' : 'объявлений'}
               </Text>
             </View>
           </TouchableOpacity>

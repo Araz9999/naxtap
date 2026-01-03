@@ -9,36 +9,46 @@ const port = parseInt(process.env.PORT || '3000', 10);
 
 // Create HTTP server for both Hono and Socket.io
 const httpServer = createServer((req, res) => {
-  // Convert Node.js request to fetch Request
-  const url = `http://${req.headers.host}${req.url}`;
-  const headers = new Headers();
+  void (async () => {
+    // Convert Node.js request to fetch Request
+    const host = req.headers.host ?? 'localhost';
+    const path = req.url ?? '/';
+    const url = `http://${host}${path}`;
 
-  for (const [key, value] of Object.entries(req.headers)) {
-    if (value) {
-      if (Array.isArray(value)) {
-        value.forEach(v => headers.append(key, v));
-      } else {
-        headers.append(key, value);
-      }
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (!value) continue;
+      if (Array.isArray(value)) value.forEach(v => headers.append(key, v));
+      else headers.append(key, value);
     }
-  }
 
-  const fetchRequest = new Request(url, {
-    method: req.method,
-    headers,
-    body: req.method !== 'GET' && req.method !== 'HEAD' ? req : undefined,
-  });
+    // BodyInit in TS does not accept Node streams; buffer request body instead
+    let body: Uint8Array | undefined;
+    const method = (req.method ?? 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      body = Buffer.concat(chunks);
+    }
 
-  app.fetch(fetchRequest).then(async (fetchResponse) => {
+    const fetchRequest = new Request(url, {
+      method,
+      headers,
+      body,
+    });
+
+    const fetchResponse = await app.fetch(fetchRequest);
     res.statusCode = fetchResponse.status;
 
     fetchResponse.headers.forEach((value, key) => {
       res.setHeader(key, value);
     });
 
-    const body = await fetchResponse.text();
-    res.end(body);
-  }).catch((error) => {
+    const responseBody = await fetchResponse.text();
+    res.end(responseBody);
+  })().catch((error) => {
     logger.error('[Server] Request handling error:', error);
     res.statusCode = 500;
     res.end('Internal Server Error');
