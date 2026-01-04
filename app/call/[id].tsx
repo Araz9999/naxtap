@@ -93,8 +93,8 @@ function CallRoomView({
 
   const [callDuration, setCallDuration] = useState<number>(0);
 
-  const startRecordingMutation = trpc.call.startRecording.useMutation();
-  const stopRecordingMutation = trpc.call.stopRecording.useMutation();
+  const startRecordingMutation = trpc.calls.startRecording.useMutation();
+  const stopRecordingMutation = trpc.calls.stopRecording.useMutation();
   const [egressId, setEgressId] = useState<string | null>(null);
   const isRecording = !!egressId && startRecordingMutation.status === 'success';
 
@@ -292,9 +292,6 @@ export default function CallScreen() {
   const { activeCall, endCall, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
-< cursor/call-feature-verification-and-fix-4af4
-  const listings = useListingStore((s) => s.listings);
-=======
   const { listings } = useListingStore();
 
   const otherUserId = useMemo(() => {
@@ -307,22 +304,11 @@ export default function CallScreen() {
     { enabled: !!otherUserId },
   );
   const otherUser = otherUserQuery.data as { id: string; name?: string; avatar?: string } | undefined;
->main
 
-  const tokenMutation = trpc.call.getToken.useMutation();
+  const tokenMutation = trpc.calls.getToken.useMutation();
   const [lkToken, setLkToken] = useState<string | undefined>(undefined);
   const [lkServerUrl, setLkServerUrl] = useState<string | undefined>(undefined);
   const [lkRoomName, setLkRoomName] = useState<string | undefined>(undefined);
-
-  const otherUserId = useMemo(() => {
-    if (!activeCall || !currentUser?.id) return undefined;
-    return activeCall.callerId === currentUser.id ? activeCall.receiverId : activeCall.callerId;
-  }, [activeCall?.callerId, activeCall?.receiverId, currentUser?.id, activeCall]);
-
-  const otherUserQuery = trpc.user.getUser.useQuery(
-    { id: otherUserId || '' },
-    { enabled: !!otherUserId },
-  );
 
   const listingFromStore = useMemo(() => {
     if (!activeCall?.listingId) return undefined;
@@ -334,7 +320,6 @@ export default function CallScreen() {
     { enabled: !!activeCall?.listingId && !listingFromStore },
   );
 
-  const otherUser = otherUserQuery.data;
   const listing = listingFromStore ?? listingQuery.data;
 
   useEffect(() => {
@@ -343,15 +328,12 @@ export default function CallScreen() {
     }
   }, [activeCall, callId]);
 
-< cursor/call-feature-verification-and-fix-4af4
-
   // Navigate back if call is invalid
   useEffect(() => {
     if (!activeCall || !callId) return;
     if (otherUserId && otherUserQuery.isError) router.back();
   }, [activeCall, callId, otherUserId, otherUserQuery.isError]);
 
-> main
   // Fetch LiveKit token once per call (requires backend env LIVEKIT_*)
   useEffect(() => {
     if (!callId || !activeCall || !currentUser?.id) return;

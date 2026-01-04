@@ -165,8 +165,6 @@ function RootLayoutNav() {
       logger.warn('[App] Realtime service initialization failed (will use polling):', error);
     });
 
-< cursor/call-feature-verification-and-fix-4af4
-
     // Setup global realtime event listeners
     if (currentUser?.id) {
       // Join user's personal room
@@ -175,7 +173,6 @@ function RootLayoutNav() {
       logger.info('[App] Joined user room:', currentUser.id);
     }
 
-> main
     return () => {
       realtimeService.disconnect();
     };

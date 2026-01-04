@@ -118,7 +118,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     // Create a server-side call invite so the receiver can join the same LiveKit room.
     let callId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     try {
-      const res = await trpcClient.call.create.mutate({
+      const res = await trpcClient.calls.create.mutate({
         callerId: currentUserId,
         receiverId,
         listingId,
@@ -194,7 +194,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
       }));
 
       // Best-effort: clear pending invite so receiver doesn't get stale ring
-      trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
+      trpcClient.calls.decline.mutate({ callId }).catch(() => undefined);
 
       const newTimeouts = new Map(get().outgoingCallTimeouts);
       newTimeouts.delete(callId);
@@ -227,7 +227,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     get().stopAllSounds();
 
     // Inform server that call invite was accepted (clears pending invite)
-    trpcClient.call.answer.mutate({ callId }).catch(() => undefined);
+    trpcClient.calls.answer.mutate({ callId }).catch(() => undefined);
 
     // Notify caller in realtime (removes "fake auto-answer" behavior)
     if (realtimeService.isAvailable()) {
@@ -288,7 +288,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     get().stopAllSounds();
 
     // Inform server that call invite was declined (clears pending invite)
-    trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
+    trpcClient.calls.decline.mutate({ callId }).catch(() => undefined);
 
     // Notify caller in realtime
     const call = get().calls.find((c) => c.id === callId);
@@ -370,7 +370,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     }));
 
     // Best-effort: clear pending invite if call ended before answer
-    trpcClient.call.decline.mutate({ callId }).catch(() => undefined);
+    trpcClient.calls.decline.mutate({ callId }).catch(() => undefined);
 
     // Notify other participant (so their UI can end the call)
     if (realtimeService.isAvailable()) {
@@ -658,7 +658,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
   pollIncomingCalls: async (currentUserId: string) => {
     if (!currentUserId || typeof currentUserId !== 'string') return;
     try {
-      const res = await trpcClient.call.getIncoming.query({ userId: currentUserId });
+      const res = await trpcClient.calls.getIncoming.query({ userId: currentUserId });
       const next = res?.calls?.[0];
       if (!next) return;
 
