@@ -67,6 +67,7 @@ function CallRoomView({
   onToggleMute,
   onToggleSpeaker,
   onToggleVideo,
+  onHangup,
   otherUserAvatar,
   otherUserName,
   listingTitle,
@@ -80,6 +81,7 @@ function CallRoomView({
   onToggleMute: () => void;
   onToggleSpeaker: () => void;
   onToggleVideo: () => void;
+  onHangup: () => void;
   otherUserAvatar?: string;
   otherUserName?: string;
   listingTitle?: string;
@@ -259,6 +261,7 @@ function CallRoomView({
               setEgressId(null);
             }
             room?.disconnect();
+            onHangup();
             router.back();
           }}
           testID="end-call-button"
@@ -307,6 +310,18 @@ export default function CallScreen() {
   const [lkServerUrl, setLkServerUrl] = useState<string | undefined>(undefined);
   const [lkRoomName, setLkRoomName] = useState<string | undefined>(undefined);
 
+  const listingFromStore = useMemo(() => {
+    if (!activeCall?.listingId) return undefined;
+    return listings.find((l) => l.id === activeCall.listingId);
+  }, [activeCall?.listingId, listings]);
+
+  const listingQuery = trpc.listing.getById.useQuery(
+    { id: activeCall?.listingId || '' },
+    { enabled: !!activeCall?.listingId && !listingFromStore },
+  );
+
+  const listing = listingFromStore ?? listingQuery.data;
+
   useEffect(() => {
     if (!activeCall || activeCall.id !== callId) {
       router.back();
@@ -354,21 +369,7 @@ export default function CallScreen() {
     return null;
   }
 
-  const listing = listings.find(l => l.id === activeCall.listingId);
-
   // Validate other user exists
-  if (!otherUser) {
-    logger.error('Other user not found');
-    return (
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.permissionText}>
-            {language === 'az' ? 'İstifadəçi tapılmadı' : 'Пользователь не найден'}
-          </Text>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -380,7 +381,7 @@ export default function CallScreen() {
       <LiveKitRoom
         serverUrl={lkServerUrl}
         token={lkToken}
-        connect={true}
+        connect={!!lkServerUrl && !!lkToken}
         audio={true}
         video={activeCall.type === 'video'}
         options={{
@@ -401,8 +402,9 @@ export default function CallScreen() {
           onToggleMute={toggleMute}
           onToggleSpeaker={toggleSpeaker}
           onToggleVideo={toggleVideo}
-          otherUserAvatar={otherUser.avatar}
-          otherUserName={otherUser.name}
+          onHangup={() => endCall(callId)}
+          otherUserAvatar={otherUser?.avatar}
+          otherUserName={otherUser?.name}
           listingTitle={listing?.title ? (typeof listing.title === 'string' ? listing.title : listing.title[language]) : ''}
         />
       </LiveKitRoom>

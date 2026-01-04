@@ -159,6 +159,7 @@ class RealtimeServer {
         callId: string;
         receiverId: string;
         type: 'voice' | 'video';
+        listingId?: string;
       }) => {
         const user = this.connectedUsers.get(socket.id);
         if (!user) return;
@@ -172,6 +173,7 @@ class RealtimeServer {
             callId: data.callId,
             callerId: user.userId,
             type: data.type,
+            listingId: data.listingId,
           });
         }
       });
