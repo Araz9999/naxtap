@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Platform, KeyboardAvoidingView, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Platform, KeyboardAvoidingView, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,7 +20,7 @@ import { logger } from '@/utils/logger';
 export default function CreateListingScreen() {
   const router = useRouter();
   const { t, language } = useTranslation();
-  const { isAuthenticated, currentUser, canAfford, spendFromBalance, getTotalBalance } = useUserStore();
+  const { isAuthenticated, currentUser, canAfford, spendFromBalance, getTotalBalance, hasHydrated } = useUserStore();
   const { getAllUserStores, canAddListing } = useStoreStore();
   const { addListingToStore } = useListingStore();
 
@@ -57,6 +57,14 @@ export default function CreateListingScreen() {
   const [showStoreModal, setShowStoreModal] = useState(false);
 
   // Check authentication after hooks
+  if (!hasHydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
   if (!isAuthenticated || !currentUser) {
     return (
       <View style={styles.authRequiredContainer}>

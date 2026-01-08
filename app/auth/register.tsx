@@ -33,68 +33,6 @@ export default function RegisterScreen() {
 
   const registerMutation = trpc.auth.register.useMutation();
 
-  // Native HTML button for web to ensure clicks always work
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-
-    const container = document.getElementById('register-button-container');
-    if (!container) return;
-
-    // Clear previous content and recreate button each time
-    container.innerHTML = '';
-
-    // Debug: log when we create the button
-    console.log('[Register] Creating native web register button');
-
-    const nativeButton = document.createElement('button');
-    nativeButton.textContent = isLoading
-      ? (t('loading') || 'Loading...')
-      : (t('registerNow') || 'Register');
-
-    nativeButton.style.cssText = `
-      width: 100%;
-      padding: 15px;
-      background-color: ${(!agreeToTerms || isLoading) ? '#9CA3AF' : (Colors?.primary || '#0EA5A7')};
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: ${(!agreeToTerms || isLoading) ? 'not-allowed' : 'pointer'};
-      margin-top: 10px;
-    `;
-
-    nativeButton.disabled = !agreeToTerms || isLoading;
-
-    nativeButton.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Debug: confirm click is firing
-      console.log('[Register] Native web register button clicked');
-      // Simple visible feedback so we know click works at all
-      window.alert('Register button clicked. Now running validation...');
-
-      if (!agreeToTerms) {
-        const title = language === 'az' ? 'Xəta' : 'Ошибка';
-        const msg =
-          language === 'az'
-            ? 'İstifadə şərtlərini qəbul edin'
-            : 'Примите условия использования';
-        window.alert(`${title}: ${msg}`);
-        return;
-      }
-
-      if (isLoading) {
-        return;
-      }
-
-      handleRegister();
-    };
-
-    container.appendChild(nativeButton);
-  }, [agreeToTerms, isLoading, t, language, name, email, phone, password, confirmPassword]);
-
   // ✅ Enhanced form validation
   const validateForm = (): { isValid: boolean; error?: string } => {
     if (!name || !name.trim()) {
@@ -558,42 +496,35 @@ export default function RegisterScreen() {
 
 
         {/* Register Button */}
-        {Platform.OS === 'web' ? (
-          <View
-            nativeID="register-button-container"
-            style={{ marginTop: 10 }}
-          />
-        ) : (
-          <Pressable
-            style={({ pressed }) => [
-              styles.registerButton,
-              (!agreeToTerms || isLoading) && styles.disabledButton,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={() => {
-              if (!agreeToTerms) {
-                Alert.alert(
-                  language === 'az' ? 'Xəta' : 'Ошибка',
-                  language === 'az'
-                    ? 'İstifadə şərtlərini qəbul edin'
-                    : 'Примите условия использования',
-                );
-                return;
-              }
-              if (isLoading) {
-                return;
-              }
-              handleRegister();
-            }}
-            disabled={!agreeToTerms || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.registerButtonText}>{t('registerNow')}</Text>
-            )}
-          </Pressable>
-        )}
+        <TouchableOpacity
+          style={[
+            styles.registerButton,
+            (!agreeToTerms || isLoading) && styles.disabledButton,
+          ]}
+          onPress={() => {
+            if (!agreeToTerms) {
+              Alert.alert(
+                language === 'az' ? 'Xəta' : 'Ошибка',
+                language === 'az'
+                  ? 'İstifadə şərtlərini qəbul edin'
+                  : 'Примите условия использования',
+              );
+              return;
+            }
+            if (isLoading) {
+              return;
+            }
+            handleRegister();
+          }}
+          disabled={!agreeToTerms || isLoading}
+          activeOpacity={0.7}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.registerButtonText}>{t('registerNow')}</Text>
+          )}
+        </TouchableOpacity>
 
         {/* Divider */}
         <View style={styles.divider}>

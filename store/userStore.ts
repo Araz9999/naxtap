@@ -26,6 +26,10 @@ interface UserState {
   // ✅ Timeout tracking for cleanup
   favoriteTimeouts: Map<string, ReturnType<typeof setTimeout>>;
 
+  // ✅ Rehydration status
+  hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
+
   login: (user: User) => void;
   logout: () => void;
   toggleFavorite: (listingId: string) => void;
@@ -88,6 +92,9 @@ export const useUserStore = create<UserState>()(
 
       // ✅ Initialize timeout map (not persisted)
       favoriteTimeouts: new Map(),
+      hasHydrated: false, // Start as false
+      setHasHydrated: (state) => set({ hasHydrated: state }),
+
       followedUsers: [],
       favoriteUsers: [],
       trustedUsers: [],
@@ -973,6 +980,9 @@ export const useUserStore = create<UserState>()(
       partialize: (state) => {
         const { favoriteTimeouts, ...rest } = state;
         return rest;
+      },
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
       },
     },
   ),
