@@ -333,6 +333,18 @@ export default function CreateListingScreen() {
         return;
       }
 
+      // Validation: SubSubcategory
+      if (selectedCategory && selectedSubcategory) {
+        const subData = selectedCategoryData?.subcategories.find(s => s.id === selectedSubcategory);
+        if (subData?.subcategories && subData.subcategories.length > 0 && !selectedSubSubcategory) {
+          Alert.alert(
+            language === 'az' ? 'Xəta' : 'Ошибка',
+            language === 'az' ? 'Daha alt kateqoriya seçin' : 'Выберите подподкатегорию',
+          );
+          return;
+        }
+      }
+
       setCurrentStep(2);
     } else if (currentStep === 2) {
       // Check if adding to store with available slots (no payment required)
@@ -1109,7 +1121,7 @@ export default function CreateListingScreen() {
           </TouchableOpacity>
         </View>
 
-        {selectedCategory && selectedSubcategory && (
+        {selectedCategory && (selectedCategoryData?.subcategories?.length ?? 0) > 0 && (
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {language === 'az' ? 'Alt kateqoriya' : 'Подкатегория'}
@@ -1124,15 +1136,17 @@ export default function CreateListingScreen() {
                 }
               }}
             >
-              <Text style={styles.pickerText}>
-                {selectedCategoryData?.subcategories.find(s => s.id === selectedSubcategory)?.name[language]}
+              <Text style={selectedSubcategory ? styles.pickerText : styles.pickerPlaceholder}>
+                {selectedSubcategory
+                  ? selectedCategoryData?.subcategories.find(s => s.id === selectedSubcategory)?.name[language]
+                  : language === 'az' ? 'Alt kateqoriya seçin' : 'Выберите подкатегорию'}
               </Text>
               <ChevronDown size={20} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
         )}
 
-        {selectedCategory && selectedSubcategory && selectedSubSubcategory && (
+        {selectedCategory && selectedSubcategory && (selectedCategoryData?.subcategories.find(s => s.id === selectedSubcategory)?.subcategories?.length ?? 0) > 0 && (
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
               {language === 'az' ? 'Daha alt kateqoriya' : 'Подподкатегория'}
@@ -1148,8 +1162,10 @@ export default function CreateListingScreen() {
                 }
               }}
             >
-              <Text style={styles.pickerText}>
-                {selectedCategoryData?.subcategories.find(s => s.id === selectedSubcategory)?.subcategories?.find(ss => ss.id === selectedSubSubcategory)?.name[language]}
+              <Text style={selectedSubSubcategory ? styles.pickerText : styles.pickerPlaceholder}>
+                {selectedSubSubcategory
+                  ? selectedCategoryData?.subcategories.find(s => s.id === selectedSubcategory)?.subcategories?.find(ss => ss.id === selectedSubSubcategory)?.name[language]
+                  : language === 'az' ? 'Daha alt kateqoriya seçin' : 'Выберите подподкатегорию'}
               </Text>
               <ChevronDown size={20} color={Colors.textSecondary} />
             </TouchableOpacity>
