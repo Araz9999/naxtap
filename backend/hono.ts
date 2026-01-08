@@ -9,7 +9,9 @@ import { appRouter } from './trpc/app-router';
 import { createContext } from './trpc/create-context';
 import authRoutes from './routes/auth';
 import paymentsRoutes from './routes/payments';
+import uploadRoutes from './routes/upload';
 import { logger } from './utils/logger';
+import { serveStatic } from '@hono/node-server/serve-static';
 
 // Simple in-memory rate limiter (per IP per window)
 type RateRecord = { count: number; resetAt: number };
@@ -96,6 +98,10 @@ app.use(
 // Mount REST routes under /api
 app.route('/api/auth', authRoutes);
 app.route('/api/payments', paymentsRoutes);
+app.route('/api/upload', uploadRoutes);
+
+// Serve uploaded files
+app.use('/uploads/*', serveStatic({ root: './' }));
 
 // SECURITY: Add security headers
 app.use('*', async (c, next) => {

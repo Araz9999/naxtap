@@ -9,7 +9,7 @@ export const trpc = createTRPCReact<AppRouter>();
 
 const stripTrailingSlash = (u: string) => u.replace(/\/+$/, '');
 
-const getBaseUrl = () => {
+export const getBaseUrl = () => {
   // Prefer explicit env vars (any of these will work)
   const fromEnv =
     process.env.EXPO_PUBLIC_RORK_API_BASE_URL ||

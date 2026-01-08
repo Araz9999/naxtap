@@ -27,7 +27,7 @@ import {
 } from 'lucide-react-native';
 import FileAttachmentPicker, { FileAttachment } from '@/components/FileAttachmentPicker';
 import WebTextInput, { WebTextInputRef } from '@/components/WebTextInput';
-import { trpc } from '@/lib/trpc';
+import { trpc, getBaseUrl } from '@/lib/trpc';
 import { realtimeService } from '@/lib/realtime';
 
 import { logger } from '@/utils/logger';
@@ -216,7 +216,7 @@ export default function LiveChatScreen() {
     }
   };
 
-  const handleSendMessage = useCallback(() => {
+  const handleSendMessage = useCallback(async () => {
     const messageToSend = message;
 
     if ((!messageToSend.trim() && attachments.length === 0) || !conversationId || !currentUser) {
@@ -237,7 +237,54 @@ export default function LiveChatScreen() {
     });
 
     try {
-      const attachmentUrls = attachments.map((att) => att.uri);
+      let attachmentUrls: string[] = [];
+
+      if (attachments.length > 0) {
+        try {
+          const formData = new FormData();
+          
+          if (Platform.OS === 'web') {
+            for (const att of attachments) {
+              const response = await fetch(att.uri);
+              const blob = await response.blob();
+              formData.append('files', blob, att.name);
+            }
+          } else {
+            attachments.forEach((att) => {
+              // @ts-ignore
+              formData.append('files', {
+                uri: att.uri,
+                name: att.name,
+                type: att.mimeType || 'application/octet-stream',
+              });
+            });
+          }
+
+          const baseUrl = getBaseUrl();
+          const uploadRes = await fetch(`${baseUrl}/api/upload`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              // On React Native, let the browser/engine set the Content-Type boundary
+              ...(Platform.OS === 'web' ? {} : { 'Content-Type': 'multipart/form-data' }),
+            },
+          });
+
+          if (!uploadRes.ok) {
+            throw new Error(`Upload failed: ${uploadRes.status}`);
+          }
+
+          const data = await uploadRes.json();
+          if (data.urls) {
+            attachmentUrls = data.urls;
+          }
+        } catch (uploadError) {
+          logger.error('[LiveChat] File upload failed:', uploadError);
+          alert(language === 'az' ? 'Fayl yüklənməsi xətası' : 'Ошибка загрузки файла');
+          return;
+        }
+      }
+
       const messageText = messageToSend.trim() || (attachments.length > 0 ? `📎 ${attachments.length} fayl göndərildi` : '');
 
       sendMessageMutation.mutate(
@@ -289,7 +336,7 @@ export default function LiveChatScreen() {
     } catch (error) {
       logger.error('[LiveChat] Send message error:', error);
     }
-  }, [message, attachments, conversationId, currentUser, sendMessageMutation, utils]);
+  }, [message, attachments, conversationId, currentUser, sendMessageMutation, utils, language]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -584,8 +631,8 @@ export default function LiveChatScreen() {
       ) : conversationId ? (
         <KeyboardAvoidingView
           style={styles.chatContent}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
           <ScrollView
             ref={scrollViewRef}
