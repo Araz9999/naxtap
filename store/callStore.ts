@@ -228,14 +228,11 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
     // Inform server that call invite was accepted (clears pending invite)
     trpcClient.calls.answer.mutate({ callId }).catch(() => undefined);
-< cursor/admin-panel-quick-operations-e5bf
-=======
 
     // Notify caller in realtime (removes "fake auto-answer" behavior)
     if (realtimeService.isAvailable()) {
       realtimeService.send('call:answer', { callId, callerId: call.callerId });
     }
-> main
 
     // Ensure native call audio session is active (ringtone stops, call audio starts)
     (async () => {
@@ -292,15 +289,12 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
     // Inform server that call invite was declined (clears pending invite)
     trpcClient.calls.decline.mutate({ callId }).catch(() => undefined);
-< cursor/admin-panel-quick-operations-e5bf
-
 
     // Notify caller in realtime
     const call = get().calls.find((c) => c.id === callId);
     if (call && realtimeService.isAvailable()) {
       realtimeService.send('call:decline', { callId, callerId: call.callerId });
     }
-> main
 
     // Stop native call audio session if it was started
     (async () => {
