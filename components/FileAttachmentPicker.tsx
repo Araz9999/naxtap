@@ -48,7 +48,7 @@ export default function FileAttachmentPicker({
 
   const pickImage = async () => {
     try {
-      // BUG FIX: Check file limit
+      // Check file limit
       if (attachments.length >= maxFiles) {
         Alert.alert(
           language === 'az' ? 'Limit aşıldı' : 'Превышен лимит',
@@ -59,18 +59,75 @@ export default function FileAttachmentPicker({
         return;
       }
 
-      // BUG FIX: Request permissions with error handling
-      if (Platform.OS !== 'web') {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permissionResult.granted) {
-          Alert.alert(
-            language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
-            language === 'az'
-              ? 'Qalereya giriş icazəsi tələb olunur'
-              : 'Требуется разрешение на доступ к галерее',
-          );
-          return;
-        }
+      // Web platform: use native file input
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        input.style.display = 'none';
+        document.body.appendChild(input);
+
+        input.click();
+
+        input.onchange = (e: Event) => {
+          const target = e.target as HTMLInputElement;
+          const files = target.files;
+          if (!files || files.length === 0) {
+            document.body.removeChild(input);
+            return;
+          }
+
+          const maxFileSize = 10 * 1024 * 1024; // 10MB limit
+          const fileArray = Array.from(files);
+          const validFiles = fileArray.slice(0, maxFiles - attachments.length).filter(file => {
+            if (file.size > maxFileSize) {
+              Alert.alert(
+                language === 'az' ? 'Xəta' : 'Ошибка',
+                language === 'az'
+                  ? `${file.name} çox böyükdür (max 10MB)`
+                  : `${file.name} слишком большой (макс 10MB)`,
+              );
+              return false;
+            }
+            return true;
+          });
+
+          const newAttachments = validFiles.map((file, index) => {
+            const uri = URL.createObjectURL(file);
+            return {
+              id: `${Date.now()}-${index}-${Math.random().toString(36).substring(2, 11)}`,
+              uri,
+              name: file.name,
+              type: 'image' as const,
+              size: file.size,
+              mimeType: file.type || 'image/jpeg',
+            };
+          });
+
+          onAttachmentsChange([...attachments, ...newAttachments]);
+          document.body.removeChild(input);
+        };
+
+        // Cleanup if user cancels
+        setTimeout(() => {
+          if (document.body.contains(input)) {
+            document.body.removeChild(input);
+          }
+        }, 1000);
+        return;
+      }
+
+      // Native platform: use expo-image-picker
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          language === 'az' ? 'İcazə tələb olunur' : 'Требуется разрешение',
+          language === 'az'
+            ? 'Qalereya giriş icazəsi tələb olunur'
+            : 'Требуется разрешение на доступ к галерее',
+        );
+        return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -80,7 +137,6 @@ export default function FileAttachmentPicker({
         allowsEditing: false,
       });
 
-      // BUG FIX: Validate result and check file sizes
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const maxFileSize = 10 * 1024 * 1024; // 10MB limit
         const validAssets = result.assets.filter(asset => {
@@ -108,7 +164,6 @@ export default function FileAttachmentPicker({
         onAttachmentsChange([...attachments, ...newAttachments]);
       }
     } catch (error) {
-      // BUG FIX: Comprehensive error handling
       logger.error('Error picking image:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
@@ -199,7 +254,7 @@ export default function FileAttachmentPicker({
 
   const pickDocument = async () => {
     try {
-      // BUG FIX: Check file limit
+      // Check file limit
       if (attachments.length >= maxFiles) {
         Alert.alert(
           language === 'az' ? 'Limit aşıldı' : 'Превышен лимит',
@@ -210,13 +265,72 @@ export default function FileAttachmentPicker({
         return;
       }
 
+      // Web platform: use native file input
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*';
+        input.multiple = true;
+        input.style.display = 'none';
+        document.body.appendChild(input);
+
+        input.click();
+
+        input.onchange = (e: Event) => {
+          const target = e.target as HTMLInputElement;
+          const files = target.files;
+          if (!files || files.length === 0) {
+            document.body.removeChild(input);
+            return;
+          }
+
+          const maxFileSize = 20 * 1024 * 1024; // 20MB limit for documents
+          const fileArray = Array.from(files);
+          const validFiles = fileArray.slice(0, maxFiles - attachments.length).filter(file => {
+            if (file.size > maxFileSize) {
+              Alert.alert(
+                language === 'az' ? 'Xəta' : 'Ошибка',
+                language === 'az'
+                  ? `${file.name} çox böyükdür (max 20MB)`
+                  : `${file.name} слишком большой (макс 20MB)`,
+              );
+              return false;
+            }
+            return true;
+          });
+
+          const newAttachments = validFiles.map((file, index) => {
+            const uri = URL.createObjectURL(file);
+            return {
+              id: `${Date.now()}-${index}-${Math.random().toString(36).substring(2, 11)}`,
+              uri,
+              name: file.name,
+              type: 'document' as const,
+              size: file.size,
+              mimeType: file.type || 'application/octet-stream',
+            };
+          });
+
+          onAttachmentsChange([...attachments, ...newAttachments]);
+          document.body.removeChild(input);
+        };
+
+        // Cleanup if user cancels
+        setTimeout(() => {
+          if (document.body.contains(input)) {
+            document.body.removeChild(input);
+          }
+        }, 1000);
+        return;
+      }
+
+      // Native platform: use expo-document-picker
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'text/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         multiple: true,
         copyToCacheDirectory: true,
       });
 
-      // BUG FIX: Validate result and check file sizes
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const maxFileSize = 20 * 1024 * 1024; // 20MB limit for documents
         const validAssets = result.assets.filter(asset => {
@@ -248,7 +362,6 @@ export default function FileAttachmentPicker({
         onAttachmentsChange([...attachments, ...newAttachments]);
       }
     } catch (error) {
-      // BUG FIX: Better error handling
       logger.error('Document picker error:', error);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',

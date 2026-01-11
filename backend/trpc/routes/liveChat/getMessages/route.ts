@@ -10,14 +10,8 @@ export default publicProcedure
     viewerType: z.enum(['user', 'support']).optional(),
   }))
   .query(({ input }) => {
-    const list = liveChatDb.messages.getByConversationId(input.conversationId);
-
-    // Realistic status transition:
-    // - "seen" only when the opposite side actually views/reads messages
-    const viewerType = input.viewerType ?? 'user';
-    if (list.length > 0) {
-      liveChatDb.messages.markAsRead(input.conversationId, viewerType);
-    }
-
+    // Don't mark as read on every query fetch - it's called too frequently by refetchInterval (every 2 seconds)
+    // Mark as read should be handled explicitly via markAsRead mutation when conversation opens
+    // This prevents infinite loops and 404 errors for closed/non-existent conversations
     return liveChatDb.messages.getByConversationId(input.conversationId);
   });

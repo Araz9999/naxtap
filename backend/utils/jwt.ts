@@ -79,7 +79,16 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
       role,
       exp: typeof exp === 'number' ? exp : undefined,
     };
-  } catch (error) {
+  } catch (error: any) {
+    // Only log non-expiration errors - expired tokens are expected for public procedures
+    // jsonwebtoken throws TokenExpiredError, JsonWebTokenError, NotBeforeError
+    const errorName = error?.name || error?.constructor?.name || '';
+    if (errorName === 'TokenExpiredError' || errorName.includes('Expired')) {
+      // Silently handle expired tokens - this is normal for public procedures
+      // No logging to prevent spam
+      return null;
+    }
+    // Log only unexpected errors (invalid signature, malformed token, etc.)
     logger.error('[JWT] Token verification failed:', error);
     return null;
   }

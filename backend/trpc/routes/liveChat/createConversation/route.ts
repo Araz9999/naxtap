@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
 import { liveChatDb } from '../../../../db/liveChat';
-import { LiveChatConversation } from '../../../../types/liveChat';
+import { LiveChatConversation, LiveChatMessage } from '../../../../types/liveChat';
 
 export default publicProcedure
   .input(z.object({
@@ -44,6 +44,29 @@ export default publicProcedure
 
     if (agent) {
       liveChatDb.agents.incrementActiveChats(agent.id);
+    }
+
+    // Create initial message with subject if provided
+    if (input.subject && input.subject.trim()) {
+      const initialMessage: LiveChatMessage = {
+        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        conversationId: created.id,
+        senderId: input.userId,
+        senderName: input.userName,
+        senderAvatar: input.userAvatar,
+        message: input.subject.trim(),
+        attachments: undefined,
+        timestamp: new Date().toISOString(),
+        status: 'delivered',
+        isSupport: false,
+      };
+      liveChatDb.messages.create(initialMessage);
+      
+      // Update conversation with last message
+      liveChatDb.conversations.update(created.id, {
+        lastMessage: input.subject.trim(),
+        lastMessageTime: initialMessage.timestamp,
+      });
     }
 
     return created;

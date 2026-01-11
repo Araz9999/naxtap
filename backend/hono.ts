@@ -87,7 +87,7 @@ if (process.env.NODE_ENV === 'production') {
   logger.info('[RateLimit] Rate limiting disabled for development - you can test freely');
 }
 
-app.use(
+app.all(
   '/api/trpc/*',
   trpcServer({
     router: appRouter,

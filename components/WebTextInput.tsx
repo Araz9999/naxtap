@@ -31,35 +31,26 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
   multiline = false,
   autoFocus = false,
 }, ref) => {
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const valueRef = useRef(value);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const isUserTypingRef = useRef(false);
+  const lastValueRef = useRef(value);
+  const onChangeTextRef = useRef(onChangeText);
+  const onSubmitEditingRef = useRef(onSubmitEditing);
 
-  // Update ref when value prop changes (for clearing)
+  // Keep refs updated
   useEffect(() => {
-    if (value === '' && valueRef.current !== '') {
-      // Clear input
-      if (inputRef.current) {
-        inputRef.current.value = '';
-        valueRef.current = '';
-      }
-    } else if (value !== valueRef.current && inputRef.current) {
-      // Only update if different (for initial value)
-      inputRef.current.value = value;
-      valueRef.current = value;
-    }
-  }, [value]);
+    onChangeTextRef.current = onChangeText;
+    onSubmitEditingRef.current = onSubmitEditing;
+  }, [onChangeText, onSubmitEditing]);
 
-  // Create input element
+  // Create input element ONCE and keep it stable
   useEffect(() => {
     if (Platform.OS !== 'web' || !containerRef.current) return;
 
-    // Clear container
-    if (containerRef.current.firstChild) {
-      containerRef.current.removeChild(containerRef.current.firstChild);
-    }
+    // Only create if it doesn't exist
+    if (inputRef.current) return;
 
-    // Create native HTML input
     const input = multiline
       ? document.createElement('textarea')
       : document.createElement('input');
@@ -67,8 +58,9 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
     if (!multiline) {
       (input as HTMLInputElement).type = 'text';
     }
+
     input.placeholder = placeholder || '';
-    input.value = valueRef.current;
+    input.value = value;
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('spellcheck', 'false');
 
@@ -77,7 +69,7 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
     }
 
     // Apply styles
-    const inputStyle = {
+    const inputStyle: Partial<CSSStyleDeclaration> = {
       width: '100%',
       height: multiline ? 'auto' : '44px',
       padding: '10px 16px',
@@ -86,51 +78,71 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
       borderStyle: 'solid',
       fontSize: '16px',
       outline: 'none',
-      boxSizing: 'border-box' as const,
-      borderColor: '#e5e7eb',
-      backgroundColor: '#ffffff',
-      color: '#111827',
+      boxSizing: 'border-box',
+      borderColor: style?.borderColor || '#e5e7eb',
+      backgroundColor: style?.backgroundColor || '#ffffff',
+      color: style?.color || '#111827',
       fontFamily: 'inherit',
-      resize: multiline ? ('vertical' as const) : ('none' as const),
+      resize: multiline ? 'vertical' : 'none',
       minHeight: multiline ? '80px' : '44px',
-      ...(style?.borderColor && { borderColor: style.borderColor }),
-      ...(style?.backgroundColor && { backgroundColor: style.backgroundColor }),
-      ...(style?.color && { color: style.color }),
     };
 
     Object.assign(input.style, inputStyle);
 
-    // Handle input - update ref but defer React state update
+    // Handle input events - update React state
     const handleInput = () => {
       const newValue = input.value;
-      valueRef.current = newValue;
-
-      // Call onChangeText in next tick to avoid React error #185
-      if (onChangeText) {
+      isUserTypingRef.current = true;
+      lastValueRef.current = newValue;
+      
+      // Reset typing flag after a short delay
+      setTimeout(() => {
+        isUserTypingRef.current = false;
+      }, 100);
+      
+      if (onChangeTextRef.current) {
+        // Use requestAnimationFrame for better performance
         requestAnimationFrame(() => {
-          onChangeText(newValue);
+          if (onChangeTextRef.current) {
+            onChangeTextRef.current(newValue);
+          }
         });
       }
     };
 
     input.addEventListener('input', handleInput);
 
+    // Handle focus/blur to track user interaction
+    const handleFocus = () => {
+      isUserTypingRef.current = true;
+    };
+
+    const handleBlur = () => {
+      isUserTypingRef.current = false;
+    };
+
+    input.addEventListener('focus', handleFocus);
+    input.addEventListener('blur', handleBlur);
+
     // Handle Enter key
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && !multiline) {
         e.preventDefault();
-        if (onSubmitEditing) {
+        if (onSubmitEditingRef.current) {
           requestAnimationFrame(() => {
-            onSubmitEditing();
+            if (onSubmitEditingRef.current) {
+              onSubmitEditingRef.current();
+            }
           });
         }
       }
     };
+
     if (!multiline) {
       input.addEventListener('keydown', handleKeyDown as unknown as EventListener);
     }
 
-    // Handle focus
+    // Auto focus
     if (autoFocus) {
       setTimeout(() => {
         input.focus();
@@ -141,17 +153,49 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
     containerRef.current.appendChild(input);
     inputRef.current = input;
 
-    // Cleanup
+    // Cleanup on unmount only
     return () => {
       input.removeEventListener('input', handleInput);
+      input.removeEventListener('focus', handleFocus);
+      input.removeEventListener('blur', handleBlur);
       if (!multiline) {
         input.removeEventListener('keydown', handleKeyDown as unknown as EventListener);
       }
       if (containerRef.current && input.parentNode === containerRef.current) {
         containerRef.current.removeChild(input);
       }
+      inputRef.current = null;
     };
-  }, [placeholder, multiline, maxLength, autoFocus, onChangeText, onSubmitEditing, style]);
+  }, []); // Empty deps - create once only
+
+  // Sync value prop to input (only when not user-typing)
+  useEffect(() => {
+    if (!inputRef.current) return;
+    
+    // Check if input is focused
+    const isFocused = document.activeElement === inputRef.current;
+    
+    // Only update if value prop changed externally and user is not typing
+    if (value !== lastValueRef.current) {
+      // If value is empty, always clear (for reset after send)
+      if (value === '') {
+        inputRef.current.value = '';
+        lastValueRef.current = '';
+        isUserTypingRef.current = false;
+      } else if (!isFocused && !isUserTypingRef.current) {
+        // Only update if input is not focused and user is not actively typing
+        inputRef.current.value = value;
+        lastValueRef.current = value;
+      }
+    }
+  }, [value]);
+
+  // Update placeholder when it changes
+  useEffect(() => {
+    if (inputRef.current && placeholder !== undefined) {
+      inputRef.current.placeholder = placeholder;
+    }
+  }, [placeholder]);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -168,16 +212,19 @@ const WebTextInput = forwardRef<WebTextInputRef, WebTextInputProps>(({
     clear: () => {
       if (inputRef.current) {
         inputRef.current.value = '';
-        valueRef.current = '';
+        lastValueRef.current = '';
+        isUserTypingRef.current = false;
+        if (onChangeTextRef.current) {
+          onChangeTextRef.current('');
+        }
       }
     },
     getValue: () => {
-      return valueRef.current;
+      return inputRef.current?.value || '';
     },
   }));
 
   if (Platform.OS !== 'web') {
-    // Fallback to regular View on native
     return <View style={style} />;
   }
 
@@ -201,4 +248,3 @@ const styles = StyleSheet.create({
 });
 
 export default WebTextInput;
-

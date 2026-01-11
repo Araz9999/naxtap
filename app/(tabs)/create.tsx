@@ -7,6 +7,7 @@ import { useTranslation } from '@/constants/translations';
 import { useUserStore } from '@/store/userStore';
 import { useStoreStore } from '@/store/storeStore';
 import { useListingStore } from '@/store/listingStore';
+import { trpcClient } from '@/lib/trpc';
 import { categories } from '@/constants/categories';
 import { locations } from '@/constants/locations';
 import { adPackages } from '@/constants/adPackages';
@@ -55,6 +56,7 @@ export default function CreateListingScreen() {
   const [addToStore, setAddToStore] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [showStoreModal, setShowStoreModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check authentication after hooks
   if (!hasHydrated) {
@@ -234,9 +236,17 @@ export default function CreateListingScreen() {
   };
 
   const handleNextStep = () => {
-    if (currentStep === 1) {
+    if (isSubmitting) {
+      logger.info('[CreateListing] Already submitting, ignoring click');
+      return;
+    }
+    logger.info('[CreateListing] handleNextStep called, currentStep:', currentStep);
+    try {
+      if (currentStep === 1) {
+      logger.info('[CreateListing] Step 1 validation started');
       // Validation: Title
       if (!title.trim()) {
+        logger.info('[CreateListing] Validation failed: Title is empty');
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',
           language === 'az' ? 'Elan başlığını daxil edin' : 'Введите заголовок объявления',
@@ -282,16 +292,16 @@ export default function CreateListingScreen() {
         if (!price.trim()) {
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Qiymət daxil edin' : 'Введите цену',
+            language === 'az' ? 'Qiymət daxil edin və ya "Razılaşma ilə" seçimini işarələyin' : 'Введите цену или отметьте "По договоренности"',
           );
           return;
         }
 
         const priceValue = parseFloat(price);
-        if (isNaN(priceValue) || priceValue <= 0) {
+        if (isNaN(priceValue) || priceValue < 0) {
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az' ? 'Düzgün qiymət daxil edin' : 'Введите корректную цену',
+            language === 'az' ? 'Düzgün qiymət daxil edin (0 və ya daha çox) və ya "Razılaşma ilə" seçimini işarələyin' : 'Введите корректную цену (0 или больше) или отметьте "По договоренности"',
           );
           return;
         }
@@ -345,10 +355,23 @@ export default function CreateListingScreen() {
         }
       }
 
+      logger.info('[CreateListing] Step 1 validation passed, moving to step 2');
       setCurrentStep(2);
     } else if (currentStep === 2) {
+      logger.info('[CreateListing] Step 2 button clicked');
       // Check if adding to store with available slots (no payment required)
       const isStoreListingWithSlots = addToStore && selectedStore && canAddToSelectedStore;
+      logger.info('[CreateListing] Step 2 validation:', { isStoreListingWithSlots, selectedPackage, selectedPackageData: !!selectedPackageData });
+
+      // Validate package data exists
+      if (!selectedPackageData) {
+        logger.error('[CreateListing] Selected package data is missing:', selectedPackage);
+        Alert.alert(
+          language === 'az' ? 'Xəta' : 'Ошибка',
+          language === 'az' ? 'Paket seçimi tapılmadı. Zəhmət olmasa yenidən seçin.' : 'Выбор пакета не найден. Пожалуйста, выберите снова.',
+        );
+        return;
+      }
 
       if (!isStoreListingWithSlots && selectedPackage !== 'free' && !canAfford(selectedPackageData?.price || 0)) {
         Alert.alert(
@@ -370,22 +393,48 @@ export default function CreateListingScreen() {
         return;
       }
 
-      // Show confirmation alert before posting the listing
+      // For free listings, submit directly without confirmation
+      // For paid listings, show confirmation in handleSubmit
+      if (selectedPackage === 'free' || isStoreListingWithSlots) {
+        logger.info('[CreateListing] Free listing or store listing with slots - submitting directly');
+        setIsSubmitting(true);
+        handleSubmit();
+      } else {
+        // Show confirmation alert before posting paid listings
+        logger.info('[CreateListing] Paid listing - showing confirmation alert');
+        Alert.alert(
+          language === 'az' ? 'Elanı yerləşdir' : 'Разместить объявление',
+          language === 'az'
+            ? 'Elanınızı yerləşdirmək istədiyinizə əminsiniz?'
+            : 'Вы уверены, что хотите разместить объявление?',
+          [
+            {
+              text: language === 'az' ? 'Ləğv et' : 'Отмена',
+              style: 'cancel',
+              onPress: () => {
+                logger.info('[CreateListing] User cancelled submission');
+              },
+            },
+            {
+              text: language === 'az' ? 'Bəli, yerləşdir' : 'Да, разместить',
+              onPress: () => {
+                logger.info('[CreateListing] User confirmed submission, calling handleSubmit');
+                setIsSubmitting(true);
+                handleSubmit();
+              },
+            },
+          ],
+        );
+      }
+      }
+    } catch (error) {
+      logger.error('[CreateListing] Error in handleNextStep:', error);
+      setIsSubmitting(false);
       Alert.alert(
-        language === 'az' ? 'Elanı yerləşdir' : 'Разместить объявление',
+        language === 'az' ? 'Xəta' : 'Ошибка',
         language === 'az'
-          ? 'Elanınızı yerləşdirmək istədiyinizə əminsiniz?'
-          : 'Вы уверены, что хотите разместить объявление?',
-        [
-          {
-            text: language === 'az' ? 'Ləğv et' : 'Отмена',
-            style: 'cancel',
-          },
-          {
-            text: language === 'az' ? 'Bəli, yerləşdir' : 'Да, разместить',
-            onPress: () => handleSubmit(),
-          },
-        ],
+          ? 'Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
+          : 'Произошла ошибка. Пожалуйста, попробуйте еще раз.',
       );
     }
   };
@@ -397,8 +446,14 @@ export default function CreateListingScreen() {
   };
 
   const handleSubmit = async () => {
+    logger.info('[CreateListing] handleSubmit called');
+    if (isSubmitting) {
+      logger.info('[CreateListing] Already submitting, ignoring handleSubmit call');
+      return;
+    }
     // Check if adding to store with available slots (no payment required)
     const isStoreListingWithSlots = addToStore && selectedStore && canAddToSelectedStore;
+    logger.info('[CreateListing] handleSubmit - isStoreListingWithSlots:', isStoreListingWithSlots);
 
     // Check free ad limit for non-store listings only
     if (selectedPackage === 'free' && !isStoreListingWithSlots) {
@@ -453,15 +508,19 @@ export default function CreateListingScreen() {
   };
 
   const processListingSubmission = async () => {
+    logger.info('[CreateListing] processListingSubmission called');
     const isStoreListingWithSlots = addToStore && selectedStore && canAddToSelectedStore;
+    logger.info('[CreateListing] processListingSubmission - isStoreListingWithSlots:', isStoreListingWithSlots, 'selectedPackage:', selectedPackage);
 
     try {
+      setIsSubmitting(true);
       // ✅ Process payment only if not adding to store with available slots
       if (!isStoreListingWithSlots && selectedPackage !== 'free') {
         const packagePrice = selectedPackageData?.price || 0;
 
         // ✅ Check if can afford first
         if (!canAfford(packagePrice)) {
+          setIsSubmitting(false);
           Alert.alert(
             language === 'az' ? 'Balans kifayət etmir' : 'Недостаточно средств',
             language === 'az'
@@ -484,6 +543,7 @@ export default function CreateListingScreen() {
         // ✅ Actually spend and check success
         const paymentSuccess = spendFromBalance(packagePrice);
         if (!paymentSuccess) {
+          setIsSubmitting(false);
           Alert.alert(
             language === 'az' ? 'Ödəniş xətası' : 'Ошибка оплаты',
             language === 'az'
@@ -520,7 +580,7 @@ export default function CreateListingScreen() {
           ru: description,
           en: description,
         },
-        price: priceByAgreement ? 0 : (parseFloat(price) || 0),
+        price: priceByAgreement ? 0 : (price.trim() ? Math.max(0, parseFloat(price) || 0) : 0),
         currency: currency as 'AZN' | 'USD',
         priceByAgreement,
         images,
@@ -544,13 +604,59 @@ export default function CreateListingScreen() {
         contactPreference,
       };
 
-      // Add to store if selected, otherwise add normally
-      if (addToStore && selectedStore) {
-        await addListingToStore(newListing, selectedStore.id);
-      } else {
-        await addListingToStore(newListing);
+      logger.info('[CreateListing] Creating listing on backend:', { 
+        id: newListing.id, 
+        title: newListing.title.az, 
+        addToStore, 
+        hasSelectedStore: !!selectedStore 
+      });
+
+      // First, create the listing on the backend
+      try {
+        const createdListing = await trpcClient.listing.create.mutate({
+          title: {
+            az: newListing.title.az,
+            ru: newListing.title.ru || newListing.title.az,
+          },
+          description: {
+            az: newListing.description.az,
+            ru: newListing.description.ru || newListing.description.az,
+          },
+          price: newListing.price,
+          currency: newListing.currency,
+          location: {
+            az: newListing.location.az,
+            ru: newListing.location.ru || newListing.location.az,
+          },
+          categoryId: newListing.categoryId,
+          subcategoryId: newListing.subcategoryId || 0,
+          images: newListing.images,
+          storeId: (addToStore && selectedStore) ? selectedStore.id : undefined,
+          expiresAt: newListing.expiresAt,
+          isFeatured: newListing.isFeatured,
+          isPremium: newListing.isPremium,
+          adType: newListing.adType,
+          contactPreference: newListing.contactPreference,
+        });
+
+        logger.info('[CreateListing] Listing created on backend:', createdListing.id);
+
+        // Then add to local store
+        if (addToStore && selectedStore) {
+          logger.info('[CreateListing] Adding listing to local store:', selectedStore.id);
+          await addListingToStore(createdListing as Listing, selectedStore.id);
+        } else {
+          logger.info('[CreateListing] Adding listing to local store without store');
+          await addListingToStore(createdListing as Listing);
+        }
+
+        logger.info('[CreateListing] Listing added successfully, showing success alert');
+      } catch (apiError) {
+        logger.error('[CreateListing] Failed to create listing on backend:', apiError);
+        throw apiError; // Re-throw to be caught by outer catch
       }
 
+      setIsSubmitting(false);
       Alert.alert(
         language === 'az' ? 'Uğurlu' : 'Успешно',
         language === 'az'
@@ -571,12 +677,18 @@ export default function CreateListingScreen() {
           },
         ],
       );
-    } catch {
+    } catch (error: any) {
+      logger.error('[CreateListing] Failed to submit listing:', error);
+      setIsSubmitting(false);
+      
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      logger.error('[CreateListing] Error details:', { errorMessage, error });
+      
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
         language === 'az'
-          ? 'Elan yerləşdirilərkən xəta baş verdi'
-          : 'Произошла ошибка при размещении объявления',
+          ? `Elan yerləşdirilərkən xəta baş verdi: ${errorMessage}. Zəhmət olmasa yenidən cəhd edin.`
+          : `Произошла ошибка при размещении объявления: ${errorMessage}. Пожалуйста, попробуйте еще раз.`,
       );
     }
   };
@@ -1604,14 +1716,31 @@ export default function CreateListingScreen() {
             style={[
               styles.nextButton,
               currentStep === 1 && styles.fullWidthButton,
+              isSubmitting && styles.disabledButton,
             ]}
-            onPress={handleNextStep}
+            onPress={() => {
+              logger.info('[CreateListing] Button clicked, currentStep:', currentStep, 'isSubmitting:', isSubmitting);
+              if (!isSubmitting) {
+                handleNextStep();
+              }
+            }}
+            activeOpacity={0.7}
+            disabled={isSubmitting}
           >
-            <Text style={styles.nextButtonText}>
-              {currentStep === 1
-                ? (language === 'az' ? 'Davam et' : 'Продолжить')
-                : (language === 'az' ? 'Elanı yerləşdir' : 'Разместить объявление')}
-            </Text>
+            {isSubmitting ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }} />
+                <Text style={styles.nextButtonText}>
+                  {language === 'az' ? 'Yerləşdirilir...' : 'Размещается...'}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.nextButtonText}>
+                {currentStep === 1
+                  ? (language === 'az' ? 'Davam et' : 'Продолжить')
+                  : (language === 'az' ? 'Elanı yerləşdir' : 'Разместить объявление')}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -2065,6 +2194,9 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 16,
     fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   nextButton: {
     flex: 1,

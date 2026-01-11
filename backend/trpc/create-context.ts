@@ -9,12 +9,10 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
 
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    try {
-      const verified = await verifyToken(token);
-      user = verified ? { ...verified, id: verified.userId } : null;
-    } catch (error) {
-      logger.error('[Context] Token verification failed:', error);
-    }
+    // verifyToken returns null on error (including expired tokens) - it doesn't throw
+    // So we can safely await it without try-catch
+    const verified = await verifyToken(token);
+    user = verified ? { ...verified, id: verified.userId } : null;
   }
 
   return {

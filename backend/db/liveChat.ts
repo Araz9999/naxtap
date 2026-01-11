@@ -159,36 +159,43 @@ export const liveChatDb = {
       return false;
     },
     markAsRead: (conversationId: string, viewerType: LiveChatViewerType = 'user') => {
-      logger.info('[LiveChatDB] Marking messages as read for conversation:', { conversationId, viewerType });
-      const convMessages = messages.get(conversationId);
-      if (convMessages) {
-        const shouldMarkSeen = (msg: LiveChatMessage) => {
-          // Viewer marks the opposite side's messages as seen.
-          // - user sees support messages
-          // - support sees user messages
-          return viewerType === 'user' ? msg.isSupport : !msg.isSupport;
-        };
-
-        let updatedCount = 0;
-        convMessages.forEach(msg => {
-          if (shouldMarkSeen(msg) && msg.status !== 'seen') {
-            msg.status = 'seen';
-            messageIndex.set(msg.id, msg);
-            updatedCount += 1;
-          }
-        });
-        messages.set(conversationId, convMessages);
-
-        // Update conversation unread count
-        const conversation = conversations.get(conversationId);
-        if (conversation && conversation.unreadCount > 0) {
-          const updated = { ...conversation, unreadCount: 0 };
-          conversations.set(conversationId, updated);
-        }
-        return updatedCount;
+      // Check if conversation exists first
+      const conversation = conversations.get(conversationId);
+      if (!conversation) {
+        logger.debug('[LiveChatDB] Conversation not found for markAsRead (may be closed):', conversationId);
+        return 0;
       }
-      logger.warn('[LiveChatDB] Conversation not found:', conversationId);
-      return 0;
+      
+      logger.debug('[LiveChatDB] Marking messages as read for conversation:', { conversationId, viewerType });
+      const convMessages = messages.get(conversationId);
+      if (!convMessages || convMessages.length === 0) {
+        return 0;
+      }
+      
+      const shouldMarkSeen = (msg: LiveChatMessage) => {
+        // Viewer marks the opposite side's messages as seen.
+        // - user sees support messages
+        // - support sees user messages
+        return viewerType === 'user' ? msg.isSupport : !msg.isSupport;
+      };
+
+      let updatedCount = 0;
+      convMessages.forEach(msg => {
+        if (shouldMarkSeen(msg) && msg.status !== 'seen') {
+          msg.status = 'seen';
+          messageIndex.set(msg.id, msg);
+          updatedCount += 1;
+        }
+      });
+      messages.set(conversationId, convMessages);
+
+      // Update conversation unread count (conversation already checked at start)
+      if (conversation && conversation.unreadCount > 0) {
+        const updated = { ...conversation, unreadCount: 0 };
+        conversations.set(conversationId, updated);
+      }
+      
+      return updatedCount;
     },
   },
 
