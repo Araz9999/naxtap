@@ -1,17 +1,23 @@
 import { Platform } from 'react-native';
 
+// Dev backend: on device/emulator set EXPO_PUBLIC_BACKEND_URL to your machine IP (e.g. http://192.168.1.5:3000)
+const devBackend =
+  typeof __DEV__ !== 'undefined' && __DEV__ && (process.env as any).EXPO_PUBLIC_BACKEND_URL
+    ? (process.env as any).EXPO_PUBLIC_BACKEND_URL.replace(/\/+$/, '')
+    : null;
+
 // API Configuration
 export const API_CONFIG = {
   // Base URLs
   BASE_URL: Platform.select({
     web: typeof window !== 'undefined' && window.location ? `${window.location.origin}/api` : 'https://naxtap.az/api',
-    default: 'https://naxtap.az/api',
+    default: devBackend ? `${devBackend}/api` : 'https://naxtap.az/api',
   }),
 
   // Backend base (used for realtime / socket connections, etc.)
   BACKEND_URL: Platform.select({
     web: typeof window !== 'undefined' && window.location ? window.location.origin : 'https://naxtap.az',
-    default: 'https://naxtap.az',
+    default: devBackend ?? 'https://naxtap.az',
   }),
 
   // AI Services

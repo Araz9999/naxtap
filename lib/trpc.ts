@@ -22,10 +22,18 @@ export const getBaseUrl = () => {
     return stripTrailingSlash(fromEnv);
   }
 
-  // ✅ In development, always use localhost:3000 for backend API
+  // In development: use EXPO_PUBLIC_BACKEND_URL for device/emulator (e.g. http://192.168.1.5:3000)
   if (__DEV__ || process.env.NODE_ENV === 'development') {
-    console.log('[tRPC] Using backend API at http://localhost:3000');
-    return 'http://localhost:3000';
+    const devUrl =
+      (process.env as any).EXPO_PUBLIC_BACKEND_URL ||
+      (process.env as any).EXPO_PUBLIC_API_BASE_URL ||
+      'http://localhost:3000';
+    if (devUrl === 'http://localhost:3000') {
+      console.warn(
+        '[tRPC] Using localhost:3000. On device/emulator set EXPO_PUBLIC_BACKEND_URL to your machine IP (e.g. http://192.168.1.5:3000)'
+      );
+    }
+    return stripTrailingSlash(devUrl);
   }
 
   // On web production, default to same-origin base (works with Nginx proxying /api)

@@ -2,12 +2,14 @@
   "name": "naxtap-workspace",
   "version": "1.0.0",
   "private": true,
+  "main": "expo-router/entry",
   "packageManager": "npm@10.9.0",
   "workspaces": [
     "mobile",
     "server"
   ],
   "scripts": {
+    "postinstall": "node scripts/postinstall.js",
     "mobile:start": "cd mobile && npm start",
     "mobile:android": "cd mobile && npm run android",
     "mobile:ios": "cd mobile && npm run ios",
@@ -116,9 +118,9 @@
     "serve": "^14.2.1",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "patch-package": "^8.0.0"
   },
-  "private": true,
   "prisma": {
     "seed": "ts-node backend/seed.ts"
   }

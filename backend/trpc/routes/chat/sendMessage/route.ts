@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { protectedProcedure } from '../../../create-context';
 import { chatDb, ChatMessageType } from '../../../../db/chat';
 import { prisma } from '../../../../db/client';
+import { realtimeServer } from '../../../../realtime/server';
 
 const attachmentSchema = z.object({
   id: z.string(),
@@ -66,6 +67,9 @@ export default protectedProcedure
       type: input.type,
       attachments: input.attachments,
     });
+
+    // Realtime: broadcast only after save (socket never writes to DB)
+    realtimeServer.broadcastChatMessage(conv.id, message);
 
     return {
       conversationId: conv.id,

@@ -3,7 +3,7 @@ import { publicProcedure } from '../../../create-context';
 import { liveChatDb } from '../../../../db/liveChat';
 import { LiveChatMessage } from '../../../../types/liveChat';
 import { TRPCError } from '@trpc/server';
-
+import { realtimeServer } from '../../../../realtime/server';
 import { logger } from '../../../../utils/logger';
 export default publicProcedure
   .input(z.object({
@@ -51,6 +51,9 @@ export default publicProcedure
       lastMessageTime: message.timestamp,
     });
     logger.debug('[SendMessage] Conversation updated:', updated?.id);
+
+    // Realtime: broadcast only after save (socket never writes to DB)
+    realtimeServer.broadcastSupportMessage(input.conversationId, created);
 
     return created;
   });

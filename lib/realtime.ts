@@ -72,12 +72,13 @@ class RealtimeService {
    */
   private async initializeSocketIO(config: RealtimeConfig): Promise<void> {
     try {
-      // Socket.io yalnız native-də işləyir
-      const io = require('socket.io-client');
+      // socket.io-client: use named export (io) or default for ESM/CJS compatibility
+      const socketIo = require('socket.io-client');
+      const io = socketIo.io ?? socketIo.default ?? socketIo;
 
       this.config = config;
 
-      this.socket = io.default(config.url, {
+      this.socket = io(config.url, {
         autoConnect: config.autoConnect ?? true,
         reconnection: config.reconnection ?? true,
         reconnectionAttempts: config.reconnectionAttempts ?? 5,
