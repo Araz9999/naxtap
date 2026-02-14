@@ -96,21 +96,35 @@ export const useListingStore = create<ListingState>((set, get) =>
     notificationTimeouts: new Map(),
 
     fetchListings: async () => {
-      try {
-        set({ isLoading: true, error: null });
-        const listings = await trpcClient.listing.getAll.query();
-        set({
-          listings: listings as Listing[],
-          filteredListings: listings as Listing[],
-          isLoading: false,
-        });
-        get().applyFilters();
-      } catch (error) {
-        logger.error('[ListingStore] Failed to fetch listings:', error);
-        set({
-          error: 'Failed to load listings',
-          isLoading: false,
-        });
+      const maxRetries = 2;
+      let lastError: unknown;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          set({ isLoading: true, error: null });
+          const listings = await trpcClient.listing.getAll.query();
+          set({
+            listings: listings as Listing[],
+            filteredListings: listings as Listing[],
+            isLoading: false,
+          });
+          get().applyFilters();
+          return;
+        } catch (error) {
+          lastError = error;
+          if (attempt < maxRetries) {
+            const delayMs = 1000 * (attempt + 1);
+            await new Promise((r) => setTimeout(r, delayMs));
+          }
+        }
+      }
+      set({
+        error: 'Failed to load listings',
+        isLoading: false,
+      });
+      logger.error('[ListingStore] Failed to fetch listings:', lastError);
+      const msg = lastError && typeof lastError === 'object' && 'message' in lastError ? String((lastError as any).message).toLowerCase() : '';
+      if (typeof __DEV__ !== 'undefined' && __DEV__ && (msg.includes('network') || msg.includes('aborted'))) {
+        logger.warn('[ListingStore] Tip: ensure backend is running and EXPO_PUBLIC_BACKEND_URL or EXPO_PUBLIC_RORK_API_BASE_URL is set. On device/emulator use your machine IP (e.g. http://192.168.1.5:3000). "Aborted" usually means request timed out or server unreachable.');
       }
     },
 

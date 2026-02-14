@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure } from '../../../create-context';
 import { chatDb, ChatMessageType } from '../../../../db/chat';
-import { prisma } from '../../../../db/client';
+import { userDB } from '../../../../db/users';
 import { realtimeServer } from '../../../../realtime/server';
 
 const attachmentSchema = z.object({
@@ -35,7 +35,7 @@ export default protectedProcedure
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot message yourself' });
     }
 
-    const receiver = await prisma.user.findUnique({ where: { id: input.receiverId }, select: { id: true } });
+    const receiver = await userDB.findById(input.receiverId);
     if (!receiver) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Receiver not found' });
     }

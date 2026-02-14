@@ -320,18 +320,22 @@ class RealtimeService {
 
   /**
    * Join room (for conversations)
+   * @param roomId - Conversation ID or user ID (for user rooms)
+   * @param type - Room type: 'chat' | 'support' | 'user' (default: 'chat')
    */
-  joinRoom(roomId: string): void {
-    this.send('room:join', { roomId });
-    logger.info(`[Realtime] Joined room: ${roomId}`);
+  joinRoom(roomId: string, type: 'chat' | 'support' | 'user' = 'chat'): void {
+    this.send('room:join', { roomId, type });
+    logger.info(`[Realtime] Joined room: ${roomId} (type: ${type})`);
   }
 
   /**
    * Leave room
+   * @param roomId - Conversation ID or user ID (for user rooms)
+   * @param type - Room type: 'chat' | 'support' | 'user' (default: 'chat')
    */
-  leaveRoom(roomId: string): void {
-    this.send('room:leave', { roomId });
-    logger.info(`[Realtime] Left room: ${roomId}`);
+  leaveRoom(roomId: string, type: 'chat' | 'support' | 'user' = 'chat'): void {
+    this.send('room:leave', { roomId, type });
+    logger.info(`[Realtime] Left room: ${roomId} (type: ${type})`);
   }
 
   /**

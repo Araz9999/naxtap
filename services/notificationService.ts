@@ -1,41 +1,36 @@
 import config from '@/constants/config';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 import { logger } from '@/utils/logger';
-// Configure notification behavior only for mobile platforms
-// Note: Push notifications are not available in Expo Go SDK 53+
+// Configure notification behavior only for mobile platforms.
+// Remote push was removed from Expo Go in SDK 53 — don't load the module there to avoid the warning.
 let Notifications: typeof import('expo-notifications') | null = null;
 let isNotificationsAvailable = false;
 
 if (Platform.OS !== 'web') {
-  try {
-    // ✅ FIX: Proper Expo Go detection
-    // In Expo Go, Constants.appOwnership === 'expo'
-    // In standalone/development builds, it's null or 'standalone'
-    const isExpoGo = __DEV__;
-
-    if (isExpoGo) {
-      // In Expo Go, we can only use local notifications
-      logger.debug('Running in development mode - remote push notifications may not be available');
+  const isExpoGo = Constants.appOwnership === 'expo';
+  if (isExpoGo) {
+    logger.debug('Expo Go: remote push not available (SDK 53+). Use a development build for push.');
+  } else {
+    try {
+      Notifications = require('expo-notifications');
+      isNotificationsAvailable = true;
+      if (Notifications?.setNotificationHandler) {
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+            shouldShowBanner: true,
+            shouldShowList: true,
+          }),
+        });
+      }
+    } catch (error) {
+      logger.debug('Expo notifications module not available');
+      isNotificationsAvailable = false;
     }
-
-    Notifications = require('expo-notifications');
-    isNotificationsAvailable = true;
-
-    if (Notifications && Notifications.setNotificationHandler) {
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-          shouldShowBanner: true,
-          shouldShowList: true,
-        }),
-      });
-    }
-  } catch (error) {
-    logger.debug('Expo notifications module not available');
-    isNotificationsAvailable = false;
   }
 }
 

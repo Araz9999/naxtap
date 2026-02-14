@@ -1,6 +1,6 @@
 import { protectedProcedure } from '../../../create-context';
 import { chatDb } from '../../../../db/chat';
-import { prisma } from '../../../../db/client';
+import { userDB } from '../../../../db/users';
 
 export default protectedProcedure.query(async ({ ctx }) => {
   const userId = ctx.user.userId;
@@ -15,13 +15,10 @@ export default protectedProcedure.query(async ({ ctx }) => {
   );
 
   const otherUsers = otherUserIds.length
-    ? await prisma.user.findMany({
-      where: { id: { in: otherUserIds } },
-      select: { id: true, name: true, avatar: true, email: true, phone: true },
-    })
+    ? (await Promise.all(otherUserIds.map((id) => userDB.findById(id)))).filter((u): u is NonNullable<typeof u> => u != null)
     : [];
 
-  const userMap = new Map(otherUsers.map((u) => [u.id, u]));
+  const userMap = new Map(otherUsers.map((u) => [u.id, { id: u.id, name: u.name, avatar: u.avatar ?? null, email: u.email ?? null, phone: u.phone ?? null }]));
 
   return conversations.map((c) => {
     const otherId = c.participants.find((p) => p !== userId) || '';
@@ -34,20 +31,8 @@ export default protectedProcedure.query(async ({ ctx }) => {
       lastMessageDate: c.lastMessageDate || c.updatedAt,
       unreadCount: c.unreadByUserId[userId] || 0,
       otherUser: other
-        ? {
-          id: other.id,
-          name: other.name,
-          avatar: other.avatar,
-          email: other.email,
-          phone: other.phone,
-        }
-        : {
-          id: otherId,
-          name: 'Unknown',
-          avatar: null,
-          email: null,
-          phone: null,
-        },
+        ? { id: other.id, name: other.name, avatar: other.avatar, email: other.email, phone: other.phone }
+        : { id: otherId, name: 'Unknown', avatar: null, email: null, phone: null },
     };
   });
 });

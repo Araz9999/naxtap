@@ -150,37 +150,61 @@ export const useStoreStore = create<StoreState>((set, get) => ({
   error: null,
 
   fetchStores: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      const stores = await trpcClient.store.getAll.query();
-      set({
-        stores: Array.isArray(stores) ? (stores as any[]).map(normalizeStore) : [],
-        isLoading: false,
-      });
-    } catch (error) {
-      logger.error('[StoreStore] Failed to fetch stores:', error);
-      set({
-        error: 'Failed to load stores',
-        isLoading: false,
-      });
+    const maxRetries = 2;
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        set({ isLoading: true, error: null });
+        const stores = await trpcClient.store.getAll.query();
+        set({
+          stores: Array.isArray(stores) ? (stores as any[]).map(normalizeStore) : [],
+          isLoading: false,
+        });
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt < maxRetries) {
+          const delayMs = 1000 * (attempt + 1);
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+      }
+    }
+    set({
+      error: 'Failed to load stores',
+      isLoading: false,
+    });
+    logger.error('[StoreStore] Failed to fetch stores:', lastError);
+    const msg = lastError && typeof lastError === 'object' && 'message' in lastError ? String((lastError as any).message).toLowerCase() : '';
+    if (typeof __DEV__ !== 'undefined' && __DEV__ && (msg.includes('network') || msg.includes('aborted'))) {
+      logger.warn('[StoreStore] Tip: ensure backend is running and EXPO_PUBLIC_BACKEND_URL or EXPO_PUBLIC_RORK_API_BASE_URL is set. On device/emulator use your machine IP (e.g. http://192.168.1.5:3000). "Aborted" usually means request timed out or server unreachable.');
     }
   },
 
   fetchUserStore: async (userId: string) => {
-    try {
-      set({ isLoading: true, error: null });
-      const store = await trpcClient.store.getByUserId.query({ userId });
-      set({
-        userStore: store ? normalizeStore(store) : null,
-        isLoading: false,
-      });
-    } catch (error) {
-      logger.error('[StoreStore] Failed to fetch user store:', error);
-      set({
-        error: 'Failed to load user store',
-        isLoading: false,
-      });
+    const maxRetries = 2;
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        set({ isLoading: true, error: null });
+        const store = await trpcClient.store.getByUserId.query({ userId });
+        set({
+          userStore: store ? normalizeStore(store) : null,
+          isLoading: false,
+        });
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt < maxRetries) {
+          const delayMs = 1000 * (attempt + 1);
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+      }
     }
+    set({
+      error: 'Failed to load user store',
+      isLoading: false,
+    });
+    logger.error('[StoreStore] Failed to fetch user store:', lastError);
   },
 
   createStore: async (storeData) => {

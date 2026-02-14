@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure } from '../../../create-context';
-import { prisma } from '../../../../db/client';
+import { userDB } from '../../../../db/users';
 import { getSystemUser } from '../../../../services/welcomeMessage';
 
 export default protectedProcedure
@@ -23,13 +23,16 @@ export default protectedProcedure
       };
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: input.userId },
-      select: { id: true, name: true, avatar: true, email: true, phone: true },
-    });
+    const user = await userDB.findById(input.userId);
     if (!user) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
     }
-    return user;
+    return {
+      id: user.id,
+      name: user.name,
+      avatar: user.avatar ?? null,
+      email: user.email ?? null,
+      phone: user.phone ?? null,
+    };
   });
 

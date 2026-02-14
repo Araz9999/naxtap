@@ -173,7 +173,13 @@ export default function LoginScreen() {
       // Extract error message from tRPC error structure
       let errorMessage = 'Giriş zamanı xəta baş verdi. Yenidən cəhd edin.';
 
-      if (error?.data?.message) {
+      const rawMessage = error?.message ?? error?.data?.message ?? error?.cause?.message ?? (typeof error === 'string' ? error : '');
+      const raw = String(rawMessage).toLowerCase();
+      const isNetworkOrTimeout = raw.includes('network') || raw.includes('aborted');
+
+      if (isNetworkOrTimeout) {
+        errorMessage = 'Serverə qoşulma mümkün olmadı. İnternet bağlantınızı və backend serverin işlədiyini yoxlayın.';
+      } else if (error?.data?.message) {
         errorMessage = error.data.message;
       } else if (error?.message) {
         errorMessage = error.message;

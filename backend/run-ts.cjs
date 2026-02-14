@@ -30,5 +30,6 @@ Module.prototype.require = function(id) {
   return originalRequire.apply(this, arguments);
 };
 
-require('dotenv').config();
+// Load .env from project root (parent of backend/) so JWT_SECRET, DATABASE_URL, etc. are set
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('./server.ts');

@@ -43,35 +43,35 @@ export default function TabLayout() {
         <Tabs.Screen
           name="search"
           options={{
-            title: language === 'az' ? 'Axtarış' : language === 'ru' ? 'Поиск' : 'Search',
+            title: language === 'az' ? 'Axtarış' : 'Поиск',
             tabBarIcon: ({ color, size }) => <Search size={size} color={color} />,
           }}
         />
         <Tabs.Screen
           name="create"
           options={{
-            title: language === 'az' ? 'Elan yerləşdir' : language === 'ru' ? 'Разместить' : 'Post Ad',
+            title: language === 'az' ? 'Elan yerləşdir' : 'Разместить',
             tabBarIcon: ({ color, size }) => <Plus size={size} color={color} />,
           }}
         />
         <Tabs.Screen
           name="messages"
           options={{
-            title: language === 'az' ? 'Mesajlar' : language === 'ru' ? 'Сообщения' : 'Messages',
+            title: language === 'az' ? 'Mesajlar' : 'Сообщения',
             tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
           }}
         />
         <Tabs.Screen
           name="stores"
           options={{
-            title: language === 'az' ? 'Mağazalar' : language === 'ru' ? 'Магазины' : 'Stores',
+            title: language === 'az' ? 'Mağazalar' : 'Магазины',
             tabBarIcon: ({ color, size }) => <Store size={size} color={color} />,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: language === 'az' ? 'Profil' : language === 'ru' ? 'Профиль' : 'Profile',
+            title: language === 'az' ? 'Profil' : 'Профиль',
             tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
           }}
         />

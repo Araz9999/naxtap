@@ -1,286 +1,51 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Dimensions,
-  Platform,
-  StatusBar,
-  Alert,
-} from 'react-native';
+import React, { useEffect, useMemo, Suspense } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
+import Constants from 'expo-constants';
 import { useCallStore } from '@/store/callStore';
-import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
-import { useListingStore } from '@/store/listingStore';
+import { useLanguageStore } from '@/store/languageStore';
 import Colors from '@/constants/colors';
-import { logger } from '@/utils/logger';
-import {
-  PhoneOff,
-  Mic,
-  MicOff,
-  Volume2,
-  VolumeX,
-  Video,
-  VideoOff,
-  Circle,
-  Square,
-} from 'lucide-react-native';
+import { PhoneOff } from 'lucide-react-native';
 
-import {
-  AudioSession,
-  LiveKitRoom,
-  VideoTrack,
-  isTrackReference,
-  registerGlobals,
-  useConnectionState,
-  useRoomContext,
-  useTracks,
-  type TrackReferenceOrPlaceholder,
-} from '@livekit/react-native';
-import { ConnectionState, Track } from 'livekit-client';
-import { trpc, trpcClient } from '@/lib/trpc';
+// LiveKit is only loaded when NOT in Expo Go (avoids "package doesn't seem to be linked").
+const CallRoomLiveKit = React.lazy(() => import('./CallRoomLiveKit'));
 
-// User cache for performance
-const userCache = new Map<string, any>();
-
-if (Platform.OS !== 'web') {
-  // Must be called before using LiveKit (safe to call multiple times).
-  registerGlobals();
+class CallScreenErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError = () => ({ hasError: true });
+  componentDidCatch() {
+    // LiveKit "not linked" or other native module errors — show fallback
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
 }
 
-function formatDuration(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
-function CallRoomView({
-  callId,
-  roomName,
-  type,
-  isMuted,
-  isSpeakerOn,
-  isVideoEnabled,
-  onToggleMute,
-  onToggleSpeaker,
-  onToggleVideo,
-  onHangup,
-  otherUserAvatar,
-  otherUserName,
-  listingTitle,
-}: {
-  callId: string;
-  roomName: string;
-  type: 'voice' | 'video';
-  isMuted: boolean;
-  isSpeakerOn: boolean;
-  isVideoEnabled: boolean;
-  onToggleMute: () => void;
-  onToggleSpeaker: () => void;
-  onToggleVideo: () => void;
-  onHangup: () => void;
-  otherUserAvatar?: string;
-  otherUserName?: string;
-  listingTitle?: string;
-}) {
+function CallUnsupportedInExpoGo() {
   const { language } = useLanguageStore();
-  const room = useRoomContext();
-  const connectionState = useConnectionState();
-  const isConnected = connectionState === ConnectionState.Connected;
-
-  const [callDuration, setCallDuration] = useState<number>(0);
-
-  const startRecordingMutation = trpc.calls.startRecording.useMutation();
-  const stopRecordingMutation = trpc.calls.stopRecording.useMutation();
-  const [egressId, setEgressId] = useState<string | null>(null);
-  const isRecording = !!egressId && startRecordingMutation.status === 'success';
-
-  useEffect(() => {
-    if (!isConnected) return;
-    setCallDuration(0);
-    const interval = setInterval(() => setCallDuration((prev) => prev + 1), 1000);
-    return () => clearInterval(interval);
-  }, [isConnected]);
-
-  // Sync UI toggles -> LiveKit media state
-  useEffect(() => {
-    if (!room) return;
-    room.localParticipant.setMicrophoneEnabled(!isMuted).catch(() => undefined);
-  }, [room, isMuted]);
-
-  useEffect(() => {
-    if (!room) return;
-    if (type !== 'video') return;
-    room.localParticipant.setCameraEnabled(!!isVideoEnabled).catch(() => undefined);
-  }, [room, type, isVideoEnabled]);
-
-  // Start/stop audio session for best call behavior
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    AudioSession.startAudioSession().catch(() => undefined);
-    return () => {
-      AudioSession.stopAudioSession().catch(() => undefined);
-    };
-  }, []);
-
-  const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
-  const { remoteCamera, localCamera } = useMemo(() => {
-    let local: TrackReferenceOrPlaceholder | undefined;
-    let remote: TrackReferenceOrPlaceholder | undefined;
-    for (const t of tracks) {
-      if (!isTrackReference(t)) continue;
-      if (t.participant.isLocal && !local) local = t;
-      if (!t.participant.isLocal && !remote) remote = t;
-    }
-    return { localCamera: local, remoteCamera: remote };
-  }, [tracks]);
-
-  const toggleServerRecording = async () => {
-    if (!roomName) return;
-    if (!isConnected) {
-      Alert.alert(
-        language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
-        language === 'az' ? 'Əvvəlcə zəngə qoşulun' : 'Сначала подключитесь к звонку',
-      );
-      return;
-    }
-
-    try {
-      if (!egressId) {
-        const res = await startRecordingMutation.mutateAsync({ roomName, callId });
-        setEgressId(res.egressId);
-      } else {
-        await stopRecordingMutation.mutateAsync({ egressId });
-        setEgressId(null);
-      }
-    } catch (e) {
-      logger.error('[Call] Recording toggle failed:', e);
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az'
-          ? 'Zəng yazısı başlatmaq/dayandırmaq mümkün olmadı (server recording konfiqurasiya olunmayıb ola bilər)'
-          : 'Не удалось запустить/остановить запись (возможно, не настроена серверная запись)',
-      );
-    }
-  };
-
   return (
-    <View style={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.statusText}>
-          {isConnected ? formatDuration(callDuration) : (language === 'az' ? 'Qoşulur...' : 'Соединение...')}
-        </Text>
-        <Text style={styles.listingTitle}>{listingTitle || ''}</Text>
-      </View>
-
-      {type === 'video' ? (
-        <View style={styles.videoContainer}>
-          <View style={styles.remoteVideo}>
-            {isTrackReference(remoteCamera) ? (
-              <VideoTrack trackRef={remoteCamera} style={styles.remoteVideoTrack} />
-            ) : (
-              <View style={styles.remoteVideoFallback}>
-                <Image source={{ uri: otherUserAvatar }} style={styles.remoteVideoPlaceholder} />
-                <Text style={styles.remoteVideoText}>{otherUserName}</Text>
-              </View>
-            )}
-          </View>
-
-          {isVideoEnabled && isTrackReference(localCamera) && (
-            <View style={styles.localVideo}>
-              <VideoTrack
-                trackRef={localCamera}
-                mirror
-                style={styles.localVideoTrack}
-              />
-            </View>
-          )}
-
-          {!isVideoEnabled && (
-            <View style={styles.localVideoOff}>
-              <VideoOff size={24} color="#fff" />
-            </View>
-          )}
-        </View>
-      ) : (
-        <View style={styles.userInfo}>
-          <Image source={{ uri: otherUserAvatar }} style={styles.userAvatar} />
-          <Text style={styles.userName}>{otherUserName}</Text>
-          <Text style={styles.callType}>
-            {language === 'az' ? 'Səsli zəng' : 'Голосовой звонок'}
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={[styles.controlButton, isMuted && styles.activeControl]}
-          onPress={onToggleMute}
-          testID="mute-button"
-        >
-          {isMuted ? <MicOff size={24} color="#fff" /> : <Mic size={24} color="#fff" />}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.controlButton, isSpeakerOn && styles.activeControl]}
-          onPress={onToggleSpeaker}
-          testID="speaker-button"
-        >
-          {isSpeakerOn ? <Volume2 size={24} color="#fff" /> : <VolumeX size={24} color="#fff" />}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.controlButton, isRecording && styles.recordingControl]}
-          onPress={toggleServerRecording}
-          testID="record-button"
-        >
-          {isRecording ? <Square size={22} color="#fff" /> : <Circle size={22} color="#fff" />}
-        </TouchableOpacity>
-
-        {type === 'video' && (
-          <TouchableOpacity
-            style={[styles.controlButton, !isVideoEnabled && styles.activeControl]}
-            onPress={onToggleVideo}
-            testID="video-button"
-          >
-            {isVideoEnabled ? <Video size={24} color="#fff" /> : <VideoOff size={24} color="#fff" />}
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <View style={styles.endCallContainer}>
-        <TouchableOpacity
-          style={styles.endCallButton}
-          onPress={() => {
-            // ensure recording stops if user hangs up
-            if (egressId) {
-              stopRecordingMutation.mutate({ egressId });
-              setEgressId(null);
-            }
-            room?.disconnect();
-            onHangup();
-            router.back();
-          }}
-          testID="end-call-button"
-        >
-          <PhoneOff size={28} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {isRecording && (
-        <Text style={styles.recordingText}>
-          {language === 'az' ? 'Server yazısı aktivdir' : 'Серверная запись активна'}
-        </Text>
-      )}
-
-      <Text style={styles.privacyNote}>
-        {language === 'az'
-          ? 'Bu zəng LiveKit vasitəsilə real vaxtda həyata keçirilir'
-          : 'Этот звонок выполняется в реальном времени через LiveKit'}
+    <View style={styles.unsupportedContainer}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <Text style={styles.unsupportedTitle}>
+        {language === 'az' ? 'Zənglər Expo Go-da mövcud deyil' : 'Звонки недоступны в Expo Go'}
       </Text>
+      <Text style={styles.unsupportedText}>
+        {language === 'az'
+          ? 'Səsli və video zənglər development build tələb edir. Terminalda: npx expo run:android və ya npx expo run:ios'
+          : 'Голосовые и видео звонки требуют development build. В терминале: npx expo run:android или npx expo run:ios'}
+      </Text>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <PhoneOff size={24} color="#fff" />
+        <Text style={styles.backButtonText}>{language === 'az' ? 'Geri' : 'Назад'}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -289,38 +54,13 @@ export default function CallScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const callId = Array.isArray(id) ? id[0] : id;
 
-  const { activeCall, endCall, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
-  const { language } = useLanguageStore();
+  const { activeCall, endCall } = useCallStore();
   const { currentUser } = useUserStore();
-  const { listings } = useListingStore();
 
   const otherUserId = useMemo(() => {
     if (!activeCall || !currentUser?.id) return undefined;
     return activeCall.callerId === currentUser.id ? activeCall.receiverId : activeCall.callerId;
   }, [activeCall, currentUser?.id]);
-
-  const otherUserQuery = trpc.user.getUser.useQuery(
-    { id: otherUserId ?? '' },
-    { enabled: !!otherUserId },
-  );
-  const otherUser = otherUserQuery.data as { id: string; name?: string; avatar?: string } | undefined;
-
-  const tokenMutation = trpc.calls.getToken.useMutation();
-  const [lkToken, setLkToken] = useState<string | undefined>(undefined);
-  const [lkServerUrl, setLkServerUrl] = useState<string | undefined>(undefined);
-  const [lkRoomName, setLkRoomName] = useState<string | undefined>(undefined);
-
-  const listingFromStore = useMemo(() => {
-    if (!activeCall?.listingId) return undefined;
-    return listings.find((l) => l.id === activeCall.listingId);
-  }, [activeCall?.listingId, listings]);
-
-  const listingQuery = trpc.listing.getById.useQuery(
-    { id: activeCall?.listingId || '' },
-    { enabled: !!activeCall?.listingId && !listingFromStore },
-  );
-
-  const listing = listingFromStore ?? listingQuery.data;
 
   useEffect(() => {
     if (!activeCall || activeCall.id !== callId) {
@@ -328,268 +68,81 @@ export default function CallScreen() {
     }
   }, [activeCall, callId]);
 
-  // Navigate back if call is invalid
-  useEffect(() => {
-    if (!activeCall || !callId) return;
-    if (otherUserId && otherUserQuery.isError) router.back();
-  }, [activeCall, callId, otherUserId, otherUserQuery.isError]);
-
-  // Fetch LiveKit token once per call (requires backend env LIVEKIT_*)
-  useEffect(() => {
-    if (!callId || !activeCall || !currentUser?.id) return;
-    if (lkToken && lkServerUrl && lkRoomName) return;
-
-    tokenMutation.mutate(
-      {
-        callId,
-        userId: currentUser.id,
-        name: currentUser.name,
-        type: activeCall.type,
-      },
-      {
-        onSuccess: (res) => {
-          setLkServerUrl(res.serverUrl);
-          setLkToken(res.token);
-          setLkRoomName(res.roomName);
-        },
-        onError: (err) => {
-          logger.error('[Call] Failed to get LiveKit token:', err);
-          Alert.alert(
-            language === 'az' ? 'Xəta' : 'Ошибка',
-            language === 'az'
-              ? 'Zəng serverinə qoşulmaq mümkün olmadı. LIVEKIT_URL/API_KEY/API_SECRET konfiqurasiyasını yoxlayın.'
-              : 'Не удалось подключиться к серверу звонков. Проверьте LIVEKIT_URL/API_KEY/API_SECRET.',
-          );
-        },
-      },
-    );
-  }, [callId, activeCall, currentUser?.id, currentUser?.name, lkToken, lkServerUrl, lkRoomName, tokenMutation, language]);
+  // Expo Go: appOwnership is 'expo'. In some builds it's undefined in dev — treat as Expo Go so we don't load LiveKit.
+  const isExpoGo = Constants.appOwnership === 'expo' || (__DEV__ && Constants.appOwnership === undefined);
 
   if (!activeCall || !callId) {
     return null;
   }
 
-  // Validate other user exists
+  if (isExpoGo) {
+    return <CallUnsupportedInExpoGo />;
+  }
 
+  const fallback = <CallUnsupportedInExpoGo />;
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
-      <Stack.Screen options={{ headerShown: false }} />
-
-      <View style={styles.backgroundOverlay} />
-
-      <LiveKitRoom
-        serverUrl={lkServerUrl}
-        token={lkToken}
-        connect={!!lkServerUrl && !!lkToken}
-        audio={true}
-        video={activeCall.type === 'video'}
-        options={{
-          adaptiveStream: { pixelDensity: 'screen' },
-        }}
-        onDisconnected={() => {
-          // Persist call end in store when LiveKit disconnects
-          endCall(callId);
-        }}
+    <CallScreenErrorBoundary fallback={fallback}>
+      <Suspense
+        fallback={
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.loadingText}>Qoşulur...</Text>
+          </View>
+        }
       >
-        <CallRoomView
-          callId={callId}
-          roomName={lkRoomName || `call_${callId}`}
-          type={activeCall.type}
-          isMuted={activeCall.isMuted}
-          isSpeakerOn={activeCall.isSpeakerOn}
-          isVideoEnabled={activeCall.type === 'video' ? activeCall.isVideoEnabled : false}
-          onToggleMute={toggleMute}
-          onToggleSpeaker={toggleSpeaker}
-          onToggleVideo={toggleVideo}
-          onHangup={() => endCall(callId)}
-          otherUserAvatar={otherUser?.avatar}
-          otherUserName={otherUser?.name}
-          listingTitle={listing?.title ? (typeof listing.title === 'string' ? listing.title : listing.title[language]) : ''}
-        />
-      </LiveKitRoom>
-    </View>
+        <CallRoomLiveKit callId={callId} />
+      </Suspense>
+    </CallScreenErrorBoundary>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  loadingContainer: {
     flex: 1,
     backgroundColor: Colors.primary,
-  },
-  backgroundOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    paddingHorizontal: 20,
   },
-  header: {
-    alignItems: 'center',
-  },
-  statusText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  listingTitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-  },
-  userInfo: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  userAvatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 20,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  userName: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  callType: {
+  loadingText: {
+    marginTop: 12,
     fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.9)',
   },
-  controls: {
+  unsupportedContainer: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+  },
+  unsupportedTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  unsupportedText: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  backButton: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
-    gap: 20,
-  },
-  controlButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    gap: 10,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  activeControl: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  recordingControl: {
-    backgroundColor: 'rgba(244,67,54,0.35)',
-    borderColor: 'rgba(244,67,54,0.6)',
-  },
-  endCallContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  endCallButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#F44336',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  privacyNote: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
-    textAlign: 'center',
-  },
-  recordingText: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-    marginBottom: 6,
-    marginTop: -8,
-  },
-  videoContainer: {
-    flex: 1,
-    width: '100%',
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  remoteVideo: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  remoteVideoTrack: {
-    width: '100%',
-    height: '100%',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 12,
   },
-  remoteVideoFallback: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  remoteVideoPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 12,
-  },
-  remoteVideoText: {
-    fontSize: 18,
+  backButtonText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
-  },
-  localVideo: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 120,
-    height: 160,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  localVideoTrack: {
-    width: '100%',
-    height: '100%',
-  },
-  localVideoOff: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 120,
-    height: 160,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  permissionText: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
   },
 });

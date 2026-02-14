@@ -73,7 +73,6 @@ export default function RegisterScreen() {
       };
     }
 
-    // Simpler frontend rule: only length >= 8, let backend enforce strong rules
     if (password.length < 8) {
       return {
         isValid: false,
@@ -81,6 +80,24 @@ export default function RegisterScreen() {
           language === 'az'
             ? 'Şifrə ən az 8 simvol olmalıdır'
             : 'Пароль должен содержать минимум 8 символов',
+      };
+    }
+    if (!/[A-Z]/.test(password)) {
+      return {
+        isValid: false,
+        error: language === 'az' ? 'Şifrə ən azı 1 böyük hərf olmalıdır' : 'Пароль должен содержать минимум 1 заглавную букву',
+      };
+    }
+    if (!/[a-z]/.test(password)) {
+      return {
+        isValid: false,
+        error: language === 'az' ? 'Şifrə ən azı 1 kiçik hərf olmalıdır' : 'Пароль должен содержать минимум 1 строчную букву',
+      };
+    }
+    if (!/[0-9]/.test(password)) {
+      return {
+        isValid: false,
+        error: language === 'az' ? 'Şifrə ən azı 1 rəqəm olmalıdır' : 'Пароль должен содержать минимум 1 цифру',
       };
     }
 
@@ -203,10 +220,32 @@ export default function RegisterScreen() {
       } catch (error: any) {
         logger.error('Registration error:', error);
         const title = language === 'az' ? 'Xəta' : 'Ошибка';
-        const message =
-        error?.message ||
-        (language === 'az' ? 'Qeydiyyat zamanı xəta baş verdi' : 'Ошибка при регистрации');
-
+        const raw = String(error?.message ?? error?.data?.message ?? '').toLowerCase();
+        const isNetworkOrTimeout = raw.includes('network') || raw.includes('aborted');
+        let message: string;
+        if (isNetworkOrTimeout) {
+          message = language === 'az'
+            ? 'Serverə qoşulma mümkün olmadı. İnternet bağlantınızı və backend serverin işlədiyini yoxlayın.'
+            : 'Не удалось подключиться к серверу. Проверьте интернет и что backend запущен.';
+        } else {
+          const data = error?.data;
+          const list = Array.isArray(data) ? data : (typeof data?.zodError?.errors === 'object' ? data.zodError.errors : null);
+          if (list?.length) {
+            message = list.map((e: { message?: string }) => e?.message).filter(Boolean).join('\n');
+          } else {
+            const msg = error?.message;
+            if (typeof msg === 'string' && msg.startsWith('[')) {
+              try {
+                const arr = JSON.parse(msg) as { message?: string }[];
+                message = Array.isArray(arr) ? arr.map((e) => e?.message).filter(Boolean).join('\n') : msg;
+              } catch {
+                message = msg;
+              }
+            } else {
+              message = msg || (language === 'az' ? 'Qeydiyyat zamanı xəta baş verdi' : 'Ошибка при регистрации');
+            }
+          }
+        }
         Alert.alert(title, message);
         if (Platform.OS === 'web') {
           window.alert(`${title}: ${message}`);

@@ -10,47 +10,49 @@ import { logger } from '../utils/logger';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient; pool: Pool };
 
-// Validate DATABASE_URL
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    'DATABASE_URL environment variable is not set. Please check your .env file.'
+const HAS_DATABASE = !!process.env.DATABASE_URL?.trim();
+
+function createPrisma(): PrismaClient {
+  if (!HAS_DATABASE) {
+    return new Proxy({} as PrismaClient, {
+      get() {
+        throw new Error(
+          'Database not configured. Set DATABASE_URL in .env for Prisma features. Auth uses in-memory store when DB is not set.'
+        );
+      },
+    });
+  }
+  const pool =
+    globalForPrisma.pool ||
+    new Pool({ connectionString: process.env.DATABASE_URL });
+  if (process.env.NODE_ENV !== 'production') {
+    globalForPrisma.pool = pool;
+  }
+  const adapter = new PrismaPg(pool);
+  return (
+    globalForPrisma.prisma ||
+    new PrismaClient({
+      adapter,
+      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    })
   );
 }
 
-// Create a connection pool
-const pool =
-  globalForPrisma.pool ||
-  new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.pool = pool;
-}
-
-// Create adapter and PrismaClient
-const adapter = new PrismaPg(pool);
-
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    adapter,
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  });
+export const prisma = createPrisma();
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  await prisma.$disconnect();
-  logger.info('[Prisma] Disconnected');
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  await prisma.$disconnect();
-  logger.info('[Prisma] Disconnected');
-  process.exit(0);
-});
+if (HAS_DATABASE) {
+  process.on('SIGINT', async () => {
+    await prisma.$disconnect();
+    logger.info('[Prisma] Disconnected');
+    process.exit(0);
+  });
+  process.on('SIGTERM', async () => {
+    await prisma.$disconnect();
+    logger.info('[Prisma] Disconnected');
+    process.exit(0);
+  });
+}

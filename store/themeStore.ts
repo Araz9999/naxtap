@@ -212,10 +212,12 @@ export const useThemeStore = create<ThemeState>()(
   ),
 );
 
-// Configure notifications
+// Configure notifications (skip in Expo Go — remote push removed in SDK 53)
 if (Platform.OS !== 'web') {
   (async () => {
     try {
+      const Constants = (await import('expo-constants')).default;
+      if (Constants.appOwnership === 'expo') return;
       const Notifications = await import('expo-notifications');
       Notifications.setNotificationHandler({
         handleNotification: async () => ({

@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
-import { prisma } from '../../../../db/client';
-import { createUser } from '../../../../db/userPrisma';
+import { userDB } from '../../../../db/users';
 import { generateTokenPair } from '../../../../utils/jwt';
 import { logger } from '../../../../utils/logger';
 import { validatePhone } from '../../../../utils/validation';
@@ -42,20 +41,16 @@ export const verifyPhoneOTPProcedure = publicProcedure
         throw new Error('OTP müddəti bitib. Zəhmət olmasa yenidən göndərin');
       }
 
-      // OTP verified, create user
-      const user = await createUser({
-        email: `phone_${phone.replace(/[^0-9]/g, '')}@naxtap.local`, // Temporary email
+      // OTP verified, create user (in-memory)
+      const user = await userDB.createUser({
+        email: `phone_${phone.replace(/[^0-9]/g, '')}@naxtap.local`,
         name: input.name.trim(),
         phone,
-        passwordHash: null, // No password for phone-only users
-        verified: true, // Phone verified via OTP
-        role: 'USER',
+        passwordHash: undefined,
+        verified: true,
+        role: 'user',
         balance: 0,
       });
-
-      if (!user) {
-        throw new Error('İstifadəçi yaradıla bilmədi');
-      }
 
       // Clean up OTP
       phoneOtpStore.delete(phone);

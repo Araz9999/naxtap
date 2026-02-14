@@ -292,7 +292,7 @@ export default function ConversationScreen() {
     if (!conversationId || !realtimeService.isAvailable()) return;
 
     logger.info('[Conversation] Joining WebSocket room:', conversationId);
-    realtimeService.joinRoom(conversationId);
+    realtimeService.joinRoom(conversationId, 'chat');
 
     // Listen for new messages in this conversation
     const handleNewMessage = (data: { conversationId: string; message: any }) => {
@@ -324,7 +324,7 @@ export default function ConversationScreen() {
 
     return () => {
       logger.info('[Conversation] Leaving WebSocket room:', conversationId);
-      realtimeService.leaveRoom(conversationId);
+      realtimeService.leaveRoom(conversationId, 'chat');
       realtimeService.off('message:new', handleNewMessage);
       realtimeService.off('message:typing', handleTyping);
       realtimeService.off('message:read', handleRead);
@@ -433,14 +433,8 @@ export default function ConversationScreen() {
       logger.debug('[Conversation] Message sent:', res.message.id);
       setInputText('');
 
-      // Emit via WebSocket if available
-      if (realtimeService.isAvailable() && conversation?.id) {
-        realtimeService.send('message:send', {
-          conversationId: conversation.id,
-          message: res.message,
-        });
-        logger.debug('[Conversation] Message emitted via WebSocket');
-      }
+      // Note: Backend already broadcasts message:new via socket after saving
+      // No need to emit message:send from client
 
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });

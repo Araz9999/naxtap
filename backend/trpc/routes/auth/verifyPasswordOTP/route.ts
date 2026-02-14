@@ -1,6 +1,6 @@
 import { publicProcedure } from '../../../create-context';
 import { z } from 'zod';
-import { findUserByEmail, setPasswordResetToken } from '../../../../db/userPrisma';
+import { userDB } from '../../../../db/users';
 import { generateRandomToken } from '../../../../utils/password';
 import { logger } from '../../../../utils/logger';
 
@@ -50,7 +50,7 @@ export const verifyPasswordOTPProcedure = publicProcedure
 
       // OTP verified, generate reset token
       const resetToken = generateRandomToken();
-      await setPasswordResetToken(storedOTP.userId, resetToken, 1); // 1 hour expiry
+      await userDB.setPasswordResetToken(storedOTP.userId, resetToken, 1); // 1 hour expiry
 
       // Clean up OTP
       otpStore.delete(contactInfo);

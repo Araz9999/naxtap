@@ -94,21 +94,34 @@ function RootLayoutNav() {
 
         // Load all listings
         await fetchListings();
-        logger.info('[App] Listings loaded successfully');
+        if (useListingStore.getState().error) {
+          logger.warn('[App] Listings failed to load (check backend / EXPO_PUBLIC_BACKEND_URL)');
+        } else {
+          logger.info('[App] Listings loaded successfully');
+        }
 
         // Load all stores
         await fetchStores();
-        logger.info('[App] Stores loaded successfully');
+        if (useStoreStore.getState().error) {
+          logger.warn('[App] Stores failed to load (check backend / EXPO_PUBLIC_BACKEND_URL)');
+        } else {
+          logger.info('[App] Stores loaded successfully');
+        }
 
         // Load user's store if authenticated
         if (currentUser) {
           await fetchUserStore(currentUser.id);
-          logger.info('[App] User store loaded successfully');
+          if (!useStoreStore.getState().error) logger.info('[App] User store loaded successfully');
         }
 
-        logger.info('[App] Application data initialized successfully');
+        if (!useListingStore.getState().error && !useStoreStore.getState().error) {
+          logger.info('[App] Application data initialized successfully');
+        }
       } catch (error) {
         logger.error('[App] Failed to initialize application data:', error);
+        if (__DEV__ && error && typeof error === 'object' && 'message' in error && String((error as any).message).includes('Network')) {
+          logger.warn('[App] Network error: ensure backend is running and EXPO_PUBLIC_BACKEND_URL (or EXPO_PUBLIC_RORK_API_BASE_URL) points to it. On device/emulator use your machine IP, e.g. http://192.168.1.5:3000');
+        }
       }
     };
 
@@ -168,7 +181,7 @@ function RootLayoutNav() {
     // Setup global realtime event listeners
     if (currentUser?.id) {
       // Join user's personal room
-      realtimeService.joinRoom(`user:${currentUser.id}`);
+      realtimeService.joinRoom(currentUser.id, 'user');
 
       logger.info('[App] Joined user room:', currentUser.id);
     }
@@ -198,7 +211,7 @@ function RootLayoutNav() {
 
         realtimeService.send('authenticate', { userId: currentUser.id, token });
         // After authenticate, join personal room (server requires auth)
-        realtimeService.joinRoom(`user:${currentUser.id}`);
+        realtimeService.joinRoom(currentUser.id, 'user');
       } catch (e) {
         logger.debug?.('[App] Realtime authenticate failed (will keep polling):', e);
       }

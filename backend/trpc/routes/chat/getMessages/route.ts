@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure } from '../../../create-context';
 import { chatDb } from '../../../../db/chat';
-import { prisma } from '../../../../db/client';
+import { userDB } from '../../../../db/users';
 
 export default protectedProcedure
   .input(
@@ -21,12 +21,7 @@ export default protectedProcedure
     }
 
     const otherId = conv.participants.find((p) => p !== userId) || '';
-    const other = otherId
-      ? await prisma.user.findUnique({
-        where: { id: otherId },
-        select: { id: true, name: true, avatar: true, email: true, phone: true },
-      })
-      : null;
+    const other = otherId ? await userDB.findById(otherId) : null;
 
     return {
       conversation: {
@@ -37,9 +32,9 @@ export default protectedProcedure
           ? {
             id: other.id,
             name: other.name,
-            avatar: other.avatar,
-            email: other.email,
-            phone: other.phone,
+            avatar: other.avatar ?? null,
+            email: other.email ?? null,
+            phone: other.phone ?? null,
           }
           : {
             id: otherId,

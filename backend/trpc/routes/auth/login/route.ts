@@ -1,5 +1,5 @@
 import { publicProcedure } from '../../../create-context';
-import { findUserByEmail } from '../../../../db/userPrisma';
+import { userDB } from '../../../../db/users';
 import { generateTokenPair } from '../../../../utils/jwt';
 import { userLoginSchema } from '../../../../utils/validation';
 import { AuthenticationError } from '../../../../utils/errors';
@@ -11,7 +11,7 @@ export const loginProcedure = publicProcedure
     try {
       logger.auth('Login attempt', { email: input.email });
 
-      const user = await findUserByEmail(input.email);
+      const user = await userDB.findByEmail(input.email);
       if (!user || !user.passwordHash) {
         // Use same error message to prevent email enumeration
         throw new AuthenticationError(
@@ -50,7 +50,7 @@ export const loginProcedure = publicProcedure
           verified: user.verified,
           role: user.role,
           balance: user.balance,
-          moderatorPermissions: (user as any).moderatorPermissions || [],
+          moderatorPermissions: [],
         },
         tokens,
       };

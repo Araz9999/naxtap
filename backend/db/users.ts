@@ -169,6 +169,19 @@ class UserDatabase {
     return this.users.get(userId) || null;
   }
 
+  async findByPhone(phone: string): Promise<DBUser | null> {
+    const normalized = phone.replace(/[\s\-\(\)]/g, '').trim();
+    const withPlus = normalized.startsWith('+') ? normalized : `+${normalized}`;
+    const digitsOnly = normalized.replace(/[^0-9]/g, '');
+    for (const user of this.users.values()) {
+      if (!user.phone) continue;
+      const uNorm = user.phone.replace(/[\s\-\(\)]/g, '').trim();
+      if (uNorm === withPlus || uNorm === normalized) return user;
+      if (digitsOnly.length >= 9 && user.phone.replace(/[^0-9]/g, '').slice(-9) === digitsOnly.slice(-9)) return user;
+    }
+    return null;
+  }
+
   async createUser(userData: Partial<DBUser>): Promise<DBUser> {
     // Generate cryptographically secure ID
     const id = await this.generateSecureId();

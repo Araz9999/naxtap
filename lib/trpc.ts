@@ -51,13 +51,30 @@ let cachedAuthHeader: Record<string, string> | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5000; // 5 seconds
 
+const apiBaseUrl = `${getBaseUrl()}/api/trpc`;
+if (typeof __DEV__ !== 'undefined' && __DEV__) {
+  console.log('[tRPC] API base URL:', apiBaseUrl || '(empty - same-origin)');
+}
+
+const REQUEST_TIMEOUT_MS = 30_000; // 30s — allow slower networks
+
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+  return fetch(input, {
+    ...init,
+    signal: ctrl.signal,
+  }).finally(() => clearTimeout(id));
+}
+
 export const trpcClient = trpc.createClient({
   links: [
     ...(process.env.NODE_ENV === 'development'
       ? [loggerLink({ enabled: () => false })]
       : []),
     httpLink({
-      url: `${getBaseUrl()}/api/trpc`,
+      url: apiBaseUrl,
+      fetch: fetchWithTimeout,
       transformer: superjson,
       async headers() {
         try {

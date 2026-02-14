@@ -1,9 +1,9 @@
 import { publicProcedure } from '../../../create-context';
-import { createUser, findUserByEmail, setVerificationToken } from '../../../../db/userPrisma';
+import { userDB } from '../../../../db/users';
 import { generateTokenPair } from '../../../../utils/jwt';
 import { emailService } from '../../../../services/email';
 import { userRegistrationSchema } from '../../../../utils/validation';
-import { AuthenticationError, DatabaseError } from '../../../../utils/errors';
+import { AuthenticationError } from '../../../../utils/errors';
 import { logger } from '../../../../utils/logger';
 import { hashPassword, generateRandomToken } from '../../../../utils/password';
 import { sendWelcomeMessage } from '../../../../services/welcomeMessage';
@@ -13,7 +13,7 @@ export const registerProcedure = publicProcedure
     try {
       logger.auth('Registration attempt', { email: input.email });
 
-      const existingUser = await findUserByEmail(input.email);
+      const existingUser = await userDB.findByEmail(input.email);
       if (existingUser) {
         throw new AuthenticationError(
           'Bu email artıq qeydiyyatdan keçib',
@@ -37,22 +37,18 @@ export const registerProcedure = publicProcedure
 
       const passwordHash = await hashPassword(input.password);
 
-      const user = await createUser({
+      const user = await userDB.createUser({
         email: input.email,
         name: input.name,
         phone: input.phone,
         passwordHash,
         verified: false,
-        role: 'USER',
+        role: 'user',
         balance: 0,
       });
 
-      if (!user) {
-        throw new DatabaseError('Failed to create user', undefined, 'createUser');
-      }
-
       const verificationToken = generateRandomToken();
-      const tokenSet = await setVerificationToken(user.id, verificationToken, 24);
+      const tokenSet = await userDB.setVerificationToken(user.id, verificationToken, 24);
 
       if (!tokenSet) {
         logger.warn('Failed to set verification token', { userId: user.id });
@@ -102,8 +98,8 @@ export const registerProcedure = publicProcedure
           id: user.id,
           email: user.email,
           name: user.name,
-          avatar: user.avatar,
-          phone: user.phone,
+          avatar: user.avatar ?? undefined,
+          phone: user.phone ?? undefined,
           verified: user.verified,
           role: user.role,
           balance: user.balance,

@@ -1,6 +1,6 @@
 import { publicProcedure } from '../../../create-context';
 import { z } from 'zod';
-import { findUserByEmail, findUserByPhone } from '../../../../db/userPrisma';
+import { userDB } from '../../../../db/users';
 import { emailService } from '../../../../services/email';
 import { smsService } from '../../../../services/sms';
 import { logger } from '../../../../utils/logger';
@@ -30,11 +30,11 @@ export const forgotPasswordProcedure = publicProcedure
       if (input.email) {
         contactInfo = input.email.toLowerCase().trim();
         contactType = 'email';
-        user = await findUserByEmail(contactInfo);
+        user = await userDB.findByEmail(contactInfo);
       } else if (input.phone) {
         contactInfo = input.phone.replace(/\s/g, '');
         contactType = 'phone';
-        user = await findUserByPhone(contactInfo);
+        user = await userDB.findByPhone(contactInfo);
       }
 
       // Check if user exists - show error if phone number not registered

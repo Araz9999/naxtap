@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure } from '../../../create-context';
 import { chatDb } from '../../../../db/chat';
-import { prisma } from '../../../../db/client';
+import { userDB } from '../../../../db/users';
 
 export default protectedProcedure
   .input(
@@ -16,7 +16,7 @@ export default protectedProcedure
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot delete your own messages via this operation' });
     }
 
-    const other = await prisma.user.findUnique({ where: { id: input.userId }, select: { id: true } });
+    const other = await userDB.findById(input.userId);
     if (!other) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
 
     const totalDeleted = chatDb.messages.deleteAllFromUser(currentUserId, input.userId);

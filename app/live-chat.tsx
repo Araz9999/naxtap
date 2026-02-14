@@ -93,7 +93,7 @@ export default function LiveChatScreen() {
   useEffect(() => {
     if (!conversationId || !realtimeService.isAvailable()) return;
 
-    realtimeService.joinRoom(conversationId);
+    realtimeService.joinRoom(conversationId, 'support');
 
     const handleNewMessage = (data: { conversationId: string; message: any }) => {
       if (data.conversationId === conversationId) {
@@ -118,7 +118,7 @@ export default function LiveChatScreen() {
     realtimeService.on('liveChat:closed', handleClosed);
 
     return () => {
-      realtimeService.leaveRoom(conversationId);
+      realtimeService.leaveRoom(conversationId, 'support');
       realtimeService.off('liveChat:message', handleNewMessage);
       realtimeService.off('liveChat:assigned', handleAssigned);
       realtimeService.off('liveChat:closed', handleClosed);
@@ -238,13 +238,8 @@ export default function LiveChatScreen() {
       await utils.liveChat.getMessages.invalidate({ conversationId });
       await utils.liveChat.getConversations.invalidate({ userId: currentUser.id });
 
-      // Emit via WebSocket if available
-      if (realtimeService.isAvailable()) {
-        realtimeService.send('liveChat:message', {
-          conversationId,
-          message: { conversationId, message: messageText },
-        });
-      }
+      // Note: Backend already broadcasts support:new via socket after saving
+      // No need to emit liveChat:message from client
 
       // Clear input and attachments
       setMessage('');
