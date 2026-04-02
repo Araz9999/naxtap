@@ -7,7 +7,7 @@ import { validatePhone } from '../../../../utils/validation';
 import { checkThrottle } from '../../../../utils/throttle';
 import { generatePhoneOTP, phoneOtpStore } from '../phoneOtpStore'; // max 5 sends/hour per phone
 
-import { smsService } from '../../../../services/sms';
+import { emailService } from '../../../../services/email';
 
 const OTP_COOLDOWN_MS = 60 * 1000; // 60s between sends
 const OTP_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
@@ -18,6 +18,7 @@ export const registerWithPhoneProcedure = publicProcedure
     z.object({
       phone: z.string().min(1),
       name: z.string().min(1),
+      email: z.string().email().optional(),
     }),
   )
   .mutation(async ({ input }) => {
@@ -59,10 +60,24 @@ export const registerWithPhoneProcedure = publicProcedure
       // Store OTP
       phoneOtpStore.set(phone, { code: otp, expiresAt, phone });
 
-      // Send SMS
-      await smsService.sendOTP(phone, otp, 'verification');
+      // Send OTP via email (no Twilio) - if email provided and Resend configured
+      if (input.email && emailService.isConfigured()) {
+        await emailService.sendOTPToEmail(input.email.trim().toLowerCase(), {
+          name: input.name,
+          otp,
+          purpose: 'verification',
+        });
+        logger.info(`[Phone Registration] OTP sent to email ${input.email}`);
+      } else {
+        // Fallback: log to console (development)
+        console.log('\n📱 ===== OTP (Phone Registration) =====');
+        console.log(`Phone: ${phone}`);
+        console.log(`OTP: ${otp}`);
+        if (input.email) console.log(`(Resend not configured - email: ${input.email})`);
+        console.log('======================================\n');
+      }
 
-      logger.info(`[Phone Registration] OTP sent to ${phone}`);
+      logger.info(`[Phone Registration] OTP sent for ${phone}`);
 
       return {
         success: true,

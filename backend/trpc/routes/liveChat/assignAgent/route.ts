@@ -1,16 +1,20 @@
 import { z } from 'zod';
-import { publicProcedure } from '../../../create-context';
+import { protectedProcedure } from '../../../create-context';
 import { liveChatDb } from '../../../../db/liveChat';
 import { realtimeServer } from '../../../../realtime/server';
+import { TRPCError } from '@trpc/server';
 
-export default publicProcedure
+export default protectedProcedure
   .input(
     z.object({
       conversationId: z.string(),
       agentId: z.string(),
     }),
   )
-  .mutation(({ input }) => {
+  .mutation(({ ctx, input }) => {
+    if (ctx.user.userId !== input.agentId && ctx.user.role !== 'admin' && ctx.user.role !== 'moderator') {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot assign another agent' });
+    }
     const result = liveChatDb.conversations.assignAgent(input.conversationId, input.agentId);
     if (result) {
       const agent = liveChatDb.agents.getById(input.agentId);

@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { LiveChatMessage, LiveChatConversation, SupportAgent } from '../types/liveChat';
 import { logger } from '../utils/logger';
 
@@ -7,7 +9,7 @@ const messageIndex: Map<string, LiveChatMessage> = new Map();
 
 export type LiveChatViewerType = 'user' | 'support';
 
-const supportAgents: SupportAgent[] = [
+const DEFAULT_AGENTS: SupportAgent[] = [
   {
     id: 'agent-1',
     name: 'Support Agent',
@@ -24,6 +26,87 @@ const supportAgents: SupportAgent[] = [
   },
 ];
 
+const supportAgents: SupportAgent[] = DEFAULT_AGENTS.map((a) => ({ ...a }));
+
+const DATA_FILE = path.join(__dirname, '..', 'data', 'live-chat.json');
+
+type LiveChatSnapshotV1 = {
+  version: 1;
+  conversations: Record<string, LiveChatConversation>;
+  messagesByConversation: Record<string, LiveChatMessage[]>;
+  agents: SupportAgent[];
+};
+
+function ensureDataDir(): void {
+  const dir = path.dirname(DATA_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function rebuildMessageIndex(): void {
+  messageIndex.clear();
+  for (const list of messages.values()) {
+    for (const m of list) {
+      messageIndex.set(m.id, m);
+    }
+  }
+}
+
+function persist(): void {
+  try {
+    ensureDataDir();
+    const snapshot: LiveChatSnapshotV1 = {
+      version: 1,
+      conversations: Object.fromEntries(conversations),
+      messagesByConversation: Object.fromEntries(messages),
+      agents: supportAgents.map((a) => ({ ...a })),
+    };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(snapshot, null, 2), 'utf8');
+  } catch (error) {
+    logger.error('[LiveChatDB] Failed to persist:', error);
+  }
+}
+
+function hydrate(): void {
+  try {
+    if (!fs.existsSync(DATA_FILE)) return;
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    if (!raw.trim()) return;
+    const data = JSON.parse(raw) as Partial<LiveChatSnapshotV1>;
+
+    const nextConversations = new Map<string, LiveChatConversation>();
+    for (const [k, v] of Object.entries(data.conversations ?? {})) {
+      if (v && typeof v === 'object') nextConversations.set(k, v as LiveChatConversation);
+    }
+
+    const nextMessages = new Map<string, LiveChatMessage[]>();
+    for (const [k, v] of Object.entries(data.messagesByConversation ?? {})) {
+      nextMessages.set(k, Array.isArray(v) ? (v as LiveChatMessage[]) : []);
+    }
+
+    conversations.clear();
+    messages.clear();
+    messageIndex.clear();
+    for (const [k, v] of nextConversations) conversations.set(k, v);
+    for (const [k, v] of nextMessages) messages.set(k, v);
+    rebuildMessageIndex();
+
+    supportAgents.length = 0;
+    if (Array.isArray(data.agents) && data.agents.length > 0) {
+      supportAgents.push(...data.agents.map((a) => ({ ...a })));
+    } else {
+      supportAgents.push(...DEFAULT_AGENTS.map((a) => ({ ...a })));
+    }
+
+    logger.info('[LiveChatDB] Hydrated from disk:', DATA_FILE);
+  } catch (error) {
+    logger.error('[LiveChatDB] Failed to hydrate:', error);
+  }
+}
+
+hydrate();
+
 export const liveChatDb = {
   conversations: {
     getAll: () => Array.from(conversations.values()).sort((a, b) =>
@@ -38,6 +121,7 @@ export const liveChatDb = {
       logger.info('[LiveChatDB] Creating conversation:', conversation.id);
       conversations.set(conversation.id, conversation);
       messages.set(conversation.id, []);
+      persist();
       return conversation;
     },
     update: (id: string, updates: Partial<LiveChatConversation>) => {
@@ -46,6 +130,7 @@ export const liveChatDb = {
       if (conversation) {
         const updated = { ...conversation, ...updates, updatedAt: new Date().toISOString() };
         conversations.set(id, updated);
+        persist();
         return updated;
       }
       logger.warn('[LiveChatDB] Conversation not found:', id);
@@ -55,6 +140,7 @@ export const liveChatDb = {
       logger.info('[LiveChatDB] Deleting conversation:', id);
       const deleted = conversations.delete(id);
       messages.delete(id);
+      if (deleted) persist();
       return deleted;
     },
     assignAgent: (conversationId: string, agentId: string) => {
@@ -72,6 +158,7 @@ export const liveChatDb = {
           };
           conversations.set(conversationId, updated);
           agent.activeChats++;
+          persist();
           return updated;
         }
       }
@@ -88,6 +175,7 @@ export const liveChatDb = {
           updatedAt: new Date().toISOString(),
         };
         conversations.set(conversationId, updated);
+        persist();
         return updated;
       }
       logger.warn('[LiveChatDB] Conversation not found:', conversationId);
@@ -108,7 +196,6 @@ export const liveChatDb = {
       messages.set(message.conversationId, convMessages);
       messageIndex.set(message.id, message);
 
-      // Update conversation's last message
       const conversation = conversations.get(message.conversationId);
       if (conversation) {
         const updated = {
@@ -121,6 +208,7 @@ export const liveChatDb = {
       }
 
       logger.info('[LiveChatDB] Message created. Total messages in conversation:', convMessages.length);
+      persist();
       return message;
     },
     updateStatus: (id: string, status: LiveChatMessage['status']) => {
@@ -138,6 +226,7 @@ export const liveChatDb = {
             messages.set(message.conversationId, convMessages);
           }
         }
+        persist();
         return message;
       }
       logger.warn('[LiveChatDB] Message not found:', id);
@@ -153,31 +242,27 @@ export const liveChatDb = {
           const filtered = convMessages.filter(m => m.id !== id);
           messages.set(message.conversationId, filtered);
         }
+        persist();
         return true;
       }
       logger.warn('[LiveChatDB] Message not found:', id);
       return false;
     },
     markAsRead: (conversationId: string, viewerType: LiveChatViewerType = 'user') => {
-      // Check if conversation exists first
       const conversation = conversations.get(conversationId);
       if (!conversation) {
         logger.debug('[LiveChatDB] Conversation not found for markAsRead (may be closed):', conversationId);
         return 0;
       }
-      
+
       logger.debug('[LiveChatDB] Marking messages as read for conversation:', { conversationId, viewerType });
       const convMessages = messages.get(conversationId);
       if (!convMessages || convMessages.length === 0) {
         return 0;
       }
-      
-      const shouldMarkSeen = (msg: LiveChatMessage) => {
-        // Viewer marks the opposite side's messages as seen.
-        // - user sees support messages
-        // - support sees user messages
-        return viewerType === 'user' ? msg.isSupport : !msg.isSupport;
-      };
+
+      const shouldMarkSeen = (msg: LiveChatMessage) =>
+        viewerType === 'user' ? msg.isSupport : !msg.isSupport;
 
       let updatedCount = 0;
       convMessages.forEach(msg => {
@@ -189,12 +274,14 @@ export const liveChatDb = {
       });
       messages.set(conversationId, convMessages);
 
-      // Update conversation unread count (conversation already checked at start)
-      if (conversation && conversation.unreadCount > 0) {
+      if (conversation.unreadCount > 0) {
         const updated = { ...conversation, unreadCount: 0 };
         conversations.set(conversationId, updated);
       }
-      
+
+      if (updatedCount > 0) {
+        persist();
+      }
       return updatedCount;
     },
   },
@@ -208,6 +295,7 @@ export const liveChatDb = {
       const agent = supportAgents.find(a => a.id === id);
       if (agent) {
         agent.status = status;
+        persist();
         return agent;
       }
       logger.warn('[LiveChatDB] Agent not found:', id);
@@ -218,6 +306,7 @@ export const liveChatDb = {
       const agent = supportAgents.find(a => a.id === id);
       if (agent) {
         agent.activeChats++;
+        persist();
         return agent;
       }
       logger.warn('[LiveChatDB] Agent not found:', id);
@@ -228,6 +317,7 @@ export const liveChatDb = {
       const agent = supportAgents.find(a => a.id === id);
       if (agent && agent.activeChats > 0) {
         agent.activeChats--;
+        persist();
         return agent;
       }
       logger.warn('[LiveChatDB] Agent not found or no active chats:', id);

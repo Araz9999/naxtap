@@ -46,6 +46,7 @@ export default function LiveChatScreen() {
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showAttachments, setShowAttachments] = useState<boolean>(false);
+  const [justCreatedConversationId, setJustCreatedConversationId] = useState<string | null>(null);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const webChatInputRef = useRef<WebTextInputRef>(null);
@@ -69,7 +70,8 @@ export default function LiveChatScreen() {
     return list.find((c) => c.status !== 'closed') || null;
   }, [conversationsQuery.data]);
 
-  const conversationId = activeConversation?.id;
+  // Use just-created id immediately so room join & messages work right away (before refetch)
+  const conversationId = justCreatedConversationId || activeConversation?.id;
 
   const messagesQuery = trpc.liveChat.getMessages.useQuery(
     { conversationId: conversationId || '', viewerType: 'user' },
@@ -86,8 +88,11 @@ export default function LiveChatScreen() {
   useEffect(() => {
     if (activeConversation) {
       setShowStartForm(false);
+      if (justCreatedConversationId && activeConversation.id === justCreatedConversationId) {
+        setJustCreatedConversationId(null);
+      }
     }
-  }, [activeConversation]);
+  }, [activeConversation, justCreatedConversationId]);
 
   // WebSocket: Join live chat room and listen for events
   useEffect(() => {
@@ -97,7 +102,7 @@ export default function LiveChatScreen() {
 
     const handleNewMessage = (data: { conversationId: string; message: any }) => {
       if (data.conversationId === conversationId) {
-        utils.liveChat.getMessages.invalidate({ conversationId });
+        utils.liveChat.getMessages.invalidate({ conversationId, viewerType: 'user' });
       }
     };
 
@@ -140,7 +145,7 @@ export default function LiveChatScreen() {
     }
 
     try {
-      await createConversationMutation.mutateAsync({
+      const created = await createConversationMutation.mutateAsync({
         userId: currentUser.id,
         userName: currentUser.name || 'User',
         userAvatar: currentUser.avatar || undefined,
@@ -149,6 +154,7 @@ export default function LiveChatScreen() {
         priority,
       });
 
+      setJustCreatedConversationId(created.id);
       await utils.liveChat.getConversations.invalidate({ userId: currentUser.id });
       setShowStartForm(false);
       setSelectedCategory('');
@@ -235,8 +241,8 @@ export default function LiveChatScreen() {
       });
 
       // Refresh messages
-      await utils.liveChat.getMessages.invalidate({ conversationId });
-      await utils.liveChat.getConversations.invalidate({ userId: currentUser.id });
+      utils.liveChat.getMessages.invalidate({ conversationId, viewerType: 'user' });
+      utils.liveChat.getConversations.invalidate({ userId: currentUser.id });
 
       // Note: Backend already broadcasts support:new via socket after saving
       // No need to emit liveChat:message from client

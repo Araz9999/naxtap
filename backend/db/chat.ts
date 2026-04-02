@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { logger } from '../utils/logger';
 
 export type ChatMessageType = 'text' | 'image' | 'audio' | 'file';
@@ -43,6 +45,14 @@ const conversations = new Map<string, ChatConversation>();
 const messagesByConversationId = new Map<string, ChatMessage[]>();
 const messageIndex = new Map<string, ChatMessage>();
 
+const DATA_FILE = path.join(__dirname, '..', 'data', 'chat.json');
+
+type ChatSnapshotV1 = {
+  version: 1;
+  conversations: Record<string, ChatConversation>;
+  messagesByConversation: Record<string, ChatMessage[]>;
+};
+
 const normalizePairKey = (a: string, b: string) => [a, b].sort().join(':');
 
 function computeLastMessagePreview(msg: ChatMessage) {
@@ -54,6 +64,68 @@ function computeLastMessagePreview(msg: ChatMessage) {
   if (first.type === 'image') return 'Şəkil göndərildi';
   return 'Fayl göndərildi';
 }
+
+function ensureDataDir(): void {
+  const dir = path.dirname(DATA_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function rebuildMessageIndex(): void {
+  messageIndex.clear();
+  for (const list of messagesByConversationId.values()) {
+    for (const m of list) {
+      messageIndex.set(m.id, m);
+    }
+  }
+}
+
+function persist(): void {
+  try {
+    ensureDataDir();
+    const snapshot: ChatSnapshotV1 = {
+      version: 1,
+      conversations: Object.fromEntries(conversations),
+      messagesByConversation: Object.fromEntries(messagesByConversationId),
+    };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(snapshot, null, 2), 'utf8');
+  } catch (error) {
+    logger.error('[ChatDB] Failed to persist:', error);
+  }
+}
+
+function hydrate(): void {
+  try {
+    if (!fs.existsSync(DATA_FILE)) return;
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    if (!raw.trim()) return;
+    const data = JSON.parse(raw) as Partial<ChatSnapshotV1>;
+
+    const nextConversations = new Map<string, ChatConversation>();
+    for (const [k, v] of Object.entries(data.conversations ?? {})) {
+      if (v && typeof v === 'object') nextConversations.set(k, v as ChatConversation);
+    }
+
+    const nextMessages = new Map<string, ChatMessage[]>();
+    for (const [k, v] of Object.entries(data.messagesByConversation ?? {})) {
+      nextMessages.set(k, Array.isArray(v) ? (v as ChatMessage[]) : []);
+    }
+
+    conversations.clear();
+    messagesByConversationId.clear();
+    messageIndex.clear();
+    for (const [k, v] of nextConversations) conversations.set(k, v);
+    for (const [k, v] of nextMessages) messagesByConversationId.set(k, v);
+    rebuildMessageIndex();
+
+    logger.info('[ChatDB] Hydrated from disk:', DATA_FILE);
+  } catch (error) {
+    logger.error('[ChatDB] Failed to hydrate:', error);
+  }
+}
+
+hydrate();
 
 export const chatDb = {
   conversations: {
@@ -85,12 +157,9 @@ export const chatDb = {
       conversations.set(id, conv);
       messagesByConversationId.set(id, []);
       logger.info('[ChatDB] Conversation created', { id, listingId, participants });
+      persist();
       return conv;
     },
-    // If value is:
-    // - undefined: keep existing
-    // - null: clear field
-    // - string: set field
     bump: (conversationId: string, lastMessage?: string | null, lastMessageDate?: string | null) => {
       const c = conversations.get(conversationId);
       if (!c) return null;
@@ -158,6 +227,7 @@ export const chatDb = {
       chatDb.conversations.bump(conversationId, preview, createdAt);
       chatDb.conversations.incrementUnreadFor(conversationId, msg.receiverId);
 
+      persist();
       return message;
     },
     markReadForUser: (conversationId: string, userId: string) => {
@@ -175,6 +245,7 @@ export const chatDb = {
       });
       messagesByConversationId.set(conversationId, updated);
       chatDb.conversations.clearUnreadFor(conversationId, userId);
+      persist();
       return updatedCount;
     },
     delete: (conversationId: string, messageId: string) => {
@@ -193,6 +264,7 @@ export const chatDb = {
       } else {
         chatDb.conversations.bump(conversationId, null, null);
       }
+      persist();
       return true;
     },
     deleteAllFromUser: (currentUserId: string, otherUserId: string) => {
@@ -218,8 +290,10 @@ export const chatDb = {
           chatDb.conversations.clearUnreadFor(conv.id, otherUserId);
         }
       }
+      if (totalDeleted > 0) {
+        persist();
+      }
       return totalDeleted;
     },
   },
 };
-

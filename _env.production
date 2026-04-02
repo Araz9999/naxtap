@@ -54,10 +54,6 @@ AWS_SECRET_ACCESS_KEY=your-production-aws-secret-key
 AWS_REGION=your-production-aws-region
 AWS_BUCKET_NAME=your-production-s3-bucket-name
 
-# Twilio SMS
-TWILIO_ACCOUNT_SID=your-production-twilio-account-sid
-TWILIO_AUTH_TOKEN=your-production-twilio-auth-token
-
 # SendGrid Email
 SENDGRID_API_KEY=your-production-sendgrid-api-key
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { publicProcedure } from '../../../create-context';
+import { protectedProcedure } from '../../../create-context';
 
-export default publicProcedure
+export default protectedProcedure
   .input(z.object({
     conversationId: z.string(),
     viewerType: z.enum(['user', 'support']).optional(),

@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
+import { MessageCirclePlus } from 'lucide-react-native';
 import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
 import Colors from '@/constants/colors';
@@ -111,6 +112,26 @@ export default function MessagesScreen() {
   const getListing = (listingId: string) => {
     return listings.find(listing => listing.id === listingId);
   };
+
+  // Add "New message" button in header
+  const navigation = useNavigation();
+  useLayoutEffect(() => {
+    if (!isAuthenticated) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => router.push('/new-conversation')}
+          style={styles.headerButton}
+          accessibilityLabel={language === 'az' ? 'Yeni mesaj' : 'Новое сообщение'}
+        >
+          <MessageCirclePlus size={22} color={Colors.primary} />
+          <Text style={styles.headerButtonText}>
+            {language === 'az' ? 'Yeni' : 'Новое'}
+          </Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, isAuthenticated, language]);
 
   const renderItem = ({ item }: { item: ConversationItem }) => {
     const otherUser = item.otherUser;
@@ -375,5 +396,18 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: Colors.textSecondary,
+  },
+  headerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    gap: 6,
+  },
+  headerButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });

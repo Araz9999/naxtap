@@ -63,7 +63,7 @@ const ChatInput = memo(({
 }: {
   inputText: string;
   onChangeText: (text: string) => void;
-  onSend: () => void;
+  onSend: (text?: string) => void;
   onAttach: () => void;
   onRecord: { onPressIn?: () => void; onPressOut?: () => void; onPress?: () => void };
   isRecording: boolean;
@@ -135,7 +135,7 @@ const ChatInput = memo(({
         onSubmitEditing={() => {
           const textToSend = inputText.trim();
           if (textToSend) {
-            onSend();
+            onSend(textToSend);
           }
         }}
         blurOnSubmit={false}
@@ -146,7 +146,9 @@ const ChatInput = memo(({
         <TouchableOpacity
           testID="chat-send-button"
           style={styles.sendButton}
-          onPress={onSend}
+          onPress={() => onSend(inputText.trim())}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.7}
         >
           <Send size={18} color="#fff" />
         </TouchableOpacity>
@@ -188,6 +190,8 @@ export default function ConversationScreen() {
       refetchOnMount: true,
     },
   );
+  // Fetch user preview when id might be userId (new chat). Don't wait for getMessages to error.
+  const looksLikeUserId = !!conversationId && typeof conversationId === 'string' && !conversationId.startsWith('conv-');
   const getUserPreviewQuery = trpc.chat.getUserPreview.useQuery(
     { userId: conversationId || '' },
     {
@@ -195,7 +199,7 @@ export default function ConversationScreen() {
         !!conversationId &&
         typeof conversationId === 'string' &&
         conversationId.length > 0 &&
-        (getMessagesQuery.error as any)?.data?.code === 'NOT_FOUND',
+        (looksLikeUserId || (getMessagesQuery.error as any)?.data?.code === 'NOT_FOUND'),
     },
   );
   const sendMessageMutation = trpc.chat.sendMessage.useMutation({
@@ -287,24 +291,27 @@ export default function ConversationScreen() {
     }
   }, [conversation?.id, getMessagesQuery.data?.unreadCount]);
 
-  // WebSocket: Join conversation room and listen for events
+  // WebSocket: Join conversation room only when conversation exists (not when opening with userId for new chat)
   useEffect(() => {
-    if (!conversationId || !realtimeService.isAvailable()) return;
+    if (!realtimeService.isAvailable()) return;
+    // Only join when we have a real conversation - not when id is userId (new conversation flow)
+    const roomId = conversation?.id;
+    if (!roomId || roomId !== conversationId) return;
 
-    logger.info('[Conversation] Joining WebSocket room:', conversationId);
-    realtimeService.joinRoom(conversationId, 'chat');
+    logger.info('[Conversation] Joining WebSocket room:', roomId);
+    realtimeService.joinRoom(roomId, 'chat');
 
     // Listen for new messages in this conversation
     const handleNewMessage = (data: { conversationId: string; message: any }) => {
-      if (data.conversationId === conversationId) {
+      if (data.conversationId === roomId) {
         logger.info('[Conversation] Received new message via WebSocket');
-        trpcUtils.chat.getMessages.invalidate({ conversationId });
+        trpcUtils.chat.getMessages.invalidate({ conversationId: roomId });
       }
     };
 
     // Listen for typing indicators
     const handleTyping = (data: { conversationId: string; userId: string; isTyping: boolean }) => {
-      if (data.conversationId === conversationId && data.userId !== currentUser?.id) {
+      if (data.conversationId === roomId && data.userId !== currentUser?.id) {
         // Show typing indicator (can be implemented in UI)
         logger.debug('[Conversation] Other user typing:', data.isTyping);
       }
@@ -312,9 +319,9 @@ export default function ConversationScreen() {
 
     // Listen for read receipts
     const handleRead = (data: { conversationId: string; messageIds: string[] }) => {
-      if (data.conversationId === conversationId) {
+      if (data.conversationId === roomId) {
         logger.info('[Conversation] Messages marked as read via WebSocket');
-        trpcUtils.chat.getMessages.invalidate({ conversationId });
+        trpcUtils.chat.getMessages.invalidate({ conversationId: roomId });
       }
     };
 
@@ -323,13 +330,13 @@ export default function ConversationScreen() {
     realtimeService.on('message:read', handleRead);
 
     return () => {
-      logger.info('[Conversation] Leaving WebSocket room:', conversationId);
-      realtimeService.leaveRoom(conversationId, 'chat');
+      logger.info('[Conversation] Leaving WebSocket room:', roomId);
+      realtimeService.leaveRoom(roomId, 'chat');
       realtimeService.off('message:new', handleNewMessage);
       realtimeService.off('message:typing', handleTyping);
       realtimeService.off('message:read', handleRead);
     };
-  }, [conversationId, currentUser?.id, trpcUtils]);
+  }, [conversation?.id, conversationId, currentUser?.id, trpcUtils]);
 
   // ✅ Proper cleanup for audio and recording
   useEffect(() => {
@@ -398,6 +405,12 @@ export default function ConversationScreen() {
         hasOtherUser: !!otherUser,
         hasCurrentUser: !!currentUser,
       });
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        language === 'az'
+          ? 'Məlumatlar yüklənir. Zəhmət olmasa bir az gözləyin.'
+          : 'Данные загружаются. Пожалуйста, подождите.',
+      );
       return;
     }
 
@@ -445,8 +458,8 @@ export default function ConversationScreen() {
     }
   };
 
-  const handleSendMessage = () => {
-    const textToSend = inputText.trim();
+  const handleSendMessage = (text?: string) => {
+    const textToSend = (text ?? inputText).trim();
     logger.debug('handleSendMessage called with text:', textToSend || '[empty]');
 
     if (!textToSend) {
@@ -2092,10 +2105,12 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: Colors.card,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    marginBottom:8
   },
   attachButton: {
     width: 36,

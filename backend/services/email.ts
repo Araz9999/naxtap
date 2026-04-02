@@ -22,6 +22,12 @@ interface PasswordResetOTPData {
   otp: string;
 }
 
+interface OTPEmailData {
+  name?: string;
+  otp: string;
+  purpose?: 'verification' | 'password-reset';
+}
+
 class EmailService {
   private apiKey: string;
   private fromEmail: string;
@@ -377,6 +383,50 @@ Telefon: +994504801313
       html,
       text,
     });
+  }
+
+  async sendOTPToEmail(email: string, data: OTPEmailData): Promise<boolean> {
+    const purpose = data.purpose || 'verification';
+    const name = data.name || 'İstifadəçi';
+    const subject = purpose === 'password-reset'
+      ? 'Şifrə Sıfırlama OTP - NaxtaPaz'
+      : 'Təsdiq Kodu - NaxtaPaz';
+    const message = purpose === 'password-reset'
+      ? 'Şifrənizi sıfırlamaq üçün'
+      : 'Hesabınızı təsdiqləmək üçün';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>OTP - NaxtaPaz</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .container { background: #fff; border-radius: 8px; padding: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          .otp-code { background: #F5F5F5; border: 2px dashed #007AFF; border-radius: 8px; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #007AFF; margin: 20px 0; }
+          .warning { background: #FFF3CD; border: 1px solid #FFE69C; border-radius: 6px; padding: 12px; margin: 20px 0; color: #856404; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>NaxtaPaz</h1>
+          <h2>Salam ${name}!</h2>
+          <p>${message} aşağıdakı OTP kodunu istifadə edin:</p>
+          <div class="otp-code">${data.otp}</div>
+          <div class="warning">
+            <strong>⚠️ Bu kod 10 dəqiqə ərzində etibarlıdır.</strong> Əgər siz bu sorğunu göndərməmisinizsə, dərhal bizimlə əlaqə saxlayın.
+          </div>
+          <p>Hörmətlə,<br>NaxtaPaz Komandası</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `Salam ${name}!\n\n${message} OTP kodunuz: ${data.otp}\n\nBu kod 10 dəqiqə ərzində etibarlıdır.\n\nHörmətlə,\nNaxtaPaz Komandası`;
+
+    return this.sendEmail({ to: email, subject, html, text });
   }
 
   async sendPasswordResetOTP(email: string, data: PasswordResetOTPData): Promise<boolean> {

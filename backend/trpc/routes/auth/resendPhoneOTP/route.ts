@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
 import { logger } from '../../../../utils/logger';
 import { validatePhone } from '../../../../utils/validation';
-import { smsService } from '../../../../services/sms';
+import { emailService } from '../../../../services/email';
 import { checkThrottle } from '../../../../utils/throttle';
 import { generatePhoneOTP, phoneOtpStore } from '../phoneOtpStore';
 
@@ -11,7 +11,11 @@ const OTP_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
 const OTP_MAX_IN_WINDOW = 5; // max 5 sends/hour per phone
 
 export const resendPhoneOTPProcedure = publicProcedure
-  .input(z.object({ phone: z.string().min(1) }))
+  .input(z.object({
+    phone: z.string().min(1),
+    email: z.string().email().optional(),
+    name: z.string().optional(),
+  }))
   .mutation(async ({ input }) => {
     try {
       const phone = input.phone.trim().replace(/\s+/g, '');
@@ -41,10 +45,22 @@ export const resendPhoneOTPProcedure = publicProcedure
       // Store OTP
       phoneOtpStore.set(phone, { code: otp, expiresAt, phone });
 
-      // Send SMS
-      await smsService.sendOTP(phone, otp, 'verification');
+      // Send OTP via email (no Twilio)
+      if (input.email && emailService.isConfigured()) {
+        await emailService.sendOTPToEmail(input.email.trim().toLowerCase(), {
+          name: input.name || 'İstifadəçi',
+          otp,
+          purpose: 'verification',
+        });
+        logger.info(`[Phone Registration] OTP resent to email ${input.email}`);
+      } else {
+        console.log('\n📱 ===== OTP Resend (Phone Registration) =====');
+        console.log(`Phone: ${phone}`);
+        console.log(`OTP: ${otp}`);
+        console.log('==============================================\n');
+      }
 
-      logger.info(`[Phone Registration] OTP resent to ${phone}`);
+      logger.info(`[Phone Registration] OTP resent for ${phone}`);
 
       return {
         success: true,

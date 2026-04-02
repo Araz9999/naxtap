@@ -9,8 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "jsEngine": "hermes",
-    "updates": { "fallbackToCacheTimeout": 0 },
-    "assetBundlePatterns": ["**/*"],
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -23,7 +27,9 @@
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone",
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       },
       "usesIcloudStorage": true
     },
@@ -34,14 +40,15 @@
       },
       "package": "com.naxtap.marketplace",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.VIBRATE",
-        "RECORD_AUDIO",
-        "android.permission.REQUEST_INSTALL_PACKAGES"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -58,7 +65,9 @@
       ],
       [
         "expo-image-picker",
-        { "photosPermission": "The app accesses your photos to let you share them with your friends." }
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your friends."
+        }
       ],
       [
         "expo-notifications",
@@ -71,11 +80,15 @@
       ],
       [
         "expo-document-picker",
-        { "iCloudContainerEnvironment": "Production" }
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
       ],
       [
         "expo-av",
-        { "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone" }
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone"
+        }
       ],
       [
         "expo-camera",
@@ -86,6 +99,17 @@
         }
       ]
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://naxtap.az/",
+        "root": "./app"
+      },
+      "eas": {
+        "projectId": "e09ada57-9ac2-4b57-a9ac-1a0ab3a64227"
+      }
+    }
   }
 }

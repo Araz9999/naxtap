@@ -2,7 +2,6 @@ import { publicProcedure } from '../../../create-context';
 import { z } from 'zod';
 import { userDB } from '../../../../db/users';
 import { emailService } from '../../../../services/email';
-import { smsService } from '../../../../services/sms';
 import { logger } from '../../../../utils/logger';
 import { otpStore, generateOTP } from '../verifyPasswordOTP/route';
 import { checkThrottle } from '../../../../utils/throttle';
@@ -79,34 +78,27 @@ export const forgotPasswordProcedure = publicProcedure
         userId: user.id,
       });
 
-      // Send OTP via email or SMS
-      if (contactType === 'email') {
-        const emailSent = await emailService.sendPasswordResetOTP(user.email, {
-          name: user.name,
-          otp,
-        });
+      // Send OTP via email (no Twilio/SMS)
+      const emailSent = await emailService.sendOTPToEmail(user.email, {
+        name: user.name,
+        otp,
+        purpose: 'password-reset',
+      });
 
-        if (!emailSent) {
-          logger.warn('[Auth] Failed to send password reset OTP email');
-        }
+      if (!emailSent) {
+        logger.warn('[Auth] Failed to send password reset OTP email');
       } else {
-        // Send SMS OTP
-        const smsSent = await smsService.sendOTP(contactInfo, otp, 'password-reset');
-
-        if (!smsSent) {
-          logger.warn('[Auth] Failed to send password reset OTP SMS');
-        } else {
-          logger.info('[Auth] Password reset OTP SMS sent:', { phone: contactInfo });
-        }
+        logger.info('[Auth] Password reset OTP sent via email:', {
+          email: user.email,
+          contactType,
+        });
       }
 
       logger.info('[Auth] Password reset OTP sent:', { userId: user.id, contactType });
 
       return {
         success: true,
-        message: contactType === 'email'
-          ? 'OTP kodu e-poçt ünvanınıza göndərildi'
-          : 'OTP kodu telefon nömrənizə göndərildi',
+        message: 'OTP kodu e-poçt ünvanınıza göndərildi',
         retryAfterSeconds: throttle.retryAfterSeconds,
       };
     } catch (error) {

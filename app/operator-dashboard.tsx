@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Stack } from 'expo-router';
+import { realtimeService } from '@/lib/realtime';
 import { useLanguageStore } from '@/store/languageStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
@@ -63,9 +64,41 @@ export default function OperatorDashboard() {
     { conversationId: selectedConversationId || '', viewerType: 'support' },
     {
       enabled: !!selectedConversationId,
-      refetchInterval: 2000,
+      refetchInterval: 3000,
     },
   );
+
+  // Realtime: Join support room when conversation is selected
+  useEffect(() => {
+    if (!selectedConversationId || !realtimeService.isAvailable()) return;
+
+    realtimeService.joinRoom(selectedConversationId, 'support');
+
+    const handleNewMessage = () => {
+      utils.liveChat.getMessages.invalidate({ conversationId: selectedConversationId, viewerType: 'support' });
+      utils.liveChat.getAllConversations.invalidate();
+    };
+    const handleAssigned = () => {
+      utils.liveChat.getAllConversations.invalidate();
+      utils.liveChat.getPresence.invalidate();
+    };
+    const handleClosed = () => {
+      utils.liveChat.getAllConversations.invalidate();
+      utils.liveChat.getPresence.invalidate();
+      setSelectedConversationId(null);
+    };
+
+    realtimeService.on('liveChat:message', handleNewMessage);
+    realtimeService.on('liveChat:assigned', handleAssigned);
+    realtimeService.on('liveChat:closed', handleClosed);
+
+    return () => {
+      realtimeService.leaveRoom(selectedConversationId, 'support');
+      realtimeService.off('liveChat:message', handleNewMessage);
+      realtimeService.off('liveChat:assigned', handleAssigned);
+      realtimeService.off('liveChat:closed', handleClosed);
+    };
+  }, [selectedConversationId, utils]);
 
   const assignAgentMutation = trpc.liveChat.assignAgent.useMutation();
   const updateAgentStatusMutation = trpc.liveChat.updateAgentStatus.useMutation();

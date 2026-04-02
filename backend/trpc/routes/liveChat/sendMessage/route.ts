@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { publicProcedure } from '../../../create-context';
+import { protectedProcedure } from '../../../create-context';
 import { liveChatDb } from '../../../../db/liveChat';
 import { LiveChatMessage } from '../../../../types/liveChat';
 import { TRPCError } from '@trpc/server';
 import { realtimeServer } from '../../../../realtime/server';
 import { logger } from '../../../../utils/logger';
-export default publicProcedure
+export default protectedProcedure
   .input(z.object({
     conversationId: z.string(),
     senderId: z.string(),
@@ -15,7 +15,10 @@ export default publicProcedure
     attachments: z.array(z.string()).optional(),
     isSupport: z.boolean(),
   }))
-  .mutation(({ input }) => {
+  .mutation(({ ctx, input }) => {
+    if (ctx.user.userId !== input.senderId) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'senderId mismatch' });
+    }
     logger.debug('[SendMessage] Creating message:', {
       conversationId: input.conversationId,
       senderId: input.senderId,
@@ -26,6 +29,13 @@ export default publicProcedure
     const conv = liveChatDb.conversations.getById(input.conversationId);
     if (!conv) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Conversation not found' });
+    }
+    if (input.isSupport) {
+      if (conv.supportAgentId !== ctx.user.userId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not assigned to this support conversation' });
+      }
+    } else if (conv.userId !== ctx.user.userId) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Not owner of this support conversation' });
     }
 
     const message: LiveChatMessage = {

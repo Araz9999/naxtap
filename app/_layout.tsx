@@ -178,14 +178,6 @@ function RootLayoutNav() {
       logger.warn('[App] Realtime service initialization failed (will use polling):', error);
     });
 
-    // Setup global realtime event listeners
-    if (currentUser?.id) {
-      // Join user's personal room
-      realtimeService.joinRoom(currentUser.id, 'user');
-
-      logger.info('[App] Joined user room:', currentUser.id);
-    }
-
     return () => {
       realtimeService.disconnect();
     };
@@ -210,8 +202,6 @@ function RootLayoutNav() {
         if (disposed) return;
 
         realtimeService.send('authenticate', { userId: currentUser.id, token });
-        // After authenticate, join personal room (server requires auth)
-        realtimeService.joinRoom(currentUser.id, 'user');
       } catch (e) {
         logger.debug?.('[App] Realtime authenticate failed (will keep polling):', e);
       }
@@ -225,8 +215,16 @@ function RootLayoutNav() {
       authenticate().catch(() => undefined);
     };
 
+    const onAuthenticated = () => {
+      if (!disposed && currentUser?.id) {
+        realtimeService.joinRoom(currentUser.id, 'user');
+        logger.info('[App] Joined user room after auth:', currentUser.id);
+      }
+    };
+
     realtimeService.on('connection', onConnect);
     realtimeService.on('reconnect', onReconnect as any);
+    realtimeService.on('authenticated', onAuthenticated);
 
     // Try immediately (in case already connected)
     authenticate().catch(() => undefined);
@@ -235,6 +233,7 @@ function RootLayoutNav() {
       disposed = true;
       realtimeService.off('connection', onConnect);
       realtimeService.off('reconnect', onReconnect as any);
+      realtimeService.off('authenticated', onAuthenticated);
     };
   }, [currentUser?.id, initializeRealtimeListeners, setSelfUserId]);
 

@@ -24,7 +24,9 @@
     "setup:mobile": "node scripts/setup-mobile-structure.js",
     "typecheck": "cd mobile && npm run typecheck",
     "lint": "cd mobile && npm run lint",
-    "test": "cd mobile && npm test"
+    "test": "cd mobile && npm test",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

@@ -66,10 +66,6 @@ export const API_CONFIG = {
   AWS_REGION: '',
   AWS_BUCKET_NAME: '',
 
-  // SMS Services
-  TWILIO_ACCOUNT_SID: '',
-  TWILIO_AUTH_TOKEN: '',
-
   // Email Services
   SENDGRID_API_KEY: '',
 

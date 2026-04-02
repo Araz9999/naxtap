@@ -44,11 +44,16 @@ interface RealtimeEvents {
   'disconnect': () => void;
   'reconnect': (attempt: number) => void;
   'error': (error: Error) => void;
+  'authenticated': () => void;
 }
+
+type PendingRoomJoin = { roomId: string; type: 'chat' | 'support' | 'user' };
 
 class RealtimeService {
   private socket: any = null;
   private isConnected: boolean = false;
+  private isSocketAuthenticated: boolean = false;
+  private pendingRoomJoins: PendingRoomJoin[] = [];
   private config: RealtimeConfig | null = null;
   private eventHandlers: Map<keyof RealtimeEvents, Set<SocketEventHandler>> = new Map();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -56,15 +61,11 @@ class RealtimeService {
 
   /**
    * WebSocket connection-u initialize edir
+   * Use Socket.io for both web and native - raw WebSocket doesn't work with Socket.io server
    */
   async initialize(config: RealtimeConfig): Promise<void> {
-    if (Platform.OS === 'web') {
-      logger.info('[Realtime] Initializing WebSocket for web platform');
-      await this.initializeWebSocket(config);
-    } else {
-      logger.info('[Realtime] Initializing Socket.io for native platform');
-      await this.initializeSocketIO(config);
-    }
+    logger.info('[Realtime] Initializing Socket.io for platform:', Platform.OS);
+    await this.initializeSocketIO(config);
   }
 
   /**
@@ -154,6 +155,8 @@ class RealtimeService {
 
     this.socket.on('connect', () => {
       this.isConnected = true;
+      this.isSocketAuthenticated = false;
+      this.pendingRoomJoins = [];
       logger.info('[Realtime] Socket.io connected');
       this.emit('connection');
       this.startHeartbeat();
@@ -161,9 +164,18 @@ class RealtimeService {
 
     this.socket.on('disconnect', () => {
       this.isConnected = false;
+      this.isSocketAuthenticated = false;
+      this.pendingRoomJoins = [];
       logger.info('[Realtime] Socket.io disconnected');
       this.emit('disconnect');
       this.stopHeartbeat();
+    });
+
+    this.socket.on('authenticated', () => {
+      this.isSocketAuthenticated = true;
+      logger.info('[Realtime] Socket authenticated');
+      this.emit('authenticated');
+      this.flushPendingRoomJoins();
     });
 
     this.socket.on('reconnect', (attempt: number) => {
@@ -238,10 +250,10 @@ class RealtimeService {
       logger.info('[Realtime] Attempting to reconnect...');
 
       if (this.config) {
-        if (Platform.OS === 'web') {
-          this.initializeWebSocket(this.config);
+        if (this.socket?.connect) {
+          this.socket.connect();
         } else {
-          this.socket?.connect();
+          this.initializeSocketIO(this.config);
         }
       }
 
@@ -306,12 +318,9 @@ class RealtimeService {
     }
 
     try {
-      if (Platform.OS === 'web' && this.socket instanceof WebSocket) {
-        this.socket.send(JSON.stringify({ event, data }));
-      } else if (this.socket?.emit) {
+      if (this.socket?.emit) {
         this.socket.emit(event, data);
       }
-
       logger.debug(`[Realtime] Sent event: ${event}`);
     } catch (error) {
       logger.error('[Realtime] Failed to send message:', error);
@@ -319,13 +328,31 @@ class RealtimeService {
   }
 
   /**
-   * Join room (for conversations)
+   * Join room (for conversations). Queues if not authenticated yet.
    * @param roomId - Conversation ID or user ID (for user rooms)
    * @param type - Room type: 'chat' | 'support' | 'user' (default: 'chat')
    */
   joinRoom(roomId: string, type: 'chat' | 'support' | 'user' = 'chat'): void {
+    if (!this.socket) return;
+    if (!this.isSocketAuthenticated) {
+      this.pendingRoomJoins.push({ roomId, type });
+      logger.debug(`[Realtime] Queued room join (not authenticated): ${roomId}`);
+      return;
+    }
     this.send('room:join', { roomId, type });
     logger.info(`[Realtime] Joined room: ${roomId} (type: ${type})`);
+  }
+
+  private flushPendingRoomJoins(): void {
+    const seen = new Set<string>();
+    for (const { roomId, type } of this.pendingRoomJoins) {
+      const key = `${type}:${roomId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      this.send('room:join', { roomId, type });
+      logger.info(`[Realtime] Joined room (from queue): ${roomId} (type: ${type})`);
+    }
+    this.pendingRoomJoins = [];
   }
 
   /**
@@ -343,14 +370,7 @@ class RealtimeService {
    */
   getConnectionStatus(): 'connected' | 'disconnected' | 'connecting' {
     if (!this.socket) return 'disconnected';
-
-    if (Platform.OS === 'web') {
-      if (this.socket.readyState === WebSocket.OPEN) return 'connected';
-      if (this.socket.readyState === WebSocket.CONNECTING) return 'connecting';
-      return 'disconnected';
-    } else {
-      return this.socket.connected ? 'connected' : 'disconnected';
-    }
+    return this.socket.connected ? 'connected' : 'disconnected';
   }
 
   /**
@@ -364,12 +384,8 @@ class RealtimeService {
       this.reconnectTimer = null;
     }
 
-    if (this.socket) {
-      if (Platform.OS === 'web' && this.socket instanceof WebSocket) {
-        this.socket.close();
-      } else if (this.socket.disconnect) {
-        this.socket.disconnect();
-      }
+    if (this.socket?.disconnect) {
+      this.socket.disconnect();
     }
 
     this.isConnected = false;

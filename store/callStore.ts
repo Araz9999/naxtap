@@ -6,6 +6,18 @@ import { Audio } from 'expo-av';
 import { trpcClient } from '@/lib/trpc';
 import { realtimeService } from '@/lib/realtime';
 
+type RealtimeCallPayload = { callId: string; callerId: string; type: CallType; listingId?: string };
+type RealtimeCallIdPayload = { callId: string };
+
+let callRealtimeHandlers:
+  | {
+    onIncoming: (data: RealtimeCallPayload) => void;
+    onAnswered: (data: RealtimeCallIdPayload) => void;
+    onDeclined: (data: RealtimeCallIdPayload) => void;
+    onEnded: (data: RealtimeCallIdPayload) => void;
+  }
+  | null = null;
+
 interface CallStore {
   calls: Call[];
   activeCall: ActiveCall | null;
@@ -698,8 +710,15 @@ export const useCallStore = create<CallStore>((set, get) => ({
       return;
     }
 
-    // Listen for incoming calls
-    realtimeService.on('call:incoming', (data) => {
+    // Prevent duplicate subscriptions across re-renders/re-initialization.
+    if (callRealtimeHandlers) {
+      realtimeService.off('call:incoming', callRealtimeHandlers.onIncoming);
+      realtimeService.off('call:answered', callRealtimeHandlers.onAnswered);
+      realtimeService.off('call:declined', callRealtimeHandlers.onDeclined);
+      realtimeService.off('call:ended', callRealtimeHandlers.onEnded);
+    }
+
+    const onIncoming = (data: RealtimeCallPayload) => {
       logger.info('[CallStore] Incoming call via WebSocket:', data.callId);
 
       const receiverId = get().selfUserId ?? '';
@@ -742,10 +761,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
           }
         })();
       }
-    });
+    };
 
     // Listen for answered calls
-    realtimeService.on('call:answered', (data) => {
+    const onAnswered = (data: RealtimeCallIdPayload) => {
       logger.info('[CallStore] Call answered via WebSocket:', data.callId);
 
       set((state) => ({
@@ -766,10 +785,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
         newTimeouts.delete(data.callId);
         set({ outgoingCallTimeouts: newTimeouts });
       }
-    });
+    };
 
     // Listen for declined calls
-    realtimeService.on('call:declined', (data) => {
+    const onDeclined = (data: RealtimeCallIdPayload) => {
       logger.info('[CallStore] Call declined via WebSocket:', data.callId);
 
       set((state) => ({
@@ -791,14 +810,20 @@ export const useCallStore = create<CallStore>((set, get) => ({
         newTimeouts.delete(data.callId);
         set({ outgoingCallTimeouts: newTimeouts });
       }
-    });
+    };
 
     // Listen for ended calls
-    realtimeService.on('call:ended', (data) => {
+    const onEnded = (data: RealtimeCallIdPayload) => {
       logger.info('[CallStore] Call ended via WebSocket:', data.callId);
 
       get().endCall(data.callId);
-    });
+    };
+
+    realtimeService.on('call:incoming', onIncoming);
+    realtimeService.on('call:answered', onAnswered);
+    realtimeService.on('call:declined', onDeclined);
+    realtimeService.on('call:ended', onEnded);
+    callRealtimeHandlers = { onIncoming, onAnswered, onDeclined, onEnded };
 
     logger.info('[CallStore] Realtime listeners initialized');
   },
@@ -806,6 +831,11 @@ export const useCallStore = create<CallStore>((set, get) => ({
   // Cleanup WebSocket listeners
   cleanupRealtimeListeners: () => {
     logger.info('[CallStore] Cleaning up realtime listeners');
-    // Cleanup is handled by realtimeService internally
+    if (!callRealtimeHandlers) return;
+    realtimeService.off('call:incoming', callRealtimeHandlers.onIncoming);
+    realtimeService.off('call:answered', callRealtimeHandlers.onAnswered);
+    realtimeService.off('call:declined', callRealtimeHandlers.onDeclined);
+    realtimeService.off('call:ended', callRealtimeHandlers.onEnded);
+    callRealtimeHandlers = null;
   },
 }));

@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { publicProcedure } from '../../../create-context';
+import { protectedProcedure } from '../../../create-context';
 import { liveChatDb } from '../../../../db/liveChat';
 import { LiveChatConversation, LiveChatMessage } from '../../../../types/liveChat';
+import { TRPCError } from '@trpc/server';
 
-export default publicProcedure
+export default protectedProcedure
   .input(z.object({
     userId: z.string(),
     userName: z.string(),
@@ -12,7 +13,10 @@ export default publicProcedure
     category: z.string().trim().min(1).max(50).optional(),
     priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   }))
-  .mutation(({ input }) => {
+  .mutation(({ ctx, input }) => {
+    if (ctx.user.userId !== input.userId) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot create conversation for another user' });
+    }
     const existingConversation = liveChatDb.conversations
       .getByUserId(input.userId)
       .find(c => c.status !== 'closed');
