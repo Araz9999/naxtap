@@ -113,14 +113,14 @@ class UserDatabase {
     // Admin user
     const adminUser: DBUser = {
       id: '2',
-      email: 'admin@test.com',
+      email: 'naxtapaz@gmail.com',
       name: 'Admin User',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
       phone: '+994501234568',
       verified: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      passwordHash: await hashPassword('Admin1234'),
+      passwordHash: await hashPassword('Araz1990@'),
       socialProviders: [],
       role: 'admin',
       balance: 5000,

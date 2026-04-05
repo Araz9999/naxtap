@@ -9,7 +9,7 @@ import Colors from '@/constants/colors';
 import { PhoneOff } from 'lucide-react-native';
 
 // LiveKit is only loaded when NOT in Expo Go (avoids "package doesn't seem to be linked").
-const CallRoomLiveKit = React.lazy(() => import('./CallRoomLiveKit'));
+const CallRoomLiveKit = React.lazy(() => import('./_CallRoomLiveKit'));
 
 class CallScreenErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback: React.ReactNode },

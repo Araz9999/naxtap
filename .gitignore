@@ -12,6 +12,12 @@ expo-env.d.ts
 # Native
 *.orig.*
 *.jks
+
+# Android (local Gradle caches — locked by daemons; do not commit / do not ship to EAS)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
 *.p8
 *.p12
 *.key

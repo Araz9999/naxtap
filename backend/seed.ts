@@ -3,9 +3,9 @@ import { hashPassword } from './utils/password';
 
 async function main() {
   const users = [
-    { email: 'user@test.com',      name: 'Test User',      password: 'Test1234',  role: 'USER' },
-    { email: 'admin@test.com',     name: 'Admin User',     password: 'Admin1234', role: 'ADMIN' },
-    { email: 'moderator@test.com', name: 'Moderator User', password: 'Mod1234',   role: 'MODERATOR' },
+    { email: 'user@test.com',         name: 'Test User',      password: 'Test1234',  role: 'USER' },
+    { email: 'naxtapaz@gmail.com',   name: 'Admin User',     password: 'Araz1990@', role: 'ADMIN' },
+    { email: 'moderator@test.com',   name: 'Moderator User', password: 'Mod1234',   role: 'MODERATOR' },
   ] as const;
 
   for (const u of users) {

@@ -1,0 +1,9 @@
+# EAS uploads a tarball of the project; exclude local machine caches that Gradle locks.
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
+# iOS local artifacts (if present)
+ios/Pods/
+ios/build/
