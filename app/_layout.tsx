@@ -2,7 +2,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState, useMemo } from 'react';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { useThemeStore } from '@/store/themeStore';
 import { useRatingStore } from '@/store/ratingStore';
 import { useCallStore } from '@/store/callStore';
@@ -92,7 +92,7 @@ function RootLayoutNav() {
       try {
         logger.info('[App] Initializing application data...');
 
-        // Load all listings
+        // Load all listings (non-blocking - in background)
         await fetchListings();
         if (useListingStore.getState().error) {
           logger.warn('[App] Listings failed to load (check backend / EXPO_PUBLIC_BACKEND_URL)');
@@ -100,7 +100,7 @@ function RootLayoutNav() {
           logger.info('[App] Listings loaded successfully');
         }
 
-        // Load all stores
+        // Load all stores (non-blocking - in background)
         await fetchStores();
         if (useStoreStore.getState().error) {
           logger.warn('[App] Stores failed to load (check backend / EXPO_PUBLIC_BACKEND_URL)');
@@ -108,7 +108,7 @@ function RootLayoutNav() {
           logger.info('[App] Stores loaded successfully');
         }
 
-        // Load user's store if authenticated
+        // Load user's store if authenticated (non-blocking)
         if (currentUser) {
           await fetchUserStore(currentUser.id);
           if (!useStoreStore.getState().error) logger.info('[App] User store loaded successfully');
@@ -250,7 +250,8 @@ function RootLayoutNav() {
 
   return (
     <>
-      <StatusBar style={themeMode === 'dark' || (themeMode === 'auto' && colors.background === '#111827') ? 'light' : 'dark'} />
+      <ExpoStatusBar style={themeMode === 'dark' || (themeMode === 'auto' && colors.background === '#111827') ? 'light' : 'dark'} />
+      
       <Stack
         screenOptions={{
           headerBackTitle: 'Back',
@@ -607,6 +608,7 @@ function RootLayoutNav() {
           }}
         />
       </Stack>
+      
       <IncomingCallModal />
     </>
   );
