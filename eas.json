@@ -7,6 +7,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.0.0",
       "android": {
         "gradleCommand": ":app:assembleDebug"
       },
@@ -16,6 +17,7 @@
     },
     "preview": {
       "distribution": "internal",
+      "node": "22.0.0",
       "android": {
         "buildType": "apk"
       },
@@ -31,6 +33,7 @@
     "production": {
       "autoIncrement": true,
       "distribution": "store",
+      "node": "22.0.0",
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
