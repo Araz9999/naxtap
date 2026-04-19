@@ -8,18 +8,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const trpc = createTRPCReact<AppRouter>();
 
 const stripTrailingSlash = (u: string) => u.replace(/\/+$/, '');
+const stripTrpcAndApiSuffix = (u: string) =>
+  stripTrailingSlash(u).replace(/\/api\/trpc$/i, '').replace(/\/api$/i, '');
 
 export const getBaseUrl = () => {
+  // Explicit full tRPC URL support (e.g. https://example.com/api/trpc)
+  const trpcFromEnv =
+    process.env.EXPO_PUBLIC_TRPC_URL ||
+    (process.env as any).EXPO_PUBLIC_TRPC_ENDPOINT;
+  if (trpcFromEnv && typeof trpcFromEnv === 'string') {
+    return stripTrpcAndApiSuffix(trpcFromEnv);
+  }
+
   // Prefer explicit env vars (any of these will work)
   const fromEnv =
     process.env.EXPO_PUBLIC_RORK_API_BASE_URL ||
+    process.env.EXPO_PUBLIC_API_URL ||
     // common alternatives if someone renamed the var
     (process.env as any).EXPO_PUBLIC_API_BASE_URL ||
     (process.env as any).EXPO_PUBLIC_BACKEND_URL ||
     (process.env as any).EXPO_PUBLIC_BASE_URL;
 
   if (fromEnv && typeof fromEnv === 'string') {
-    return stripTrailingSlash(fromEnv);
+    return stripTrpcAndApiSuffix(fromEnv);
   }
 
   // In development: use EXPO_PUBLIC_BACKEND_URL for device/emulator (e.g. http://192.168.1.5:3000)
@@ -51,7 +62,18 @@ let cachedAuthHeader: Record<string, string> | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5000; // 5 seconds
 
-const apiBaseUrl = `${getBaseUrl()}/api/trpc`;
+const getTrpcUrl = () => {
+  const explicitTrpc =
+    process.env.EXPO_PUBLIC_TRPC_URL ||
+    (process.env as any).EXPO_PUBLIC_TRPC_ENDPOINT;
+  if (explicitTrpc && typeof explicitTrpc === 'string') {
+    return stripTrailingSlash(explicitTrpc);
+  }
+  const base = getBaseUrl();
+  return base ? `${base}/api/trpc` : '/api/trpc';
+};
+
+const apiBaseUrl = getTrpcUrl();
 if (typeof __DEV__ !== 'undefined' && __DEV__) {
   console.log('[tRPC] API base URL:', apiBaseUrl || '(empty - same-origin)');
 }

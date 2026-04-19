@@ -31,22 +31,24 @@ import {
   Circle,
   Square,
 } from 'lucide-react-native';
-import {
-  AudioSession,
-  LiveKitRoom,
-  VideoTrack,
-  isTrackReference,
-  registerGlobals,
-  useConnectionState,
-  useRoomContext,
-  useTracks,
-  type TrackReferenceOrPlaceholder,
-} from '@livekit/react-native';
 import { ConnectionState, Track } from 'livekit-client';
 import { trpc } from '@/lib/trpc';
+import Constants from 'expo-constants';
 
-if (Platform.OS !== 'web') {
-  registerGlobals();
+type LiveKitModule = typeof import('@livekit/react-native');
+type TrackReferenceOrPlaceholder = any;
+
+function isExpoGo() {
+  // In some dev setups Constants.appOwnership can be undefined; treat as Expo Go to be safe.
+  return Constants.appOwnership === 'expo' || (__DEV__ && Constants.appOwnership === undefined);
+}
+
+function getLiveKit(): LiveKitModule | null {
+  if (Platform.OS === 'web') return null;
+  if (isExpoGo()) return null;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require('@livekit/react-native') as LiveKitModule;
+  return mod;
 }
 
 function formatDuration(seconds: number) {
@@ -84,6 +86,27 @@ function CallRoomView({
   otherUserName?: string;
   listingTitle?: string;
 }) {
+  const livekit = getLiveKit();
+  if (!livekit) {
+    // Should never render in Expo Go / web, but keep a hard guard in case router imports eagerly.
+    return (
+      <View style={[styles.content, { justifyContent: 'center' }]}>
+        <Text style={{ color: '#fff', textAlign: 'center' }}>
+          Calls require a development build (LiveKit native modules).
+        </Text>
+      </View>
+    );
+  }
+
+  const {
+    AudioSession,
+    VideoTrack,
+    isTrackReference,
+    useConnectionState,
+    useRoomContext,
+    useTracks,
+  } = livekit;
+
   const { language } = useLanguageStore();
   const room = useRoomContext();
   const connectionState = useConnectionState();
@@ -366,6 +389,21 @@ const styles = StyleSheet.create({
 });
 
 export default function CallRoomLiveKit({ callId }: { callId: string }) {
+  const livekit = getLiveKit();
+  if (!livekit) {
+    return null;
+  }
+
+  const { LiveKitRoom, registerGlobals } = livekit;
+  // Ensure globals are registered once when LiveKit is actually available.
+  useEffect(() => {
+    try {
+      registerGlobals();
+    } catch {
+      // ignore
+    }
+  }, [registerGlobals]);
+
   const { activeCall, endCall, toggleMute, toggleSpeaker, toggleVideo } = useCallStore();
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
