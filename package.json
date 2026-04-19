@@ -4,10 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "packageManager": "npm@10.9.0",
-  "workspaces": [
-    "mobile",
-    "server"
-  ],
+  
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
     "dev": "node backend/run-ts.cjs",
