@@ -236,6 +236,9 @@ export default function ConversationScreen() {
   const [recordingDuration, setRecordingDuration] = useState<number>(0); // ✅ Track current recording duration in seconds
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null); // ✅ Interval ref used to update recordingDuration
   const recordingStartedAtRef = useRef<number | null>(null); // ✅ Timestamp used to update recordingDuration
+  const isStoppingRecordingRef = useRef<boolean>(false); // Prevent duplicate stop calls
+  const isStartingRecordingRef = useRef<boolean>(false); // Prevent start/stop race
+  const pendingStopAfterStartRef = useRef<boolean>(false); // Queue stop if user releases early
   const [showAttachmentModal, setShowAttachmentModal] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -400,9 +403,8 @@ export default function ConversationScreen() {
       return;
     }
 
-    if (!otherUser || !currentUser) {
+    if (!currentUser) {
       logger.error('[Conversation] Cannot send message - missing user data:', {
-        hasOtherUser: !!otherUser,
         hasCurrentUser: !!currentUser,
       });
       Alert.alert(
@@ -410,6 +412,23 @@ export default function ConversationScreen() {
         language === 'az'
           ? 'Məlumatlar yüklənir. Zəhmət olmasa bir az gözləyin.'
           : 'Данные загружаются. Пожалуйста, подождите.',
+      );
+      return;
+    }
+
+    const fallbackReceiverId =
+      !conversation?.id && looksLikeUserId && conversationId ? conversationId : undefined;
+    const receiverId = otherUser?.id || fallbackReceiverId;
+    if (!receiverId) {
+      logger.error('[Conversation] Cannot send message - missing receiver id:', {
+        hasOtherUser: !!otherUser,
+        conversationId,
+      });
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        language === 'az'
+          ? 'Alıcı tapılmadı. Söhbəti yenidən açın.'
+          : 'Получатель не найден. Откройте чат заново.',
       );
       return;
     }
@@ -436,7 +455,7 @@ export default function ConversationScreen() {
       const listingIdToUse = conversation?.listingId || listings[0].id;
       const res = await sendMessageMutation.mutateAsync({
         conversationId: conversation?.id,
-        receiverId: otherUser.id,
+        receiverId,
         listingId: listingIdToUse,
         text: trimmedText,
         type,
@@ -790,6 +809,12 @@ export default function ConversationScreen() {
   };
 
   const startRecording = async () => {
+    if (isStartingRecordingRef.current || isRecording || recording) {
+      return;
+    }
+    isStartingRecordingRef.current = true;
+    pendingStopAfterStartRef.current = false;
+
     try {
       // ✅ 1. Platform check
       if (Platform.OS === 'web') {
@@ -803,6 +828,7 @@ export default function ConversationScreen() {
       // ✅ 2. Prevent concurrent recordings
       if (recording || isRecording) {
         logger.warn('Recording already in progress');
+        isStartingRecordingRef.current = false;
         return;
       }
 
@@ -820,6 +846,7 @@ export default function ConversationScreen() {
               ? 'Предоставьте разрешение для записи аудио'
               : 'Разрешение на запись отклонено. Разрешите в настройках.',
         );
+        isStartingRecordingRef.current = false;
         return;
       }
 
@@ -843,6 +870,15 @@ export default function ConversationScreen() {
       setRecording(newRecording);
       setIsRecording(true);
       setRecordingDuration(0);
+      isStartingRecordingRef.current = false;
+
+      // User already released mic before recorder became ready.
+      if (pendingStopAfterStartRef.current) {
+        pendingStopAfterStartRef.current = false;
+        setTimeout(() => {
+          stopRecording().catch(() => undefined);
+        }, 0);
+      }
 
       // ✅ 5b. Start elapsed-time ticker for UI
       if (recordingTimerRef.current) {
@@ -875,6 +911,8 @@ export default function ConversationScreen() {
       logger.info('Recording started successfully');
     } catch (error) {
       logger.error('Failed to start recording:', error);
+      isStartingRecordingRef.current = false;
+      pendingStopAfterStartRef.current = false;
 
       // ✅ Cleanup on error
       setIsRecording(false);
@@ -902,6 +940,17 @@ export default function ConversationScreen() {
   };
 
   const stopRecording = async () => {
+    if (isStartingRecordingRef.current && !recording) {
+      // Recorder init still in progress; stop as soon as start completes.
+      pendingStopAfterStartRef.current = true;
+      return;
+    }
+
+    if (isStoppingRecordingRef.current) {
+      return;
+    }
+    isStoppingRecordingRef.current = true;
+
     // ✅ Early return with proper validation
     if (!recording || Platform.OS === 'web') {
       // ✅ Clear timer even if recording is null
@@ -914,10 +963,15 @@ export default function ConversationScreen() {
         recordingTimerRef.current = null;
       }
       recordingStartedAtRef.current = null;
+      isStoppingRecordingRef.current = false;
       return;
     }
 
     try {
+      const currentRecording = recording;
+
+      let durationSeconds = 0;
+
       // ✅ Stop recording timer
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
@@ -926,6 +980,7 @@ export default function ConversationScreen() {
       recordingStartedAtRef.current = null;
 
       setIsRecording(false);
+      setRecording(null); // Detach immediately to avoid second stop against same recorder
 
       // ✅ Clear max duration timer
       if (recordingTimer) {
@@ -933,8 +988,18 @@ export default function ConversationScreen() {
         setRecordingTimer(null);
       }
 
+      // Read status before stop to detect ultra-short recordings.
+      try {
+        const statusBeforeStop = await currentRecording.getStatusAsync();
+        if ('durationMillis' in statusBeforeStop && typeof statusBeforeStop.durationMillis === 'number') {
+          durationSeconds = Math.floor((statusBeforeStop.durationMillis || 0) / 1000);
+        }
+      } catch {
+        // ignore pre-stop status read failures
+      }
+
       // ✅ Proper cleanup sequence
-      await recording.stopAndUnloadAsync();
+      await currentRecording.stopAndUnloadAsync();
 
       // ✅ Reset audio mode after recording
       await Audio.setAudioModeAsync({
@@ -943,7 +1008,7 @@ export default function ConversationScreen() {
         staysActiveInBackground: false,
       });
 
-      const uri = recording.getURI();
+      const uri = currentRecording.getURI();
       if (uri) {
         const uriParts = uri.split('.');
         const fileType = uriParts[uriParts.length - 1];
@@ -958,10 +1023,10 @@ export default function ConversationScreen() {
           return;
         }
 
-        // ✅ Get recording status for duration and file size
-        const status = await recording.getStatusAsync();
-        const durationMs = status.durationMillis || 0;
-        const durationSeconds = Math.floor(durationMs / 1000);
+        // Use measured duration if available, fallback to UI timer value.
+        if (!durationSeconds) {
+          durationSeconds = Math.floor(recordingDuration || 0);
+        }
 
         // ✅ Validate recording duration
         if (durationSeconds < 1) {
@@ -997,10 +1062,16 @@ export default function ConversationScreen() {
       }
 
       // ✅ Clear recording reference and duration
-      setRecording(null);
       setRecordingDuration(0);
     } catch (error) {
-      logger.error('Failed to stop recording:', error);
+      const errMsg = error instanceof Error ? error.message : String(error || '');
+      const isShortOrNotReadyRecording =
+        /E_AUDIO_NODATA|No data|not been prepared|not currently recording|Cannot stop|Recorder does not exist/i.test(errMsg);
+      if (isShortOrNotReadyRecording) {
+        logger.warn('Recording stopped too early; discarding short/empty audio:', errMsg);
+      } else {
+        logger.error('Failed to stop recording:', error);
+      }
 
       // ✅ Ensure cleanup even on error
       setIsRecording(false);
@@ -1028,10 +1099,14 @@ export default function ConversationScreen() {
         logger.error('Failed to reset audio mode:', audioModeError);
       }
 
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Səs yazma dayandırıla bilmədi' : 'Не удалось остановить запись',
-      );
+      if (!isShortOrNotReadyRecording) {
+        Alert.alert(
+          language === 'az' ? 'Xəta' : 'Ошибка',
+          language === 'az' ? 'Səs yazma dayandırıla bilmədi' : 'Не удалось остановить запись',
+        );
+      }
+    } finally {
+      isStoppingRecordingRef.current = false;
     }
   };
 
@@ -1040,6 +1115,8 @@ export default function ConversationScreen() {
     if (!recording || Platform.OS === 'web') return;
 
     try {
+      const currentRecording = recording;
+
       // Stop timer
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
@@ -1048,9 +1125,10 @@ export default function ConversationScreen() {
       recordingStartedAtRef.current = null;
 
       setIsRecording(false);
+      setRecording(null);
 
       // Stop and discard recording
-      await recording.stopAndUnloadAsync();
+      await currentRecording.stopAndUnloadAsync();
 
       // Reset audio mode
       await Audio.setAudioModeAsync({
@@ -1058,7 +1136,6 @@ export default function ConversationScreen() {
         playsInSilentModeIOS: false,
       });
 
-      setRecording(null);
       setRecordingDuration(0);
 
       logger.info('Recording cancelled');
@@ -1318,20 +1395,22 @@ export default function ConversationScreen() {
                   ]}
                   onPress={() => playAudio(attachment.uri, item.id)}
                 >
-                  {playingAudio === item.id ? (
-                    <Pause size={20} color={audioIconColor} />
-                  ) : (
-                    <Play size={20} color={audioIconColor} />
-                  )}
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={[styles.audioText, { color: audioTextColor }]}>
+                  <View style={styles.audioPlayButton}>
+                    {playingAudio === item.id ? (
+                      <Pause size={18} color={audioIconColor} />
+                    ) : (
+                      <Play size={18} color={audioIconColor} />
+                    )}
+                  </View>
+                  <View style={styles.audioMeta}>
+                    <Text style={[styles.audioTitle, { color: audioTextColor }]} numberOfLines={1}>
                       {language === 'az' ? 'Səs mesajı' : 'Голосовое сообщение'}
                     </Text>
-                    {attachment.duration && (
-                      <Text style={[styles.audioText, { color: audioTextColor, fontSize: 12, opacity: 0.8 }]}>
-                        {Math.floor(attachment.duration / 60)}:{String(attachment.duration % 60).padStart(2, '0')}
-                      </Text>
-                    )}
+                    <Text style={[styles.audioDuration, { color: audioTextColor }]}>
+                      {attachment.duration
+                        ? `${Math.floor(attachment.duration / 60)}:${String(attachment.duration % 60).padStart(2, '0')}`
+                        : '0:00'}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               )}
@@ -1509,24 +1588,58 @@ export default function ConversationScreen() {
   };
 
   if (!conversation && !otherUser) {
-    if (getMessagesQuery.isLoading || getUserPreviewQuery.isLoading) {
-      return (
-        <View style={styles.errorContainer}>
-          <ActivityIndicator size="small" color={Colors.primary} />
-          <Text style={[styles.errorText, { marginTop: 10 }]}>
-            {language === 'az' ? 'Yüklənir...' : 'Загрузка...'}
-          </Text>
-        </View>
-      );
-    }
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>
-          {language === 'az' ? 'Söhbət tapılmadı' : 'Беседа не найдена'}
-        </Text>
-        <Text style={[styles.errorText, { fontSize: 14, marginTop: 8 }]}>
-          ID: {conversationId}
-        </Text>
+      <View style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: language === 'az' ? 'Söhbət' : 'Чат',
+            headerStyle: { backgroundColor: Colors.card },
+            headerTintColor: Colors.text,
+          }}
+        />
+
+        <View style={styles.emptyContainer}>
+          {(getMessagesQuery.isLoading || getUserPreviewQuery.isLoading) ? (
+            <>
+              <ActivityIndicator size="small" color={Colors.primary} />
+              <Text style={[styles.emptyText, { marginTop: 10 }]}>
+                {language === 'az' ? 'Yüklənir...' : 'Загрузка...'}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.emptyText}>
+                {language === 'az'
+                  ? 'Söhbət məlumatı tapılmadı, amma mesaj göndərə bilərsiniz'
+                  : 'Данные чата не найдены, но вы можете отправить сообщение'}
+              </Text>
+              <Text style={[styles.emptyText, { fontSize: 13, marginTop: 8 }]}>
+                ID: {conversationId}
+              </Text>
+            </>
+          )}
+        </View>
+
+        <ChatInput
+          inputText={inputText}
+          onChangeText={setInputText}
+          onSend={handleSendMessage}
+          onAttach={() => setShowAttachmentModal(true)}
+          onRecord={{
+            onPressIn: Platform.OS !== 'web' ? startRecording : undefined,
+            onPressOut: Platform.OS !== 'web' ? stopRecording : undefined,
+            onPress: Platform.OS === 'web' ? () => {
+              Alert.alert(
+                language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
+                language === 'az' ? 'Səs yazma web versiyasında dəstəklənmir' : 'Запись аудио не поддерживается в веб-версии',
+              );
+            } : undefined,
+          }}
+          isRecording={isRecording}
+          recordingDuration={recordingDuration}
+          onCancelRecording={cancelRecording}
+          language={language}
+        />
       </View>
     );
   }
@@ -2063,11 +2176,13 @@ const styles = StyleSheet.create({
   audioAttachment: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minHeight: 44,
-    maxWidth: screenWidth * 0.6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+    height: 58,
+    minHeight: 58,
+    width: Math.min(screenWidth * 0.68, 240),
+    maxWidth: Math.min(screenWidth * 0.68, 240),
     alignSelf: 'flex-start',
     flexGrow: 0,
   },
@@ -2077,8 +2192,27 @@ const styles = StyleSheet.create({
   audioAttachmentOther: {
     backgroundColor: 'rgba(0,0,0,0.06)',
   },
-  audioText: {
-    fontWeight: '500',
+  audioPlayButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  audioMeta: {
+    flex: 1,
+    marginLeft: 10,
+    justifyContent: 'center',
+  },
+  audioTitle: {
+    fontWeight: '600',
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  audioDuration: {
+    fontSize: 12,
+    opacity: 0.85,
   },
   fileAttachment: {
     flexDirection: 'row',

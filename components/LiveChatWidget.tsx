@@ -71,13 +71,10 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
   const [isScrolling, setIsScrolling] = useState<boolean>(false);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showAttachments, setShowAttachments] = useState<boolean>(false);
-  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
-  const [inputHeight, setInputHeight] = useState<number>(44);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const slideAnim = useRef(new Animated.Value(height)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const keyboardAnimRef = useRef(new Animated.Value(0)).current;
 
   const currentChat = currentChatId ? liveChats.find(chat => chat.id === currentChatId) : undefined;
   const operator = currentChat?.operatorId ? operators.find(op => op.id === currentChat.operatorId) : undefined;
@@ -114,46 +111,8 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
     }
   }, [currentChat?.messages.length, shouldScrollToEnd, isScrolling]);
 
-  useEffect(() => {
-    const keyboardWillShowListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
-        const keyboardHeight = e.endCoordinates.height;
-        setKeyboardHeight(keyboardHeight);
-
-        // Animate keyboard space
-        Animated.timing(keyboardAnimRef, {
-          toValue: keyboardHeight,
-          duration: Platform.OS === 'ios' ? e.duration || 250 : 250,
-          useNativeDriver: false,
-        }).start();
-
-        // Scroll to bottom after a short delay
-        setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: true });
-        }, 50);
-      },
-    );
-
-    const keyboardWillHideListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      (e) => {
-        setKeyboardHeight(0);
-
-        // Animate keyboard space back
-        Animated.timing(keyboardAnimRef, {
-          toValue: 0,
-          duration: Platform.OS === 'ios' ? e.duration || 250 : 250,
-          useNativeDriver: false,
-        }).start();
-      },
-    );
-
-    return () => {
-      keyboardWillShowListener.remove();
-      keyboardWillHideListener.remove();
-    };
-  }, []);
+  // Note: We intentionally avoid custom keyboard animations here.
+  // They can fight with KeyboardAvoidingView on Android and cause the keyboard to "bounce".
 
   const handleStartChat = () => {
     if (!currentUser) {
@@ -438,6 +397,8 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
           onChangeText={setSubject}
           multiline={false}
           maxLength={100}
+          blurOnSubmit={false}
+          returnKeyType="done"
         />
       </View>
 
@@ -473,7 +434,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <TouchableWithoutFeedback onPress={() => {}}>
@@ -484,7 +445,6 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                   {
                     backgroundColor: colors.background,
                     transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-                    marginBottom: Platform.OS === 'android' ? keyboardAnimRef : 0,
                   },
                   isMinimized && styles.minimizedContainer,
                 ]}
@@ -552,7 +512,7 @@ export default function LiveChatWidget({ visible, onClose, chatId }: LiveChatWid
                           style={styles.messagesContainer}
                           showsVerticalScrollIndicator={false}
                           keyboardShouldPersistTaps="handled"
-                          keyboardDismissMode="on-drag"
+                          keyboardDismissMode="none"
                           contentContainerStyle={{ paddingBottom: 10, flexGrow: 1 }}
                           onContentSizeChange={() => {
                             if (shouldScrollToEnd && !isScrolling) {

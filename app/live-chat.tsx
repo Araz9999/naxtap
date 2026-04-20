@@ -11,6 +11,8 @@ import {
   Dimensions,
   Image,
   Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -374,7 +376,7 @@ export default function LiveChatScreen() {
     );
   };
 
-  const StartChatForm = () => (
+  const renderStartChatForm = () => (
     <KeyboardAvoidingView
       style={styles.startForm}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -382,7 +384,8 @@ export default function LiveChatScreen() {
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
         contentContainerStyle={styles.startFormScrollContent}
       >
         <View style={styles.startFormInner}>
@@ -463,6 +466,8 @@ export default function LiveChatScreen() {
                 maxLength={100}
                 autoCorrect={false}
                 autoCapitalize="sentences"
+                blurOnSubmit={false}
+                returnKeyType="done"
               />
             </View>
           </View>
@@ -522,25 +527,32 @@ export default function LiveChatScreen() {
         }}
       />
       {showStartForm ? (
-        <StartChatForm />
+        renderStartChatForm()
       ) : conversationId ? (
         <KeyboardAvoidingView
           style={styles.chatContent}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.messagesContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }}
+          <TouchableWithoutFeedback
+            onPress={() => {
+              if (Platform.OS !== 'web') Keyboard.dismiss();
+            }}
+            accessible={false}
           >
-            {(messagesQuery.data || []).map((msg: any) => (
-              <MessageBubble key={msg.id} msg={msg} />
-            ))}
-          </ScrollView>
+            <ScrollView
+              ref={scrollViewRef}
+              style={styles.messagesContainer}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="none"
+              contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }}
+            >
+              {(messagesQuery.data || []).map((msg: any) => (
+                <MessageBubble key={msg.id} msg={msg} />
+              ))}
+            </ScrollView>
+          </TouchableWithoutFeedback>
           <View style={styles.inputSection}>
             {showAttachments && (
               <View style={[styles.attachmentsSection, { backgroundColor: colors.card }]}>
