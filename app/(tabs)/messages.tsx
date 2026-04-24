@@ -136,8 +136,9 @@ export default function MessagesScreen() {
   const renderItem = ({ item }: { item: ConversationItem }) => {
     const otherUser = item.otherUser;
     const listing = getListing(item.listingId);
+    const listingTitleFallback = language === 'az' ? `Elan #${item.listingId}` : `Объявление #${item.listingId}`;
 
-    if (!otherUser || !listing) return null;
+    if (!otherUser) return null;
     if (otherUser?.id && isUserBlocked(otherUser.id)) return null;
 
     const handlePress = () => {
@@ -230,7 +231,7 @@ export default function MessagesScreen() {
           </View>
 
           <Text style={styles.listingTitle} numberOfLines={1}>
-            {listing.title[language]}
+            {listing?.title?.[language] || listingTitleFallback}
           </Text>
 
           <View style={styles.messageRow}>

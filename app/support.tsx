@@ -94,7 +94,20 @@ export default function SupportScreen() {
     }).start();
   }, [fadeAnim]);
 
-  const userTickets = (myTicketsQuery.data as any[]) || [];
+  const userTickets = React.useMemo(() => {
+    const raw = (myTicketsQuery.data as any[]) || [];
+    return raw.map((ticket) => ({
+      ...ticket,
+      createdAt: new Date(ticket.createdAt),
+      updatedAt: new Date(ticket.updatedAt),
+      responses: Array.isArray(ticket.responses)
+        ? ticket.responses.map((response: any) => ({
+          ...response,
+          createdAt: new Date(response.createdAt),
+        }))
+        : [],
+    })) as SupportTicket[];
+  }, [myTicketsQuery.data]);
   const userChats = currentUser ? liveChats.filter(chat => chat.userId === currentUser.id) : [];
   const availableOperators = getAvailableOperators();
   const onlineOperatorsCount = presenceQuery.data?.availableCount ?? availableOperators.length;

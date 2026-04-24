@@ -21,6 +21,7 @@ import { useUserStore } from '@/store/userStore';
 import { useCallStore } from '@/store/callStore';
 import Colors from '@/constants/colors';
 import { listings } from '@/mocks/listings';
+import { users as mockUsers } from '@/mocks/users';
 import { Message, MessageAttachment, MessageType } from '@/types/message';
 import {
   Send,
@@ -259,7 +260,7 @@ export default function ConversationScreen() {
     ? [...getMessagesQuery.data.messages].sort((a: Message, b: Message) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     : [];
 
-  const otherUser =
+  const baseOtherUser =
     (conversation as any)?.otherUser ||
     (getUserPreviewQuery.data
       ? {
@@ -271,6 +272,28 @@ export default function ConversationScreen() {
         },
       }
       : null);
+  const matchingMockUser = baseOtherUser
+    ? mockUsers.find((user) =>
+      user.id === baseOtherUser.id ||
+      user.id === `user${baseOtherUser.id}` ||
+      `user${user.id}` === baseOtherUser.id,
+    )
+    : null;
+  const otherUser = baseOtherUser
+    ? {
+      ...baseOtherUser,
+      privacySettings: {
+        hidePhoneNumber: false,
+        allowDirectContact: true,
+        onlyAppMessaging: false,
+        ...(matchingMockUser?.privacySettings || {}),
+        ...(baseOtherUser.privacySettings || {}),
+      },
+      analytics: matchingMockUser?.analytics,
+      memberSince: matchingMockUser?.memberSince,
+      location: matchingMockUser?.location,
+    }
+    : null;
 
   const lastCountRef = useRef<number>(0);
   useEffect(() => {
@@ -433,8 +456,11 @@ export default function ConversationScreen() {
       return;
     }
 
-    // ✅ Check if other user allows messaging
-    if (otherUser.privacySettings?.onlyAppMessaging === false && otherUser.privacySettings?.allowDirectContact === false) {
+    // ✅ Check if receiver allows messaging (only when profile is loaded)
+    if (
+      otherUser?.privacySettings?.onlyAppMessaging === false &&
+      otherUser?.privacySettings?.allowDirectContact === false
+    ) {
       logger.warn('[Conversation] User has disabled messaging:', otherUser.id);
       Alert.alert(
         language === 'az' ? 'Mesaj göndərilə bilməz' : 'Невозможно отправить сообщение',
@@ -864,7 +890,7 @@ export default function ConversationScreen() {
 
       // ✅ 5. Create recording
       const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
+        Audio.RecordingOptionsPresets.LOW_QUALITY,
       );
 
       setRecording(newRecording);
@@ -893,15 +919,15 @@ export default function ConversationScreen() {
         setRecordingDuration(prev => (prev === seconds ? prev : seconds));
       }, 250);
 
-      // ✅ 6. Set max duration timer (5 minutes)
-      const MAX_DURATION_MS = 5 * 60 * 1000;
+      // Keep voice messages compact to prevent oversized payload/layout issues.
+      const MAX_DURATION_MS = 2 * 60 * 1000;
       const timer = setTimeout(async () => {
         logger.warn('Max recording duration reached, auto-stopping');
         Alert.alert(
           language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
           language === 'az'
-            ? 'Maksimum qeyd müddəti (5 dəqiqə) bitdi. Səs avtomatik saxlanıldı.'
-            : 'Достигнута максимальная длительность записи (5 минут). Аудио сохранено автоматически.',
+            ? 'Maksimum qeyd müddəti (2 dəqiqə) bitdi. Səs avtomatik saxlanıldı.'
+            : 'Достигнута максимальная длительность записи (2 минуты). Аудио сохранено автоматически.',
         );
         await stopRecording();
       }, MAX_DURATION_MS);
@@ -1038,11 +1064,11 @@ export default function ConversationScreen() {
           return;
         }
 
-        if (durationSeconds > 300) { // 5 minutes max
+        if (durationSeconds > 120) {
           logger.warn('Recording too long:', durationSeconds);
           Alert.alert(
             language === 'az' ? 'Xəbərdarlıq' : 'Предупреждение',
-            language === 'az' ? 'Səs qeydi çox uzundur (maksimum 5 dəqiqə)' : 'Аудио слишком длинное (максимум 5 минут)',
+            language === 'az' ? 'Səs qeydi çox uzundur (maksimum 2 dəqiqə)' : 'Аудио слишком длинное (максимум 2 минуты)',
           );
           return;
         }

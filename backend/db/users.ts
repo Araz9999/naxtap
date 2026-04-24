@@ -159,7 +159,20 @@ class UserDatabase {
   }
 
   async findById(id: string): Promise<DBUser | null> {
-    return this.users.get(id) || null;
+    const direct = this.users.get(id);
+    if (direct) return direct;
+
+    // Compatibility: app-side IDs can be "userN" while backend defaults are "N".
+    const numericAlias = id.match(/^user(\d+)$/)?.[1];
+    if (numericAlias) {
+      return this.users.get(numericAlias) || null;
+    }
+
+    if (/^\d+$/.test(id)) {
+      return this.users.get(`user${id}`) || null;
+    }
+
+    return null;
   }
 
   async findBySocialId(provider: string, socialId: string): Promise<DBUser | null> {

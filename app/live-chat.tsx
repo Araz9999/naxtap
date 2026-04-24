@@ -11,8 +11,6 @@ import {
   Dimensions,
   Image,
   Alert,
-  Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -534,25 +532,18 @@ export default function LiveChatScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <TouchableWithoutFeedback
-            onPress={() => {
-              if (Platform.OS !== 'web') Keyboard.dismiss();
-            }}
-            accessible={false}
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.messagesContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="none"
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }}
           >
-            <ScrollView
-              ref={scrollViewRef}
-              style={styles.messagesContainer}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="none"
-              contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }}
-            >
-              {(messagesQuery.data || []).map((msg: any) => (
-                <MessageBubble key={msg.id} msg={msg} />
-              ))}
-            </ScrollView>
-          </TouchableWithoutFeedback>
+            {(messagesQuery.data || []).map((msg: any) => (
+              <MessageBubble key={msg.id} msg={msg} />
+            ))}
+          </ScrollView>
           <View style={styles.inputSection}>
             {showAttachments && (
               <View style={[styles.attachmentsSection, { backgroundColor: colors.card }]}>

@@ -177,7 +177,11 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const seller = users.find(user => user.id === listing.userId);
+  const seller = users.find((user) =>
+    user.id === listing.userId ||
+    user.id === `user${listing.userId}` ||
+    `user${user.id}` === listing.userId,
+  );
 
   // ✅ Log warning if seller not found
   if (!seller) {
