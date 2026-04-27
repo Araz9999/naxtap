@@ -29,6 +29,7 @@ import FileAttachmentPicker, { FileAttachment } from '@/components/FileAttachmen
 import WebTextInput, { WebTextInputRef } from '@/components/WebTextInput';
 import { trpc, getBaseUrl } from '@/lib/trpc';
 import { realtimeService } from '@/lib/realtime';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -179,6 +180,9 @@ export default function LiveChatScreen() {
     // Upload attachments first if any
     if (attachments.length > 0) {
       try {
+        const storedTokens = await AsyncStorage.getItem('auth_tokens');
+        const parsedTokens = storedTokens ? JSON.parse(storedTokens) : null;
+        const accessToken = parsedTokens?.accessToken as string | undefined;
         const formData = new FormData();
         
         if (Platform.OS === 'web') {
@@ -204,7 +208,7 @@ export default function LiveChatScreen() {
           body: formData,
           credentials: 'omit',
           headers: {
-            ...(Platform.OS === 'web' ? {} : { 'Content-Type': 'multipart/form-data' }),
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
         });
 

@@ -43,6 +43,7 @@ import {
 import { Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { Audio } from 'expo-av';
 import UserActionModal from '@/components/UserActionModal';
 import { trpc } from '@/lib/trpc';
@@ -105,7 +106,7 @@ const ChatInput = memo(({
         <TouchableOpacity
           testID="chat-mic-button"
           style={styles.sendButton}
-          onPressOut={onRecord.onPressOut}
+          onPress={onRecord.onPressOut}
         >
           <Send size={18} color="#fff" />
         </TouchableOpacity>
@@ -1073,12 +1074,13 @@ export default function ConversationScreen() {
           return;
         }
 
+        const audioInfo = await FileSystem.getInfoAsync(uri.trim());
         const attachment: MessageAttachment = {
           id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`, // ✅ Use substring()
           type: 'audio',
           uri: uri.trim(),
           name: `recording_${Date.now()}.${fileType}`,
-          size: 0, // ⚠️ TODO - Get actual file size
+          size: audioInfo.exists ? (audioInfo.size || 0) : 0,
           mimeType: `audio/${fileType}`,
           duration: durationSeconds, // ✅ Store duration
         };

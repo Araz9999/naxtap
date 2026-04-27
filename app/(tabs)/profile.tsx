@@ -362,7 +362,7 @@ export default function ProfileScreen() {
           <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.7}>
             <View>
               <Image
-                source={{ uri: currentUser.avatar || 'https://placehold.co/100x100?text=Avatar' }}
+                source={{ uri: currentUser.avatar || '' }}
                 style={{ width: 50, height: 50, borderRadius: 25, opacity: isUpdatingAvatar ? 0.6 : 1 }}
               />
               {isUpdatingAvatar && (

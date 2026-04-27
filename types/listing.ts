@@ -35,6 +35,7 @@ export interface Listing {
   contactPreference: 'phone' | 'message' | 'both'; // Added contact preference
   condition?: string; // Optional condition field
   deliveryAvailable?: boolean; // Optional delivery availability
+  deliveryType?: string; // Optional delivery type label
   // Discount fields
   originalPrice?: number; // Original price before discount
   discountPercentage?: number; // Discount percentage applied

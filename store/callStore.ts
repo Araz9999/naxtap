@@ -131,7 +131,6 @@ export const useCallStore = create<CallStore>((set, get) => ({
     let callId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     try {
       const res = await trpcClient.calls.create.mutate({
-        callerId: currentUserId,
         receiverId,
         listingId,
         type,

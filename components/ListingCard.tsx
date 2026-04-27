@@ -9,7 +9,6 @@ import { useLanguageStore } from '@/store/languageStore';
 import { useUserStore } from '@/store/userStore';
 import { useListingStore } from '@/store/listingStore';
 import { useThemeStore } from '@/store/themeStore';
-import { useMessageStore } from '@/store/messageStore';
 import { useDiscountStore } from '@/store/discountStore';
 import { getColors } from '@/constants/colors';
 import CountdownTimer from '@/components/CountdownTimer';
@@ -165,7 +164,6 @@ const ListingCard = React.memo(function ListingCard({
   const { favorites, toggleFavorite, currentUser, isAuthenticated } = useUserStore();
   const { deleteListing } = useListingStore();
   const { themeMode, colorTheme, fontSize, showPriceInTitle, compactMode } = useThemeStore();
-  const { getOrCreateConversation, addMessage } = useMessageStore();
   const { getActiveDiscountsForListing, getActiveCampaignsForListing } = useDiscountStore();
 
   // State for seller
@@ -640,21 +638,13 @@ const ListingCard = React.memo(function ListingCard({
     setIsSending(true);
 
     try {
-      const conversationId = getOrCreateConversation([currentUser.id, listing.userId], listing.id);
-
-      const newMessage = {
-        id: Date.now().toString(),
-        senderId: currentUser.id,
+      const sendRes = await trpcClient.chat.sendMessage.mutate({
         receiverId: listing.userId,
         listingId: listing.id,
         text: messageText.trim(),
-        type: 'text' as const,
-        createdAt: new Date().toISOString(),
-        isRead: false,
-        isDelivered: true,
-      };
-
-      addMessage(conversationId, newMessage);
+        type: 'text',
+      });
+      const conversationId = sendRes.conversationId;
 
       setShowMessageModal(false);
       setMessageText('');
@@ -955,18 +945,6 @@ const ListingCard = React.memo(function ListingCard({
             </View>
           )}
 
-          {/* Timer Bar for Promotions */}
-          {hasActivePromotion && promotionEndDate && (
-            <View style={styles.timerBarContainer}>
-              <CountdownTimer
-                endDate={promotionEndDate.toISOString()}
-                compact={true}
-                style={styles.timerBar}
-                key={`timer-${listing.id}-${promotionEndDate.getTime()}`}
-              />
-            </View>
-          )}
-
           {/* Custom Timer Bar for Discounts */}
           {listing.timerBarEnabled && listing.timerBarEndDate && listing.timerBarTitle && (
             <View style={[
@@ -1170,6 +1148,16 @@ const ListingCard = React.memo(function ListingCard({
               <Text style={[styles.statText, { color: colors.textSecondary, fontSize: fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12 }]}>{formatDate(listing.createdAt)}</Text>
             </View>
           </View>
+          {hasActivePromotion && promotionEndDate && (
+            <View style={styles.timerInlineContainer}>
+              <CountdownTimer
+                endDate={promotionEndDate.toISOString()}
+                compact={true}
+                style={styles.timerBar}
+                key={`timer-${listing.id}-${promotionEndDate.getTime()}`}
+              />
+            </View>
+          )}
           {daysRemaining <= 3 && (
             <View style={styles.expirationContainer}>
               <Clock size={fontSize === 'small' ? 10 : fontSize === 'large' ? 14 : 12} color={colors.error} />
@@ -1285,6 +1273,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 8,
+    paddingBottom: 44,
   },
   price: {
     fontWeight: 'bold',
@@ -1539,12 +1528,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   // Timer Bar Styles
-  timerBarContainer: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
-    zIndex: 10,
+  timerInlineContainer: {
+    marginTop: 6,
+    marginBottom: 6,
   },
   timerBar: {
     backgroundColor: 'rgba(0, 0, 0, 0.8)',

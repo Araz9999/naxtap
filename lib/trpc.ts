@@ -1,7 +1,6 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { httpLink, loggerLink } from '@trpc/client';
-// Adjust the import path if backend alias differs in production
-import type { AppRouter } from '@/backend/trpc/app-router';
+import type { AppRouter } from '../../naxtap-backend/trpc/app-router';
 import superjson from 'superjson';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

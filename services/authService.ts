@@ -209,12 +209,13 @@ class AuthService {
 
     logger.debug('[deleteAccount] Starting account deletion for user:', this.currentUser.id);
 
+    let deletedSuccessfully = false;
     try {
       // ✅ Add timeout to prevent hanging requests
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-      const response = await fetch(`${config.BASE_URL}/auth/delete-account`, {
+      const response = await fetch(`${config.BASE_URL}/auth/delete`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${this.tokens.accessToken}`,
@@ -233,6 +234,7 @@ class AuthService {
       }
 
       logger.debug('[deleteAccount] Account deleted successfully');
+      deletedSuccessfully = true;
     } catch (error) {
       // ✅ Differentiate between network and server errors
       if (error instanceof Error) {
@@ -243,8 +245,10 @@ class AuthService {
         logger.error('[deleteAccount] Delete account request failed:', error.message);
       }
       throw error;
-    } finally {
-      logger.debug('[deleteAccount] Clearing auth data');
+    }
+
+    if (deletedSuccessfully) {
+      logger.debug('[deleteAccount] Clearing auth data after successful deletion');
       await this.clearAuthData();
     }
   }

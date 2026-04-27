@@ -9,6 +9,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -18,6 +19,8 @@ import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
 import { prompt } from '@/utils/confirm';
 import { trpc } from '@/lib/trpc';
+import { getBaseUrl } from '@/lib/trpc';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   MessageSquare,
   Send,
@@ -51,20 +54,23 @@ export default function SupportScreen() {
   const { categories, liveChats, operators, getAvailableOperators } = useSupportStore();
   const colors = getColors(themeMode, colorTheme);
 
-  const utils = trpc.useUtils();
-  const presenceQuery = trpc.liveChat.getPresence.useQuery(undefined, {
+  // Temporary typing bridge: workspace tRPC typegen is out-of-sync.
+  // Runtime router is valid; this avoids false TS errors.
+  const trpcAny = trpc as any;
+  const utils = trpcAny.useUtils();
+  const presenceQuery = trpcAny.liveChat.getPresence.useQuery(undefined, {
     refetchInterval: 10000,
   });
-  const myTicketsQuery = trpc.support.getMyTickets.useQuery(undefined, {
+  const myTicketsQuery = trpcAny.support.getMyTickets.useQuery(undefined, {
     enabled: !!currentUser,
     refetchInterval: 30000,
   });
-  const createTicketMutation = trpc.support.createTicket.useMutation({
+  const createTicketMutation = trpcAny.support.createTicket.useMutation({
     onSuccess: async () => {
       await myTicketsQuery.refetch();
     },
   });
-  const addTicketResponseMutation = trpc.support.addTicketResponse.useMutation({
+  const addTicketResponseMutation = trpcAny.support.addTicketResponse.useMutation({
     onSuccess: async () => {
       await myTicketsQuery.refetch();
     },
@@ -205,8 +211,46 @@ export default function SupportScreen() {
 
     setIsSubmitting(true);
     try {
-      // Convert FileAttachment to string array for storage
-      const attachmentUris = attachments.map(att => att.uri);
+      // Upload attachments first so backend stores stable URLs instead of local URIs
+      let attachmentUris: string[] = [];
+      if (attachments.length > 0) {
+        const storedTokens = await AsyncStorage.getItem('auth_tokens');
+        const parsedTokens = storedTokens ? JSON.parse(storedTokens) : null;
+        const accessToken = parsedTokens?.accessToken as string | undefined;
+        const formData = new FormData();
+
+        if (Platform.OS === 'web') {
+          for (const att of attachments) {
+            const response = await fetch(att.uri);
+            const blob = await response.blob();
+            formData.append('files', blob, att.name);
+          }
+        } else {
+          attachments.forEach((att) => {
+            // @ts-ignore react-native form data file type
+            formData.append('files', {
+              uri: att.uri,
+              name: att.name,
+              type: att.mimeType || 'application/octet-stream',
+            });
+          });
+        }
+
+        const uploadResponse = await fetch(`${getBaseUrl()}/api/upload`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error(`Attachment upload failed: ${uploadResponse.status}`);
+        }
+
+        const uploaded = await uploadResponse.json();
+        attachmentUris = Array.isArray(uploaded?.urls) ? uploaded.urls : [];
+      }
 
       await createTicketMutation.mutateAsync({
         subject: subject.trim(),
@@ -748,7 +792,12 @@ export default function SupportScreen() {
                 style={[styles.faqItem, { backgroundColor: colors.card }]}
                 onPress={() => {
                   logger.info('[Support] FAQ item clicked:', { question: 'view_all' });
-                  router.push('/faq');
+                  Alert.alert(
+                    language === 'az' ? 'Məlumat' : 'Информация',
+                    language === 'az'
+                      ? 'Bütün FAQ bölməsi tezliklə əlavə ediləcək.'
+                      : 'Полный раздел FAQ будет добавлен в ближайшее время.',
+                  );
                 }}
               >
                 <Text style={[styles.faqQuestion, { color: colors.primary, fontWeight: '600' }]}>

@@ -31,6 +31,16 @@ export default function NewConversationScreen() {
     return data.filter((u) => {
       if (u.id === currentUser?.id) return false;
       if (isUserBlocked(u.id)) return false;
+      const normalizedName = (u.name || '').toLowerCase();
+      const normalizedEmail = (u.email || '').toLowerCase();
+      const isLikelyTestAccount =
+        normalizedName.includes('test') ||
+        normalizedName.includes('admin') ||
+        normalizedName.includes('moderator') ||
+        normalizedEmail.includes('test') ||
+        normalizedEmail.includes('admin') ||
+        normalizedEmail.includes('moderator');
+      if (isLikelyTestAccount) return false;
       return true;
     });
   }, [allUsersQuery.data, currentUser?.id, isUserBlocked]);

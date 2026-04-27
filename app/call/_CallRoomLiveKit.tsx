@@ -31,7 +31,6 @@ import {
   Circle,
   Square,
 } from 'lucide-react-native';
-import { ConnectionState, Track } from 'livekit-client';
 import { trpc } from '@/lib/trpc';
 import Constants from 'expo-constants';
 
@@ -110,12 +109,14 @@ function CallRoomView({
   const { language } = useLanguageStore();
   const room = useRoomContext();
   const connectionState = useConnectionState();
-  const isConnected = connectionState === ConnectionState.Connected;
+  // Avoid importing `livekit-client` at module scope in React Native (DOMException issue).
+  const isConnected = String(connectionState).toLowerCase() === 'connected';
+  const trpcAny = trpc as any;
 
   const [callDuration, setCallDuration] = useState<number>(0);
 
-  const startRecordingMutation = trpc.calls.startRecording.useMutation();
-  const stopRecordingMutation = trpc.calls.stopRecording.useMutation();
+  const startRecordingMutation = trpcAny.calls.startRecording.useMutation();
+  const stopRecordingMutation = trpcAny.calls.stopRecording.useMutation();
   const [egressId, setEgressId] = useState<string | null>(null);
   const isRecording = !!egressId && startRecordingMutation.status === 'success';
 
@@ -145,7 +146,7 @@ function CallRoomView({
     };
   }, []);
 
-  const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
+  const tracks = useTracks(['camera' as any], { onlySubscribed: false });
   const { remoteCamera, localCamera } = useMemo(() => {
     let local: TrackReferenceOrPlaceholder | undefined;
     let remote: TrackReferenceOrPlaceholder | undefined;
@@ -408,19 +409,20 @@ export default function CallRoomLiveKit({ callId }: { callId: string }) {
   const { language } = useLanguageStore();
   const { currentUser } = useUserStore();
   const { listings } = useListingStore();
+  const trpcAny = trpc as any;
 
   const otherUserId = useMemo(() => {
     if (!activeCall || !currentUser?.id) return undefined;
     return activeCall.callerId === currentUser.id ? activeCall.receiverId : activeCall.callerId;
   }, [activeCall, currentUser?.id]);
 
-  const otherUserQuery = trpc.user.getUser.useQuery(
+  const otherUserQuery = trpcAny.user.getUser.useQuery(
     { id: otherUserId ?? '' },
     { enabled: !!otherUserId },
   );
   const otherUser = otherUserQuery.data as { id: string; name?: string; avatar?: string } | undefined;
 
-  const tokenMutation = trpc.calls.getToken.useMutation();
+  const tokenMutation = trpcAny.calls.getToken.useMutation();
   const [lkToken, setLkToken] = useState<string | undefined>(undefined);
   const [lkServerUrl, setLkServerUrl] = useState<string | undefined>(undefined);
   const [lkRoomName, setLkRoomName] = useState<string | undefined>(undefined);
@@ -430,7 +432,7 @@ export default function CallRoomLiveKit({ callId }: { callId: string }) {
     return listings.find((l) => l.id === activeCall.listingId);
   }, [activeCall?.listingId, listings]);
 
-  const listingQuery = trpc.listing.getById.useQuery(
+  const listingQuery = trpcAny.listing.getById.useQuery(
     { id: activeCall?.listingId || '' },
     { enabled: !!activeCall?.listingId && !listingFromStore },
   );
@@ -454,12 +456,12 @@ export default function CallRoomLiveKit({ callId }: { callId: string }) {
         type: activeCall.type,
       },
       {
-        onSuccess: (res) => {
+        onSuccess: (res: { serverUrl: string; token: string; roomName: string }) => {
           setLkServerUrl(res.serverUrl);
           setLkToken(res.token);
           setLkRoomName(res.roomName);
         },
-        onError: (err) => {
+        onError: (err: unknown) => {
           logger.error('[Call] Failed to get LiveKit token:', err);
           Alert.alert(
             language === 'az' ? 'Xəta' : 'Ошибка',

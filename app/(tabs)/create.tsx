@@ -602,6 +602,9 @@ export default function CreateListingScreen() {
         isVip: selectedPackage === 'vip',
         adType: selectedPackage as 'free' | 'standard' | 'colored' | 'auto-renewal' | 'premium' | 'vip',
         contactPreference,
+        condition: condition || undefined,
+        deliveryAvailable,
+        deliveryType: deliveryAvailable ? (deliveryType || undefined) : undefined,
       };
 
       logger.info('[CreateListing] Creating listing on backend:', { 
@@ -611,9 +614,9 @@ export default function CreateListingScreen() {
         hasSelectedStore: !!selectedStore 
       });
 
-      // First, create the listing on the backend
+      // First, create the listing on the backend (with retry to reduce transient aborted errors)
       try {
-        const createdListing = await trpcClient.listing.create.mutate({
+        const payload = {
           title: {
             az: newListing.title.az,
             ru: newListing.title.ru || newListing.title.az,
@@ -637,7 +640,30 @@ export default function CreateListingScreen() {
           isPremium: newListing.isPremium,
           adType: newListing.adType,
           contactPreference: newListing.contactPreference,
-        });
+          condition: newListing.condition,
+          deliveryAvailable: newListing.deliveryAvailable,
+          deliveryType: newListing.deliveryType,
+        };
+
+        let createdListing: any = null;
+        let lastCreateError: unknown;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            createdListing = await trpcClient.listing.create.mutate(payload as any);
+            break;
+          } catch (createError) {
+            lastCreateError = createError;
+            const message = createError instanceof Error ? createError.message.toLowerCase() : '';
+            const isRetryable = message.includes('aborted') || message.includes('timeout') || message.includes('network');
+            if (!isRetryable || attempt === 2) {
+              throw createError;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 800 * (attempt + 1)));
+          }
+        }
+        if (!createdListing) {
+          throw lastCreateError || new Error('Listing creation failed');
+        }
 
         logger.info('[CreateListing] Listing created on backend:', createdListing.id);
 

@@ -11,6 +11,7 @@ import { useUserStore } from '@/store/userStore';
 import { useListingStore } from '@/store/listingStore';
 import { useCallStore } from '@/store/callStore';
 import { useDiscountStore } from '@/store/discountStore';
+import { trpc } from '@/lib/trpc';
 // import { listings } from '@/mocks/listings'; // Removed - using store instead
 import { users } from '@/mocks/users';
 import { categories } from '@/constants/categories';
@@ -22,6 +23,7 @@ import CountdownTimer from '@/components/CountdownTimer';
 import { logger } from '@/utils/logger';
 import { getListingWebUrl } from '@/utils/shareLinks';
 const { width } = Dimensions.get('window');
+const roundCurrency = (value: number): number => Math.round((value + Number.EPSILON) * 100) / 100;
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -140,12 +142,12 @@ export default function ListingDetailScreen() {
     }
 
     const result = {
-      discountedPrice: Math.round(discountedPrice),
-      originalPrice: Math.round(originalPrice),
+      discountedPrice: roundCurrency(discountedPrice),
+      originalPrice: roundCurrency(originalPrice),
       discountPercentage,
       discountType,
-      discountValue: Math.round(discountValue),
-      absoluteSavings: Math.round(absoluteSavings),
+      discountValue: roundCurrency(discountValue),
+      absoluteSavings: roundCurrency(absoluteSavings),
       discount: { type: discountType, value: discountValue },
     } as const;
 
@@ -177,11 +179,46 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const seller = users.find((user) =>
+  const sellerFromMock = users.find((user) =>
     user.id === listing.userId ||
     user.id === `user${listing.userId}` ||
     `user${user.id}` === listing.userId,
   );
+  const sellerQuery = trpc.user.getUser.useQuery(
+    { id: listing.userId },
+    { enabled: !!listing?.userId },
+  );
+  const seller = sellerFromMock || (sellerQuery.data
+    ? {
+      id: sellerQuery.data.id,
+      name: sellerQuery.data.name,
+      phone: sellerQuery.data.phone || '',
+      email: sellerQuery.data.email || '',
+      avatar: sellerQuery.data.avatar || '',
+      location: {
+        az: '',
+        ru: '',
+      },
+      memberSince: new Date().toISOString(),
+      role: 'user' as const,
+      balance: 0,
+      rating: 0,
+      totalRatings: 0,
+      analytics: {
+        lastOnline: new Date().toISOString(),
+        messageResponseRate: 0,
+        averageResponseTime: 0,
+        totalMessages: 0,
+        totalResponses: 0,
+        isOnline: false,
+      },
+      privacySettings: {
+        hidePhoneNumber: false,
+        allowDirectContact: true,
+        onlyAppMessaging: false,
+      },
+    }
+    : null);
 
   // ✅ Log warning if seller not found
   if (!seller) {
@@ -248,19 +285,20 @@ export default function ListingDetailScreen() {
     const shareUrl = getShareUrl();
 
     // ✅ Safe title access with fallback
-    const title = listing.title[language] || listing.title.az || listing.title.en || 'Elan';
+    const title = listing.title[language] || listing.title.az || listing.title.ru || listing.title.en || 'Elan';
 
     // ✅ Safe location access with fallback
-    const location = listing.location[language] || listing.location.az || listing.location.en || '';
+    const location = listing.location[language] || listing.location.az || listing.location.ru || listing.location.en || '';
 
     // Use discounted price if available, otherwise use regular price
     const displayPrice = priceInfo && priceInfo.absoluteSavings >= 1
       ? `${priceInfo.discountedPrice.toFixed(2)} ${listing.currency} (${language === 'az' ? 'Endirimli qiymət' : 'Цена со скидкой'})`
       : `${listing.price.toFixed(2)} ${listing.currency}`;
 
+    const imageUrl = listing.images?.[0];
     return language === 'az'
-      ? `${title}\n\n${displayPrice}\n${location}\n\n${shareUrl}`
-      : `${title}\n\n${displayPrice}\n${location}\n\n${shareUrl}`;
+      ? `${title}\n\n${displayPrice}\n${location}\n\n${shareUrl}${imageUrl ? `\n${imageUrl}` : ''}`
+      : `${title}\n\n${displayPrice}\n${location}\n\n${shareUrl}${imageUrl ? `\n${imageUrl}` : ''}`;
   };
 
   const shareToSocialMedia = async (platform: string) => {
@@ -289,6 +327,8 @@ export default function ListingDetailScreen() {
       const encodedText = encodeURIComponent(shareText);
       const shareUrl = getShareUrl();
       const encodedUrl = encodeURIComponent(shareUrl);
+      const imageUrl = listing.images?.[0] || '';
+      const encodedImage = encodeURIComponent(imageUrl);
 
       let url = '';
 
@@ -297,7 +337,7 @@ export default function ListingDetailScreen() {
           url = `whatsapp://send?text=${encodedText}`;
           break;
         case 'facebook':
-          url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+          url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}${imageUrl ? `&picture=${encodedImage}` : ''}`;
           break;
         case 'instagram':
         // ✅ Instagram doesn't support direct URL sharing, so we'll copy to clipboard
@@ -328,10 +368,10 @@ export default function ListingDetailScreen() {
           url = `https://twitter.com/intent/tweet?text=${encodedText}`;
           break;
         case 'vk':
-          url = `https://vk.com/share.php?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language])}&description=${encodeURIComponent(listing.description[language])}`;
+          url = `https://vk.com/share.php?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language] || listing.title.az)}&description=${encodeURIComponent(listing.description[language] || listing.description.az)}${imageUrl ? `&image=${encodedImage}` : ''}`;
           break;
         case 'ok':
-          url = `https://connect.ok.ru/offer?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language])}&description=${encodeURIComponent(listing.description[language])}`;
+          url = `https://connect.ok.ru/offer?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language] || listing.title.az)}&description=${encodeURIComponent(listing.description[language] || listing.description.az)}${imageUrl ? `&imageUrl=${encodedImage}` : ''}`;
           break;
         case 'tiktok':
         // ✅ TikTok doesn't support direct URL sharing, copy to clipboard
@@ -844,7 +884,7 @@ export default function ListingDetailScreen() {
           )}
         </View>
 
-        <Text style={styles.title}>{listing.title[language]}</Text>
+        <Text style={styles.title}>{listing.title[language] || listing.title.az || listing.title.ru || listing.title.en}</Text>
 
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
@@ -909,8 +949,28 @@ export default function ListingDetailScreen() {
           <Text style={styles.sectionTitle}>
             {language === 'az' ? 'Təsvir' : 'Описание'}
           </Text>
-          <Text style={styles.description}>{listing.description[language]}</Text>
+          <Text style={styles.description}>{listing.description[language] || listing.description.az || listing.description.ru || listing.description.en}</Text>
         </View>
+
+        {(listing.condition || listing.deliveryAvailable) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {language === 'az' ? 'Əlavə məlumat' : 'Дополнительно'}
+            </Text>
+            {!!listing.condition && (
+              <Text style={styles.description}>
+                {language === 'az' ? 'Vəziyyəti: ' : 'Состояние: '}
+                {listing.condition}
+              </Text>
+            )}
+            {listing.deliveryAvailable && (
+              <Text style={styles.description}>
+                {language === 'az' ? 'Çatdırılma: ' : 'Доставка: '}
+                {listing.deliveryType || (language === 'az' ? 'Mümkündür' : 'Доступна')}
+              </Text>
+            )}
+          </View>
+        )}
 
         {seller && (
           <View style={styles.section}>
