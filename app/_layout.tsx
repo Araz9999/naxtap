@@ -15,9 +15,11 @@ import { LanguageProvider } from '@/store/languageStore';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 import { initializeServices } from '@/services';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { trpc, trpcClient } from '@/lib/trpc';
 import { realtimeService } from '@/lib/realtime';
+import { registerGlobalRealtimeHandlers } from '@/lib/registerGlobalRealtime';
 import config from '@/constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -28,24 +30,6 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
-
-// Create QueryClient with optimized defaults outside component to avoid recreating
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: true,
-      retry: 1,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    },
-    mutations: {
-      retry: false, // Disable retry for mutations to prevent infinite loops on 404s
-    },
-  },
-});
 
 export default function RootLayout() {
   // Skip font loading - use system fonts for better performance
@@ -164,6 +148,8 @@ function RootLayoutNav() {
 
   // Initialize WebSocket/Realtime connection
   useEffect(() => {
+    registerGlobalRealtimeHandlers();
+
     const backendUrl = config.BACKEND_URL || 'http://localhost:3000';
 
     logger.info('[App] Initializing realtime service:', backendUrl);

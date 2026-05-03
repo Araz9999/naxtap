@@ -203,14 +203,22 @@ export default function LiveChatScreen() {
         }
 
         const baseUrl = getBaseUrl();
-        const uploadRes = await fetch(`${baseUrl}/api/upload`, {
-          method: 'POST',
-          body: formData,
-          credentials: 'omit',
-          headers: {
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-        });
+        const uploadAbort = new AbortController();
+        const uploadDeadline = setTimeout(() => uploadAbort.abort(), 120_000);
+        let uploadRes: Response;
+        try {
+          uploadRes = await fetch(`${baseUrl}/api/upload`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'omit',
+            signal: uploadAbort.signal,
+            headers: {
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            },
+          });
+        } finally {
+          clearTimeout(uploadDeadline);
+        }
 
         if (!uploadRes.ok) {
           throw new Error(`Upload failed: ${uploadRes.status}`);

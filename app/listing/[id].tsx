@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert, Linking, Platform, Modal, ActivityIndicator, Share as RNShare } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -22,6 +22,8 @@ import CountdownTimer from '@/components/CountdownTimer';
 
 import { logger } from '@/utils/logger';
 import { getListingWebUrl } from '@/utils/shareLinks';
+import { realtimeService } from '@/lib/realtime';
+import { DEFAULT_AVATAR_URI } from '@/constants/defaultAvatar';
 const { width } = Dimensions.get('window');
 const roundCurrency = (value: number): number => Math.round((value + Number.EPSILON) * 100) / 100;
 
@@ -164,24 +166,13 @@ export default function ListingDetailScreen() {
       incrementViewCount(id);
     }
   }, [id, incrementViewCount]);
-  if (!listing) {
-    logger.debug('[ListingDetail] Listing not found. ID:', id);
-    logger.debug('[ListingDetail] All listing IDs:', listings.map(l => ({ id: l.id, title: l.title.az })));
-    return (
-      <View style={styles.notFound}>
-        <Text style={styles.notFoundText}>
-          {language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено'}
-        </Text>
-        <Text style={styles.notFoundSubtext}>
-          ID: {id}
-        </Text>
-      </View>
-    );
-  }
 
-  const sellerQuery = trpc.user.getUser.useQuery({ id: listing.userId }, { enabled: !!listing?.userId });
+  const sellerQuery = trpc.user.getUser.useQuery(
+    { id: listing?.userId ?? '__none__' },
+    { enabled: !!listing?.userId },
+  );
 
-  const sellerFromMockStrict = users.find(user => user.id === listing.userId);
+  const sellerFromMockStrict = listing ? users.find(user => user.id === listing.userId) : undefined;
 
   const seller = sellerQuery.data
     ? {
@@ -212,13 +203,66 @@ export default function ListingDetailScreen() {
       }
     : sellerFromMockStrict ?? null;
 
+  const [sellerPresence, setSellerPresence] = useState<'online' | 'offline' | null>(null);
+
+  useEffect(() => {
+    setSellerPresence(null);
+  }, [listing?.userId]);
+
+  useEffect(() => {
+    if (!listing?.userId) return;
+    const handler = (data: { userId: string; status: string }) => {
+      if (data.userId !== listing.userId) return;
+      setSellerPresence(data.status === 'online' ? 'online' : 'offline');
+    };
+    realtimeService.on('user:presence', handler);
+    return () => realtimeService.off('user:presence', handler);
+  }, [listing?.userId]);
+
+  const sellerDisplay = useMemo(() => {
+    if (!seller) return null;
+    const isOnline =
+      sellerPresence === 'online'
+        ? true
+        : sellerPresence === 'offline'
+          ? false
+          : !!seller.analytics?.isOnline;
+    return {
+      ...seller,
+      avatar: seller.avatar?.trim() ? seller.avatar : DEFAULT_AVATAR_URI,
+      analytics: {
+        ...seller.analytics,
+        isOnline,
+        lastOnline:
+          sellerPresence === 'online'
+            ? new Date().toISOString()
+            : seller.analytics?.lastOnline ?? seller.memberSince,
+      },
+    };
+  }, [seller, sellerPresence]);
+
+  if (!listing) {
+    logger.debug('[ListingDetail] Listing not found. ID:', id);
+    logger.debug('[ListingDetail] All listing IDs:', listings.map(l => ({ id: l.id, title: l.title.az })));
+    return (
+      <View style={styles.notFound}>
+        <Text style={styles.notFoundText}>
+          {language === 'az' ? 'Elan tapılmadı' : 'Объявление не найдено'}
+        </Text>
+        <Text style={styles.notFoundSubtext}>
+          ID: {id}
+        </Text>
+      </View>
+    );
+  }
+
   const showCallFooterButton =
-    !!seller &&
+    !!sellerDisplay &&
     (listing.contactPreference === 'phone' || listing.contactPreference === 'both') &&
-    !seller.privacySettings?.onlyAppMessaging;
+    !sellerDisplay.privacySettings?.onlyAppMessaging;
 
   // ✅ Log warning if seller not found
-  if (!seller) {
+  if (!sellerDisplay) {
     logger.warn('Seller not found for listing:', listing.userId);
   }
 
@@ -571,7 +615,7 @@ export default function ListingDetailScreen() {
   const handleContact = () => {
     logger.info('[ListingDetail] handleContact called:', {
       listingId: listing.id,
-      sellerId: seller?.id,
+      sellerId: sellerDisplay?.id,
       isAuthenticated,
     });
 
@@ -597,7 +641,7 @@ export default function ListingDetailScreen() {
     }
 
     // ✅ Validate seller exists
-    if (!seller) {
+    if (!sellerDisplay) {
       logger.error('[ListingDetail] No seller found for listing:', listing.id);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
@@ -607,7 +651,7 @@ export default function ListingDetailScreen() {
     }
 
     // Check if seller has hidden phone number
-    if (seller?.privacySettings?.hidePhoneNumber) {
+    if (sellerDisplay?.privacySettings?.hidePhoneNumber) {
       logger.info('[ListingDetail] Seller has hidden phone number, showing in-app call option');
       Alert.alert(
         language === 'az' ? 'Telefon nömrəsi gizlədilmiş' : 'Номер телефона скрыт',
@@ -627,7 +671,7 @@ export default function ListingDetailScreen() {
                   );
                   return;
                 }
-                const callId = await initiateCall(currentUser.id, seller.id, listing.id, 'voice'); // ✅ Fixed signature
+                const callId = await initiateCall(currentUser.id, sellerDisplay.id, listing.id, 'voice'); // ✅ Fixed signature
                 router.push(`/call/${callId}`);
               } catch (error) {
                 logger.error('Failed to initiate call:', error);
@@ -646,7 +690,7 @@ export default function ListingDetailScreen() {
                   );
                   return;
                 }
-                const callId = await initiateCall(currentUser.id, seller.id, listing.id, 'video'); // ✅ Fixed signature
+                const callId = await initiateCall(currentUser.id, sellerDisplay.id, listing.id, 'video'); // ✅ Fixed signature
                 router.push(`/call/${callId}`);
               } catch (error) {
                 logger.error('Failed to initiate video call:', error);
@@ -664,21 +708,21 @@ export default function ListingDetailScreen() {
 
     Alert.alert(
       language === 'az' ? 'Əlaqə' : 'Контакт',
-      seller?.phone || '',
+      sellerDisplay?.phone || '',
       [
         {
           text: language === 'az' ? 'Zəng et' : 'Позвонить',
           onPress: () => {
-            if (seller?.phone) {
-              Linking.openURL(`tel:${seller.phone}`);
+            if (sellerDisplay?.phone) {
+              Linking.openURL(`tel:${sellerDisplay.phone}`);
             }
           },
         },
         {
           text: 'WhatsApp',
           onPress: () => {
-            if (seller?.phone) {
-              const phoneNumber = seller.phone.replace(/[^0-9]/g, '');
+            if (sellerDisplay?.phone) {
+              const phoneNumber = sellerDisplay.phone.replace(/[^0-9]/g, '');
               const message = encodeURIComponent(
                 language === 'az'
                   ? `Salam! "${listing.title[language]}" elanınızla maraqlanıram.`
@@ -699,7 +743,7 @@ export default function ListingDetailScreen() {
   const handleMessage = () => {
     logger.info('[ListingDetail] handleMessage called:', {
       listingId: listing.id,
-      sellerId: seller?.id,
+      sellerId: sellerDisplay?.id,
       isAuthenticated,
     });
 
@@ -724,7 +768,7 @@ export default function ListingDetailScreen() {
       return;
     }
 
-    if (!seller) {
+    if (!sellerDisplay) {
       logger.error('[ListingDetail] No seller found for listing:', listing.id);
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
@@ -734,8 +778,8 @@ export default function ListingDetailScreen() {
     }
 
     // Navigate to conversation with the seller
-    logger.info('[ListingDetail] Navigating to conversation:', seller.id);
-    router.push(`/conversation/${seller.id}?listingId=${listing.id}&listingTitle=${encodeURIComponent(listing.title[language])}`);
+    logger.info('[ListingDetail] Navigating to conversation:', sellerDisplay.id);
+    router.push(`/conversation/${sellerDisplay.id}?listingId=${listing.id}&listingTitle=${encodeURIComponent(listing.title[language])}`);
   };
 
   // Calculate days remaining until expiration
@@ -800,7 +844,7 @@ export default function ListingDetailScreen() {
             <ShareIcon size={20} color="white" />
           </TouchableOpacity>
 
-          {seller && (
+          {sellerDisplay && (
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => setShowUserActionModal(true)}
@@ -975,7 +1019,7 @@ export default function ListingDetailScreen() {
           </View>
         )}
 
-        {seller && (
+        {sellerDisplay && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               {language === 'az' ? 'Satıcı' : 'Продавец'}
@@ -983,14 +1027,14 @@ export default function ListingDetailScreen() {
 
             <TouchableOpacity
               style={styles.sellerContainer}
-              onPress={() => router.push(`/profile/${seller.id}`)}
+              onPress={() => router.push(`/profile/${sellerDisplay.id}`)}
             >
-              <Image source={{ uri: seller.avatar }} style={styles.sellerAvatar} />
+              <Image source={{ uri: sellerDisplay.avatar }} style={styles.sellerAvatar} />
 
               <View style={styles.sellerInfo}>
-                <Text style={styles.sellerName}>{seller.name}</Text>
-                <Text style={styles.sellerLocation}>{seller.location[language]}</Text>
-                <UserAnalytics user={seller} />
+                <Text style={styles.sellerName}>{sellerDisplay.name}</Text>
+                <Text style={styles.sellerLocation}>{sellerDisplay.location[language]}</Text>
+                <UserAnalytics user={sellerDisplay} />
               </View>
             </TouchableOpacity>
           </View>
@@ -1030,11 +1074,11 @@ export default function ListingDetailScreen() {
       <ShareModal />
 
       {/* User Action Modal */}
-      {seller && (
+      {sellerDisplay && (
         <UserActionModal
           visible={showUserActionModal}
           onClose={() => setShowUserActionModal(false)}
-          user={seller}
+          user={sellerDisplay}
         />
       )}
     </ScrollView>

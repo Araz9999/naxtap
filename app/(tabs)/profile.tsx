@@ -6,6 +6,7 @@ import { useUserStore } from '@/store/userStore';
 import { useListingStore } from '@/store/listingStore';
 import { useStoreStore } from '@/store/storeStore';
 import Colors from '@/constants/colors';
+import { DEFAULT_AVATAR_URI } from '@/constants/defaultAvatar';
 import { Star, LogOut, Heart, Settings, Bell, HelpCircle, Package, MessageCircle, ChevronRight, Wallet, Store, Trash2, Headphones, User as UserIcon } from 'lucide-react-native';
 import LiveChatWidget from '@/components/LiveChatWidget';
 import { authService } from '@/services/authService';
@@ -362,7 +363,7 @@ export default function ProfileScreen() {
           <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.7}>
             <View>
               <Image
-                source={{ uri: currentUser.avatar || '' }}
+                source={{ uri: currentUser.avatar?.trim() ? currentUser.avatar : DEFAULT_AVATAR_URI }}
                 style={{ width: 50, height: 50, borderRadius: 25, opacity: isUpdatingAvatar ? 0.6 : 1 }}
               />
               {isUpdatingAvatar && (

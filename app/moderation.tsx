@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { logger } from '@/utils/logger';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
@@ -9,6 +9,7 @@ import { useModerationStore } from '@/store/moderationStore';
 import { useModerationSettingsStore } from '@/store/moderationSettingsStore';
 import { getColors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
+import { realtimeService } from '@/lib/realtime';
 import { useNotificationStore } from '@/store/notificationStore';
 import { notificationService } from '@/services/notificationService';
 import {
@@ -25,6 +26,32 @@ import {
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
+
+type ActivityRow = {
+  id: string;
+  kind: string;
+  titleAz: string;
+  titleRu: string;
+  at: string;
+};
+
+function formatActivityTime(atIso: string, language: 'az' | 'ru'): string {
+  const d = new Date(atIso);
+  if (Number.isNaN(d.getTime())) {
+    return language === 'az' ? 'Məlum deyil' : 'Неизвестно';
+  }
+  const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (diffMin < 1) return language === 'az' ? 'İndi' : 'Сейчас';
+  if (diffMin < 60) {
+    return language === 'az' ? `${diffMin} dəq əvvəl` : `${diffMin} мин назад`;
+  }
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) {
+    return language === 'az' ? `${diffH} saat əvvəl` : `${diffH} ч назад`;
+  }
+  const diffD = Math.floor(diffH / 24);
+  return language === 'az' ? `${diffD} gün əvvəl` : `${diffD} дн назад`;
+}
 
 export default function ModerationScreen() {
   const router = useRouter();
@@ -75,6 +102,42 @@ export default function ModerationScreen() {
 
   const isLoading = statsLoading || reportsLoading || moderatorsLoading;
   const hasError = statsError || reportsError;
+
+  const [liveActivity, setLiveActivity] = useState<ActivityRow[]>([]);
+
+  useEffect(() => {
+    const handler = (row: ActivityRow) => {
+      setLiveActivity((prev) => [{ ...row }, ...prev].slice(0, 40));
+    };
+    realtimeService.on('admin:activity', handler);
+    return () => realtimeService.off('admin:activity', handler);
+  }, []);
+
+  const derivedReportActivity: ActivityRow[] = useMemo(() => {
+    const list = Array.isArray(actualReports) ? actualReports : [];
+    return [...list]
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.updatedAt || b.createdAt).getTime() -
+          new Date(a.updatedAt || a.createdAt).getTime(),
+      )
+      .slice(0, 8)
+      .map((r: any) => ({
+        id: `report_${r.id}`,
+        kind: 'report_snapshot',
+        titleAz: `Şikayət • ${r.status}`,
+        titleRu: `Жалоба • ${r.status}`,
+        at: r.updatedAt || r.createdAt,
+      }));
+  }, [actualReports]);
+
+  const mergedActivity = useMemo(() => {
+    const map = new Map<string, ActivityRow>();
+    [...liveActivity, ...derivedReportActivity].forEach((r) => map.set(r.id, r));
+    return [...map.values()]
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+      .slice(0, 10);
+  }, [liveActivity, derivedReportActivity]);
 
   // Log errors for debugging
   useEffect(() => {
@@ -464,47 +527,40 @@ export default function ModerationScreen() {
           </Text>
 
           <View style={[styles.activityCard, { backgroundColor: colors.card }]}>
-            <View style={styles.activityItem}>
-              <View style={[styles.activityIcon, { backgroundColor: '#EF444420' }]}>
-                <Flag size={16} color="#EF4444" />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityTitle, { color: colors.text }]}>
-                  {language === 'az' ? 'Yeni şikayət alındı' : 'Получена новая жалоба'}
-                </Text>
-                <Text style={[styles.activityTime, { color: colors.textSecondary }]}>
-                  {language === 'az' ? '5 dəqiqə əvvəl' : '5 минут назад'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.activityItem}>
-              <View style={[styles.activityIcon, { backgroundColor: '#10B98120' }]}>
-                <CheckCircle size={16} color="#10B981" />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityTitle, { color: colors.text }]}>
-                  {language === 'az' ? 'Şikayət həll edildi' : 'Жалоба решена'}
-                </Text>
-                <Text style={[styles.activityTime, { color: colors.textSecondary }]}>
-                  {language === 'az' ? '1 saat əvvəl' : '1 час назад'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.activityItem}>
-              <View style={[styles.activityIcon, { backgroundColor: '#3B82F620' }]}>
-                <HelpCircle size={16} color="#3B82F6" />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityTitle, { color: colors.text }]}>
-                  {language === 'az' ? 'Yeni dəstək bileti' : 'Новый тикет поддержки'}
-                </Text>
-                <Text style={[styles.activityTime, { color: colors.textSecondary }]}>
-                  {language === 'az' ? '2 saat əvvəl' : '2 часа назад'}
-                </Text>
-              </View>
-            </View>
+            {mergedActivity.length === 0 ? (
+              <Text style={[styles.activityTitle, { color: colors.textSecondary, padding: 12 }]}>
+                {language === 'az' ? 'Hələlik fəaliyyət yoxdur' : 'Пока нет активности'}
+              </Text>
+            ) : (
+              mergedActivity.map((row, index) => {
+                const icon =
+                  row.kind.includes('ticket') ? (
+                    <HelpCircle size={16} color="#3B82F6" />
+                  ) : row.kind.includes('status') || row.kind === 'report_snapshot' ? (
+                    <CheckCircle size={16} color="#10B981" />
+                  ) : (
+                    <Flag size={16} color="#EF4444" />
+                  );
+                const bg =
+                  row.kind.includes('ticket') ? '#3B82F620' : row.kind.includes('report') ? '#EF444420' : '#10B98120';
+                return (
+                  <View
+                    key={row.id}
+                    style={[styles.activityItem, index > 0 && { marginTop: 12 }]}
+                  >
+                    <View style={[styles.activityIcon, { backgroundColor: bg }]}>{icon}</View>
+                    <View style={styles.activityContent}>
+                      <Text style={[styles.activityTitle, { color: colors.text }]}>
+                        {language === 'az' ? row.titleAz : row.titleRu}
+                      </Text>
+                      <Text style={[styles.activityTime, { color: colors.textSecondary }]}>
+                        {formatActivityTime(row.at, language === 'az' ? 'az' : 'ru')}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            )}
           </View>
         </View>
 

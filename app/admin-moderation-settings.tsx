@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity } from 'react-native';
 import { Stack } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -7,6 +7,15 @@ import { useUserStore } from '@/store/userStore';
 import { getColors } from '@/constants/colors';
 import { useModerationSettingsStore } from '@/store/moderationSettingsStore';
 import Toast from '@/components/Toast';
+import { trpc } from '@/lib/trpc';
+
+const REMOTE_DEFAULT_PANEL = {
+  autoRefresh: true,
+  autoRefreshIntervalSec: 30 as const,
+  showResolvedReports: true,
+  showDismissedReports: false,
+  notifyOnNewReport: true,
+};
 
 export default function AdminModerationSettingsScreen() {
   const { language } = useLanguageStore();
@@ -18,6 +27,19 @@ export default function AdminModerationSettingsScreen() {
   const { settings, setSettings, reset } = useModerationSettingsStore();
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  const hydratedRef = useRef(false);
+
+  const remoteSettings = trpc.moderation.getAppSettings.useQuery(undefined, {
+    enabled: canAccess,
+    retry: false,
+  });
+  const syncRemote = trpc.moderation.syncAppSettings.useMutation();
+
+  useEffect(() => {
+    if (!remoteSettings.data || hydratedRef.current) return;
+    setSettings(remoteSettings.data);
+    hydratedRef.current = true;
+  }, [remoteSettings.data, setSettings]);
 
   if (!canAccess) return null;
 
@@ -78,6 +100,7 @@ export default function AdminModerationSettingsScreen() {
           value={settings.autoRefresh}
           onValueChange={(v: boolean) => {
             setSettings({ autoRefresh: v });
+            syncRemote.mutate({ autoRefresh: v });
             showToast(language === 'az' ? 'Yadda saxlanıldı' : 'Сохранено');
           }}
         />
@@ -95,6 +118,7 @@ export default function AdminModerationSettingsScreen() {
               active={settings.autoRefreshIntervalSec === 15}
               onPress={() => {
                 setSettings({ autoRefreshIntervalSec: 15 });
+                syncRemote.mutate({ autoRefreshIntervalSec: 15 });
                 showToast(language === 'az' ? 'Yadda saxlanıldı' : 'Сохранено');
               }}
             />
@@ -103,6 +127,7 @@ export default function AdminModerationSettingsScreen() {
               active={settings.autoRefreshIntervalSec === 30}
               onPress={() => {
                 setSettings({ autoRefreshIntervalSec: 30 });
+                syncRemote.mutate({ autoRefreshIntervalSec: 30 });
                 showToast(language === 'az' ? 'Yadda saxlanıldı' : 'Сохранено');
               }}
             />
@@ -111,6 +136,7 @@ export default function AdminModerationSettingsScreen() {
               active={settings.autoRefreshIntervalSec === 60}
               onPress={() => {
                 setSettings({ autoRefreshIntervalSec: 60 });
+                syncRemote.mutate({ autoRefreshIntervalSec: 60 });
                 showToast(language === 'az' ? 'Yadda saxlanıldı' : 'Сохранено');
               }}
             />
@@ -123,6 +149,7 @@ export default function AdminModerationSettingsScreen() {
           value={settings.showResolvedReports}
           onValueChange={(v: boolean) => {
             setSettings({ showResolvedReports: v });
+            syncRemote.mutate({ showResolvedReports: v });
             showToast(language === 'az' ? 'Yadda saxlanıldı' : 'Сохранено');
           }}
         />
@@ -132,6 +159,7 @@ export default function AdminModerationSettingsScreen() {
           value={settings.showDismissedReports}
           onValueChange={(v: boolean) => {
             setSettings({ showDismissedReports: v });
+            syncRemote.mutate({ showDismissedReports: v });
             showToast(language === 'az' ? 'Yadda saxlanıldı' : 'Сохранено');
           }}
         />
@@ -141,6 +169,7 @@ export default function AdminModerationSettingsScreen() {
           value={settings.notifyOnNewReport}
           onValueChange={(v: boolean) => {
             setSettings({ notifyOnNewReport: v });
+            syncRemote.mutate({ notifyOnNewReport: v });
             showToast(language === 'az' ? 'Yadda saxlanıldı' : 'Сохранено');
           }}
         />
@@ -149,6 +178,8 @@ export default function AdminModerationSettingsScreen() {
           style={[styles.resetBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {
             reset();
+            hydratedRef.current = false;
+            syncRemote.mutate(REMOTE_DEFAULT_PANEL);
             showToast(language === 'az' ? 'Standart tənzimləmələr bərpa olundu' : 'Настройки сброшены');
           }}
         >

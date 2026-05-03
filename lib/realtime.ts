@@ -39,6 +39,24 @@ interface RealtimeEvents {
   'liveChat:assigned': (data: { conversationId: string; agentId: string; agentName: string }) => void;
   'liveChat:closed': (data: { conversationId: string }) => void;
 
+  /** Presence (seller blocks, analytics). */
+  'user:presence': (data: { userId: string; status: 'online' | 'offline' | string; timestamp?: number }) => void;
+
+  /** Moderator/admin dashboards */
+  'admin:invalidate': (data?: { tags?: string[]; reason?: string }) => void;
+  'admin:activity': (data: {
+    id: string;
+    kind: string;
+    titleAz: string;
+    titleRu: string;
+    at: string;
+    meta?: Record<string, unknown>;
+  }) => void;
+  'moderation:settings': (data: Record<string, unknown>) => void;
+
+  /** Listing catalog refresh */
+  'listing:invalidate': (data?: { listingId?: string }) => void;
+
   // Sistem
   'connection': () => void;
   'disconnect': () => void;

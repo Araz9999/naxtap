@@ -1,5 +1,5 @@
 import { createTRPCReact } from '@trpc/react-query';
-import { httpLink, loggerLink } from '@trpc/client';
+import { httpLink, loggerLink, splitLink } from '@trpc/client';
 import type { AppRouter } from '../../naxtap-backend/trpc/app-router';
 import superjson from 'superjson';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -77,58 +77,70 @@ if (typeof __DEV__ !== 'undefined' && __DEV__) {
   console.log('[tRPC] API base URL:', apiBaseUrl || '(empty - same-origin)');
 }
 
-const REQUEST_TIMEOUT_MS = 30_000; // 30s — allow slower networks
-
-function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
-  return fetch(input, {
-    ...init,
-    signal: ctrl.signal,
-  }).finally(() => clearTimeout(id));
+function fetchWithDeadline(ms: number) {
+  return function boundedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const ctrl = new AbortController();
+    const id = setTimeout(() => ctrl.abort(), ms);
+    return fetch(input, {
+      ...init,
+      signal: ctrl.signal,
+    }).finally(() => clearTimeout(id));
+  };
 }
+
+const fetchDefault = fetchWithDeadline(30_000);
+const fetchListingCreate = fetchWithDeadline(120_000);
+
+async function trpcHeaders(): Promise<Record<string, string>> {
+  try {
+    const now = Date.now();
+    if (cachedAuthHeader && now - cacheTimestamp < CACHE_DURATION) {
+      return cachedAuthHeader;
+    }
+    const raw = await AsyncStorage.getItem('auth_tokens');
+    if (!raw) {
+      cachedAuthHeader = {};
+      cacheTimestamp = now;
+      return {};
+    }
+    let tokens: any;
+    try {
+      tokens = JSON.parse(raw);
+    } catch {
+      cachedAuthHeader = {};
+      cacheTimestamp = now;
+      return {};
+    }
+    if (tokens?.accessToken) {
+      cachedAuthHeader = { Authorization: `Bearer ${tokens.accessToken}` };
+      cacheTimestamp = now;
+      return cachedAuthHeader;
+    }
+  } catch {
+    // swallow errors
+  }
+  cachedAuthHeader = {};
+  cacheTimestamp = Date.now();
+  return {};
+}
+
+const sharedHttp = {
+  url: apiBaseUrl,
+  transformer: superjson,
+  headers: trpcHeaders,
+} as const;
 
 export const trpcClient = trpc.createClient({
   links: [
     ...(process.env.NODE_ENV === 'development'
       ? [loggerLink({ enabled: () => false })]
       : []),
-    httpLink({
-      url: apiBaseUrl,
-      fetch: fetchWithTimeout,
-      transformer: superjson,
-      async headers() {
-        try {
-          const now = Date.now();
-          if (cachedAuthHeader && (now - cacheTimestamp) < CACHE_DURATION) {
-            return cachedAuthHeader;
-          }
-          const raw = await AsyncStorage.getItem('auth_tokens');
-          if (!raw) {
-            cachedAuthHeader = {};
-            cacheTimestamp = now;
-            return {};
-          }
-          let tokens: any;
-          try {
-            tokens = JSON.parse(raw);
-          } catch {
-            cachedAuthHeader = {};
-            cacheTimestamp = now;
-            return {};
-          }
-          if (tokens?.accessToken) {
-            cachedAuthHeader = { Authorization: `Bearer ${tokens.accessToken}` };
-            cacheTimestamp = now;
-            return cachedAuthHeader;
-          }
-        } catch {
-          // swallow errors
-        }
-        cachedAuthHeader = {};
-        cacheTimestamp = Date.now();
-        return {};
+    splitLink({
+      condition(op) {
+        return op.type === 'mutation' && op.path === 'listing.create';
       },
+      true: httpLink({ ...sharedHttp, fetch: fetchListingCreate }),
+      false: httpLink({ ...sharedHttp, fetch: fetchDefault }),
     }),
   ],
 });
