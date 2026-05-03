@@ -7,6 +7,7 @@ import { useUserStore } from '@/store/userStore';
 import { useCallStore } from '@/store/callStore';
 import { getColors } from '@/constants/colors';
 import { logger } from '@/utils/logger';
+import { trpc } from '@/lib/trpc';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationService } from '@/services/notificationService';
 import * as FileSystem from 'expo-file-system';
@@ -89,6 +90,14 @@ export default function SettingsScreen() {
   } = useThemeStore();
 
   const colors = getColors(themeMode, colorTheme);
+  const utils = trpc.useUtils();
+  const updatePrivacyMutation = trpc.user.updateMe.useMutation({
+    onSuccess: async () => {
+      const uid = useUserStore.getState().currentUser?.id;
+      if (uid) await utils.user.getUser.invalidate({ id: uid });
+    },
+  });
+
   const [headerAnimation] = useState(new Animated.Value(0));
   const [sectionAnimations] = useState(Array.from({ length: 8 }, () => new Animated.Value(0)));
   const [pulseAnimation] = useState(new Animated.Value(1));
@@ -834,6 +843,9 @@ export default function SettingsScreen() {
 
                   try {
                     updatePrivacySettings({ hidePhoneNumber: value });
+                    void updatePrivacyMutation
+                      .mutateAsync({ hidePhoneNumber: value })
+                      .catch((e: unknown) => logger.error('[Settings] Privacy sync failed:', e));
                     logger.info('[Settings] Phone visibility updated:', value);
                   } catch (error) {
                     logger.error('[Settings] Error updating phone visibility:', error);
@@ -876,6 +888,12 @@ export default function SettingsScreen() {
                       onlyAppMessaging: value,
                       allowDirectContact: !value,
                     });
+                    void updatePrivacyMutation
+                      .mutateAsync({
+                        onlyAppMessaging: value,
+                        allowDirectContact: !value,
+                      })
+                      .catch((e: unknown) => logger.error('[Settings] Privacy sync failed:', e));
                     logger.info('[Settings] App messaging preference updated:', value);
                   } catch (error) {
                     logger.error('[Settings] Error updating messaging preference:', error);
@@ -918,6 +936,12 @@ export default function SettingsScreen() {
                       allowDirectContact: value,
                       onlyAppMessaging: !value,
                     });
+                    void updatePrivacyMutation
+                      .mutateAsync({
+                        allowDirectContact: value,
+                        onlyAppMessaging: !value,
+                      })
+                      .catch((e: unknown) => logger.error('[Settings] Privacy sync failed:', e));
                     logger.info('[Settings] Direct contact preference updated:', value);
                   } catch (error) {
                     logger.error('[Settings] Error updating direct contact:', error);

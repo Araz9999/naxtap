@@ -119,9 +119,9 @@ export default function LoginScreen() {
           memberSince: new Date().toISOString(),
           location: { az: '', ru: '', en: '' },
           privacySettings: {
-            hidePhoneNumber: false,
-            allowDirectContact: true,
-            onlyAppMessaging: false,
+            hidePhoneNumber: Boolean(baseUser.privacySettings?.hidePhoneNumber),
+            allowDirectContact: baseUser.privacySettings?.allowDirectContact !== false,
+            onlyAppMessaging: Boolean(baseUser.privacySettings?.onlyAppMessaging),
           },
           analytics: {
             lastOnline: new Date().toISOString(),

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert, Linking, Platform, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert, Linking, Platform, Modal, ActivityIndicator, Share as RNShare } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Sharing from 'expo-sharing';
@@ -16,7 +16,7 @@ import { trpc } from '@/lib/trpc';
 import { users } from '@/mocks/users';
 import { categories } from '@/constants/categories';
 import Colors from '@/constants/colors';
-import { Heart, Share, ChevronLeft, ChevronRight, MapPin, Calendar, Eye, Phone, MessageCircle, Clock, X, MoreVertical, Tag, Percent } from 'lucide-react-native';
+import { Heart, Share as ShareIcon, ChevronLeft, ChevronRight, MapPin, Calendar, Eye, Phone, MessageCircle, Clock, X, MoreVertical, Tag, Percent } from 'lucide-react-native';
 import { SocialIcons } from '@/components/Icons';
 import CountdownTimer from '@/components/CountdownTimer';
 
@@ -179,46 +179,43 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const sellerFromMock = users.find((user) =>
-    user.id === listing.userId ||
-    user.id === `user${listing.userId}` ||
-    `user${user.id}` === listing.userId,
-  );
-  const sellerQuery = trpc.user.getUser.useQuery(
-    { id: listing.userId },
-    { enabled: !!listing?.userId },
-  );
-  const seller = sellerFromMock || (sellerQuery.data
+  const sellerQuery = trpc.user.getUser.useQuery({ id: listing.userId }, { enabled: !!listing?.userId });
+
+  const sellerFromMockStrict = users.find(user => user.id === listing.userId);
+
+  const seller = sellerQuery.data
     ? {
-      id: sellerQuery.data.id,
-      name: sellerQuery.data.name,
-      phone: sellerQuery.data.phone || '',
-      email: sellerQuery.data.email || '',
-      avatar: sellerQuery.data.avatar || '',
-      location: {
-        az: '',
-        ru: '',
-      },
-      memberSince: new Date().toISOString(),
-      role: 'user' as const,
-      balance: 0,
-      rating: 0,
-      totalRatings: 0,
-      analytics: {
-        lastOnline: new Date().toISOString(),
-        messageResponseRate: 0,
-        averageResponseTime: 0,
-        totalMessages: 0,
-        totalResponses: 0,
-        isOnline: false,
-      },
-      privacySettings: {
-        hidePhoneNumber: false,
-        allowDirectContact: true,
-        onlyAppMessaging: false,
-      },
-    }
-    : null);
+        id: sellerQuery.data.id,
+        name: sellerQuery.data.name,
+        phone: sellerQuery.data.phone || '',
+        email: sellerQuery.data.email || '',
+        avatar: sellerQuery.data.avatar || '',
+        location: { az: '', ru: '', en: '' },
+        memberSince: sellerQuery.data.createdAt,
+        role: sellerQuery.data.role as 'user' | 'moderator' | 'admin',
+        balance: typeof sellerQuery.data.balance === 'number' ? sellerQuery.data.balance : 0,
+        rating: 0,
+        totalRatings: 0,
+        analytics: {
+          lastOnline: sellerQuery.data.updatedAt,
+          messageResponseRate: 0,
+          averageResponseTime: 0,
+          totalMessages: 0,
+          totalResponses: 0,
+          isOnline: false,
+        },
+        privacySettings: sellerQuery.data.privacySettings ?? {
+          hidePhoneNumber: false,
+          allowDirectContact: true,
+          onlyAppMessaging: false,
+        },
+      }
+    : sellerFromMockStrict ?? null;
+
+  const showCallFooterButton =
+    !!seller &&
+    (listing.contactPreference === 'phone' || listing.contactPreference === 'both') &&
+    !seller.privacySettings?.onlyAppMessaging;
 
   // ✅ Log warning if seller not found
   if (!seller) {
@@ -396,26 +393,36 @@ export default function ListingDetailScreen() {
           setIsSharing(false);
           return;
         case 'native':
-        // ✅ Use native sharing with better error handling
           try {
-            if (await Sharing.isAvailableAsync()) {
-              await Sharing.shareAsync(shareUrl, {
+            const imageUrl = listing.images?.[0];
+            await RNShare.share(
+              {
+                title: listing.title[language] || listing.title.az,
+                message: shareText,
+                ...(imageUrl ? { url: imageUrl } : {}),
+              },
+              {
                 dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением',
-              });
-              logger.debug('[shareToSocialMedia] Native share successful');
-            } else {
-              logger.warn('[shareToSocialMedia] Native sharing not available');
-              Alert.alert(
-                language === 'az' ? 'Xəta' : 'Ошибка',
-                language === 'az' ? 'Paylaşma funksiyası mövcud deyil' : 'Функция обмена недоступна',
-              );
-            }
+              },
+            );
+            logger.debug('[shareToSocialMedia] Native Share.share completed');
           } catch (nativeShareError) {
             logger.error('[shareToSocialMedia] Native share error:', nativeShareError);
-            Alert.alert(
-              language === 'az' ? 'Xəta' : 'Ошибка',
-              language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться',
-            );
+            try {
+              if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(getShareUrl(), {
+                  dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением',
+                });
+              } else {
+                throw new Error('sharing_unavailable');
+              }
+            } catch (fallbackErr) {
+              logger.error('[shareToSocialMedia] Fallback share error:', fallbackErr);
+              Alert.alert(
+                language === 'az' ? 'Xəta' : 'Ошибка',
+                language === 'az' ? 'Paylaşma zamanı xəta baş verdi' : 'Произошла ошибка при попытке поделиться',
+              );
+            }
           }
           setShareModalVisible(false);
           setIsSharing(false);
@@ -726,18 +733,6 @@ export default function ListingDetailScreen() {
       return;
     }
 
-    // ✅ Check if seller allows messaging
-    if (seller.privacySettings?.onlyAppMessaging === false && seller.privacySettings?.allowDirectContact === false) {
-      logger.warn('[ListingDetail] Seller has disabled messaging:', seller.id);
-      Alert.alert(
-        language === 'az' ? 'Mesaj göndərilə bilməz' : 'Невозможно отправить сообщение',
-        language === 'az'
-          ? 'Bu istifadəçi mesajları qəbul etmir'
-          : 'Этот пользователь не принимает сообщения',
-      );
-      return;
-    }
-
     // Navigate to conversation with the seller
     logger.info('[ListingDetail] Navigating to conversation:', seller.id);
     router.push(`/conversation/${seller.id}?listingId=${listing.id}&listingTitle=${encodeURIComponent(listing.title[language])}`);
@@ -802,7 +797,7 @@ export default function ListingDetailScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-            <Share size={20} color="white" />
+            <ShareIcon size={20} color="white" />
           </TouchableOpacity>
 
           {seller && (
@@ -952,7 +947,9 @@ export default function ListingDetailScreen() {
           <Text style={styles.description}>{listing.description[language] || listing.description.az || listing.description.ru || listing.description.en}</Text>
         </View>
 
-        {(listing.condition || listing.deliveryAvailable) && (
+        {(listing.condition ||
+          listing.deliveryAvailable === true ||
+          listing.deliveryAvailable === false) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               {language === 'az' ? 'Əlavə məlumat' : 'Дополнительно'}
@@ -960,13 +957,19 @@ export default function ListingDetailScreen() {
             {!!listing.condition && (
               <Text style={styles.description}>
                 {language === 'az' ? 'Vəziyyəti: ' : 'Состояние: '}
-                {listing.condition}
+                {listing.condition === 'new'
+                  ? (language === 'az' ? 'Yeni' : 'Новое')
+                  : listing.condition === 'used'
+                    ? (language === 'az' ? 'İşlənmiş' : 'Б/у')
+                    : listing.condition}
               </Text>
             )}
-            {listing.deliveryAvailable && (
+            {(listing.deliveryAvailable === true || listing.deliveryAvailable === false) && (
               <Text style={styles.description}>
                 {language === 'az' ? 'Çatdırılma: ' : 'Доставка: '}
-                {listing.deliveryType || (language === 'az' ? 'Mümkündür' : 'Доступна')}
+                {listing.deliveryAvailable
+                  ? listing.deliveryType || (language === 'az' ? 'Mümkündür' : 'Доступна')
+                  : (language === 'az' ? 'Yoxdur' : 'Нет')}
               </Text>
             )}
           </View>
@@ -995,7 +998,7 @@ export default function ListingDetailScreen() {
       </View>
 
       <View style={styles.footer}>
-        {(listing.contactPreference === 'phone' || listing.contactPreference === 'both') && (
+        {showCallFooterButton && (
           <TouchableOpacity
             style={[styles.footerButton, styles.callButton]}
             onPress={handleContact}

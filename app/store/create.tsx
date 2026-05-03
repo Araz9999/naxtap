@@ -277,8 +277,15 @@ export default function CreateStoreScreen() {
       Alert.alert(
         language === 'az' ? '💰 Kifayət qədər balans yoxdur' : '💰 Недостаточно средств',
         language === 'az'
-          ? `Mağaza yaratmaq üçün ${finalPrice} AZN lazımdır.\nCari balansınız: ${walletBalance.toFixed(2)} AZN\n\nZəhmət olmasa balansınızı artırın.`
-          : `Для создания магазина требуется ${finalPrice} AZN.\nВаш текущий баланс: ${walletBalance.toFixed(2)} AZN\n\nПожалуйста, пополните баланс.`,
+          ? `Mağaza yaratmaq üçün ${finalPrice} AZN lazımdır.\nCari balansınız: ${walletBalance.toFixed(2)} AZN`
+          : `Для создания магазина требуется ${finalPrice} AZN.\nВаш текущий баланс: ${walletBalance.toFixed(2)} AZN`,
+        [
+          { text: language === 'az' ? 'Ləğv' : 'Отмена', style: 'cancel' },
+          {
+            text: language === 'az' ? 'Balans artır' : 'Пополнить',
+            onPress: () => router.push('/wallet'),
+          },
+        ],
       );
       return;
     }

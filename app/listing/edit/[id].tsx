@@ -387,41 +387,36 @@ export default function EditListingScreen() {
       return;
     }
 
-    // ✅ Validate title (all languages)
-    if (!formData.title.az?.trim() || !formData.title.ru?.trim() || !formData.title.en?.trim()) {
+    const azTitle = formData.title.az?.trim() || '';
+    const ruTitle = formData.title.ru?.trim() || '';
+    const enTitle = formData.title.en?.trim() || '';
+    const primaryTitle = azTitle || ruTitle || enTitle;
+    if (!primaryTitle || primaryTitle.length < 3 || primaryTitle.length > 100) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Bütün dillərdə başlıq daxil edin' : 'Введите заголовок на всех языках',
+        language === 'az'
+          ? 'Ən azı bir dildə başlıq daxil edin (3–100 simvol)'
+          : 'Введите заголовок хотя бы на одном языке (3–100 символов)',
       );
       return;
     }
 
-    // ✅ Validate title length
-    if (formData.title.az.trim().length < 3 || formData.title.az.trim().length > 100) {
+    const azDesc = formData.description.az?.trim() || '';
+    const ruDesc = formData.description.ru?.trim() || '';
+    const enDesc = formData.description.en?.trim() || '';
+    const primaryDesc = azDesc || ruDesc || enDesc;
+    if (!primaryDesc || primaryDesc.length < 10 || primaryDesc.length > 2000) {
       Alert.alert(
         language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Başlıq 3-100 simvol arasında olmalıdır' : 'Заголовок должен быть от 3 до 100 символов',
+        language === 'az'
+          ? 'Ən azı bir dildə təsvir daxil edin (10–2000 simvol)'
+          : 'Введите описание хотя бы на одном языке (10–2000 символов)',
       );
       return;
     }
 
-    // ✅ Validate description (all languages)
-    if (!formData.description.az?.trim() || !formData.description.ru?.trim() || !formData.description.en?.trim()) {
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Bütün dillərdə təsvir daxil edin' : 'Введите описание на всех языках',
-      );
-      return;
-    }
-
-    // ✅ Validate description length
-    if (formData.description.az.trim().length < 10 || formData.description.az.trim().length > 2000) {
-      Alert.alert(
-        language === 'az' ? 'Xəta' : 'Ошибка',
-        language === 'az' ? 'Təsvir 10-2000 simvol arasında olmalıdır' : 'Описание должно быть от 10 до 2000 символов',
-      );
-      return;
-    }
+    const filledTitle = { az: azTitle || primaryTitle, ru: ruTitle || primaryTitle, en: enTitle || primaryTitle };
+    const filledDesc = { az: azDesc || primaryDesc, ru: ruDesc || primaryDesc, en: enDesc || primaryDesc };
 
     // ✅ Validate price
     if (!formData.price.trim()) {
@@ -483,16 +478,8 @@ export default function EditListingScreen() {
       // ✅ Prepare update data
       const updatedListing = {
         ...listing,
-        title: {
-          az: formData.title.az.trim(),
-          ru: formData.title.ru.trim(),
-          en: formData.title.en.trim(),
-        },
-        description: {
-          az: formData.description.az.trim(),
-          ru: formData.description.ru.trim(),
-          en: formData.description.en.trim(),
-        },
+        title: filledTitle,
+        description: filledDesc,
         price: parseFloat(formData.price),
         currency: formData.currency,
         categoryId: formData.categoryId,
@@ -512,8 +499,8 @@ export default function EditListingScreen() {
       Alert.alert(
         language === 'az' ? 'Uğurlu!' : 'Успешно!',
         language === 'az'
-          ? `"${formData.title.az.trim()}" elanı yeniləndi`
-          : `Объявление "${formData.title.ru.trim()}" обновлено`,
+          ? `"${filledTitle.az}" elanı yeniləndi`
+          : `Объявление "${filledTitle.ru}" обновлено`,
         [
           {
             text: 'OK',

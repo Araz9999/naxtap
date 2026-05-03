@@ -495,6 +495,8 @@ export default function ListingDiscountScreen() {
     return date.toLocaleDateString(language === 'az' ? 'az-AZ' : 'ru-RU');
   };
 
+  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
   const getDiscountPreview = () => {
     if (!discountValue || isNaN(Number(discountValue))) return null;
 
@@ -513,10 +515,10 @@ export default function ListingDiscountScreen() {
     const finalPrice = Math.max(0, listing.price - discountAmount);
 
     return {
-      originalPrice: listing.price,
-      discountAmount,
-      finalPrice,
-      savings: discountAmount,
+      originalPrice: round2(listing.price),
+      discountAmount: round2(discountAmount),
+      finalPrice: round2(finalPrice),
+      savings: round2(discountAmount),
     };
   };
 
@@ -578,7 +580,11 @@ export default function ListingDiscountScreen() {
                 </TouchableOpacity>
               </View>
               <Text style={styles.discountValue}>
-                {individualDiscountPercentage}% {language === 'az' ? 'endirim' : 'скидка'}
+                {listing.originalPrice != null &&
+                listing.originalPrice > listing.price &&
+                listing.hasDiscount
+                  ? `${(listing.originalPrice - listing.price).toFixed(2)} ${listing.currency} ${language === 'az' ? 'endirim' : 'скидка'}`
+                  : `${individualDiscountPercentage}% ${language === 'az' ? 'endirim' : 'скидка'}`}
               </Text>
               <Text style={styles.discountDates}>
                 {language === 'az' ? 'Aktiv' : 'Активна'}
@@ -745,14 +751,14 @@ export default function ListingDiscountScreen() {
               </Text>
               <View style={styles.previewPrices}>
                 <Text style={styles.originalPrice}>
-                  {preview.originalPrice} {listing.currency}
+                  {preview.originalPrice.toFixed(2)} {listing.currency}
                 </Text>
                 <Text style={styles.discountedPrice}>
-                  {preview.finalPrice} {listing.currency}
+                  {preview.finalPrice.toFixed(2)} {listing.currency}
                 </Text>
               </View>
               <Text style={styles.savingsText}>
-                {language === 'az' ? 'Qənaət:' : 'Экономия:'} {preview.savings} {listing.currency}
+                {language === 'az' ? 'Qənaət:' : 'Экономия:'} {preview.savings.toFixed(2)} {listing.currency}
               </Text>
             </View>
           )}

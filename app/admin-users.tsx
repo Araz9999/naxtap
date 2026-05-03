@@ -49,7 +49,7 @@ export default function AdminUsersScreen() {
   const colors = getColors(themeMode, colorTheme);
   const router = useRouter();
 
-  const canAccess = currentUser?.role === 'admin';
+  const canAccess = currentUser?.role?.toLowerCase?.() === 'admin';
 
   const [search, setSearch] = useState('');
   const [role, setRole] = useState<RoleFilter>('all');
@@ -296,16 +296,19 @@ export default function AdminUsersScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-        <RoleChip value="all" title={language === 'az' ? 'Hamısı' : 'Все'} />
-        <RoleChip value="USER" title={language === 'az' ? 'İstifadəçi' : 'Пользователь'} />
-        <RoleChip value="MODERATOR" title={language === 'az' ? 'Moderator' : 'Модератор'} />
-        <RoleChip value="ADMIN" title={language === 'az' ? 'Admin' : 'Админ'} />
-        <View style={{ width: 8 }} />
-        <VerifiedChip value="all" title={language === 'az' ? 'Təsdiq: hamısı' : 'Вериф: все'} />
-        <VerifiedChip value="verified" title={language === 'az' ? 'Təsdiqli' : 'Вериф.'} />
-        <VerifiedChip value="unverified" title={language === 'az' ? 'Təsdiqsiz' : 'Без вериф.'} />
-      </ScrollView>
+      <View style={styles.filterRows}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+          <RoleChip value="all" title={language === 'az' ? 'Hamısı' : 'Все'} />
+          <RoleChip value="USER" title={language === 'az' ? 'İstifadəçi' : 'Пользователь'} />
+          <RoleChip value="MODERATOR" title={language === 'az' ? 'Moderator' : 'Модератор'} />
+          <RoleChip value="ADMIN" title={language === 'az' ? 'Admin' : 'Админ'} />
+        </ScrollView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+          <VerifiedChip value="all" title={language === 'az' ? 'Təsdiq: hamısı' : 'Вериф: все'} />
+          <VerifiedChip value="verified" title={language === 'az' ? 'Təsdiqli' : 'Вериф.'} />
+          <VerifiedChip value="unverified" title={language === 'az' ? 'Təsdiqsiz' : 'Без вериф.'} />
+        </ScrollView>
+      </View>
 
       {usersQuery.isLoading ? (
         <View style={styles.center}>
@@ -601,7 +604,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipsRow: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
+  filterRows: { gap: 10, paddingBottom: 8 },
+  chipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    flexGrow: 0,
+  },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
   list: { paddingHorizontal: 16, paddingTop: 8 },
   emptyCard: { padding: 16, borderRadius: 12, alignItems: 'center' },

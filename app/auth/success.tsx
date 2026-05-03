@@ -45,6 +45,10 @@ export default function AuthSuccessScreen() {
       // ✅ Normalize role to lowercase (backend returns uppercase: ADMIN, MODERATOR, USER)
       const normalizedRole = (userData.role || 'USER').toLowerCase() as 'user' | 'moderator' | 'admin';
 
+      const ps = userData.privacySettings as
+        | { hidePhoneNumber?: boolean; allowDirectContact?: boolean; onlyAppMessaging?: boolean }
+        | undefined;
+
       login({
         id: userData.id,
         name: userData.name,
@@ -58,9 +62,9 @@ export default function AuthSuccessScreen() {
         balance: 0,
         role: normalizedRole,
         privacySettings: {
-          hidePhoneNumber: false,
-          allowDirectContact: true,
-          onlyAppMessaging: false,
+          hidePhoneNumber: Boolean(ps?.hidePhoneNumber),
+          allowDirectContact: ps?.allowDirectContact !== false,
+          onlyAppMessaging: Boolean(ps?.onlyAppMessaging),
         },
         analytics: {
           lastOnline: new Date().toISOString(),

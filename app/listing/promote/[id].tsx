@@ -151,12 +151,7 @@ export default function PromoteListingScreen() {
     }
 
     if (totalBalance < selectedPackage.price) {
-      Alert.alert(
-        language === 'az' ? 'Kifayət qədər balans yoxdur' : 'Недостаточно средств',
-        language === 'az'
-          ? `Bu paket üçün ${selectedPackage.price.toFixed(2)} AZN lazımdır. Balansınız: ${totalBalance.toFixed(2)} AZN`
-          : `Для этого пакета требуется ${selectedPackage.price.toFixed(2)} AZN. Ваш баланс: ${totalBalance.toFixed(2)} AZN`,
-      );
+      router.push('/wallet');
       return;
     }
 
@@ -392,12 +387,7 @@ export default function PromoteListingScreen() {
     const totalBalance = walletBalance + bonusBalance;
 
     if (totalBalance < totalPrice) {
-      Alert.alert(
-        language === 'az' ? 'Kifayət qədər balans yoxdur' : 'Недостаточно средств',
-        language === 'az'
-          ? `Bu effektlər üçün ${totalPrice.toFixed(2)} AZN lazımdır. Balansınız: ${totalBalance.toFixed(2)} AZN`
-          : `Для этих эффектов требуется ${totalPrice.toFixed(2)} AZN. Ваш баланс: ${totalBalance.toFixed(2)} AZN`,
-      );
+      router.push('/wallet');
       return;
     }
 
@@ -599,12 +589,7 @@ export default function PromoteListingScreen() {
 
     const totalBalance = getTotalBalance();
     if (totalBalance < selectedViewPackage.price) {
-      Alert.alert(
-        language === 'az' ? 'Kifayət qədər balans yoxdur' : 'Недостаточно средств',
-        language === 'az'
-          ? `Bu paket üçün ${selectedViewPackage.price} AZN lazımdır. Balansınız: ${totalBalance} AZN`
-          : `Для этого пакета требуется ${selectedViewPackage.price} AZN. Ваш баланс: ${totalBalance} AZN`,
-      );
+      router.push('/wallet');
       return;
     }
 
@@ -1013,31 +998,9 @@ export default function PromoteListingScreen() {
         <View style={styles.footer}>
           <TouchableOpacity
             testID="action-buy-button"
-            style={[
-              styles.promoteButton,
-              (() => {
-                const required = activeTab === 'promotion'
-                  ? (selectedPackage?.price ?? 0)
-                  : activeTab === 'views'
-                    ? (selectedViewPackage?.price ?? 0)
-                    : selectedEffects.length > 0
-                      ? selectedEffects.reduce((sum, effect) => sum + effect.price, 0)
-                      : 0;
-                const isDisabled = !currentUser || (walletBalance + bonusBalance) < required || isProcessing;
-                return isDisabled && styles.disabledButton;
-              })(),
-            ]}
+            style={[styles.promoteButton, isProcessing && styles.disabledButton]}
             onPress={activeTab === 'promotion' ? handlePromote : activeTab === 'views' ? handlePurchaseViews : handlePurchaseEffects}
-            disabled={(() => {
-              const required = activeTab === 'promotion'
-                ? (selectedPackage?.price ?? 0)
-                : activeTab === 'views'
-                  ? (selectedViewPackage?.price ?? 0)
-                  : selectedEffects.length > 0
-                    ? selectedEffects.reduce((sum, effect) => sum + effect.price, 0)
-                    : 0;
-              return !currentUser || (walletBalance + bonusBalance) < required || isProcessing;
-            })()}
+            disabled={!currentUser || isProcessing}
           >
             <Text style={styles.promoteButtonText}>
               {isProcessing
