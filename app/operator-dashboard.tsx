@@ -26,7 +26,7 @@ import {
   Star,
   Activity,
 } from 'lucide-react-native';
-import type { LiveChatConversation, LiveChatMessage, SupportAgent } from '@/backend/types/liveChat';
+import type { LiveChatConversation, LiveChatMessage, SupportAgent } from '@/types/liveChat';
 
 const { width } = Dimensions.get('window');
 
@@ -180,7 +180,7 @@ export default function OperatorDashboard() {
       <View style={styles.chatHeader}>
         <View style={styles.chatInfo}>
           <Text style={[styles.chatSubject, { color: colors.text }]} numberOfLines={1}>
-            {conv.subject || (language === 'az' ? 'Yeni söhbət' : 'Новый чат')}
+            {conv.userName || (language === 'az' ? 'Yeni söhbət' : 'Новый чат')}
           </Text>
           <Text style={[styles.chatTime, { color: colors.textSecondary }]}>
             {formatClock(conv.createdAt)}
@@ -421,7 +421,7 @@ export default function OperatorDashboard() {
           <View style={[styles.chatDetailModal, { backgroundColor: colors.card }]}>
             <View style={styles.chatDetailHeader}>
               <Text style={[styles.chatDetailTitle, { color: colors.text }]}>
-                {selectedConversation.subject || (language === 'az' ? 'Söhbət' : 'Чат')}
+                {selectedConversation.userName || (language === 'az' ? 'Söhbət' : 'Чат')}
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}

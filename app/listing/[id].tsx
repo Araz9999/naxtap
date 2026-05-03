@@ -26,6 +26,7 @@ import { realtimeService } from '@/lib/realtime';
 import { DEFAULT_AVATAR_URI } from '@/constants/defaultAvatar';
 const { width } = Dimensions.get('window');
 const roundCurrency = (value: number): number => Math.round((value + Number.EPSILON) * 100) / 100;
+const asLang = (lang: string): 'az' | 'ru' => (lang === 'ru' ? 'ru' : 'az');
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -50,6 +51,40 @@ export default function ListingDetailScreen() {
 
   const listing = listings.find(item => item.id === id);
   logger.debug('[ListingDetail] Found listing:', listing ? 'Yes' : 'No');
+
+  const targetLang = asLang(language);
+  const hasMissingTargetLocale = !!listing && (
+    !listing.title?.[targetLang]?.trim() ||
+    !listing.description?.[targetLang]?.trim() ||
+    !listing.location?.[targetLang]?.trim()
+  );
+
+  const localizedListingQuery = trpc.listing.localize.useQuery(
+    { listingId: listing?.id ?? '', targetLang },
+    { enabled: !!listing?.id && hasMissingTargetLocale },
+  );
+
+  const displayTitle =
+    localizedListingQuery.data?.title ||
+    listing?.title?.[language] ||
+    listing?.title?.az ||
+    listing?.title?.ru ||
+    listing?.title?.en ||
+    'Elan';
+  const displayDescription =
+    localizedListingQuery.data?.description ||
+    listing?.description?.[language] ||
+    listing?.description?.az ||
+    listing?.description?.ru ||
+    listing?.description?.en ||
+    '';
+  const displayLocation =
+    localizedListingQuery.data?.location ||
+    listing?.location?.[language] ||
+    listing?.location?.az ||
+    listing?.location?.ru ||
+    listing?.location?.en ||
+    '';
 
   // Get active discounts for this listing
   const activeDiscounts = listing?.storeId ? getActiveDiscounts(listing.storeId).filter(discount =>
@@ -326,10 +361,10 @@ export default function ListingDetailScreen() {
     const shareUrl = getShareUrl();
 
     // ✅ Safe title access with fallback
-    const title = listing.title[language] || listing.title.az || listing.title.ru || listing.title.en || 'Elan';
+    const title = displayTitle;
 
     // ✅ Safe location access with fallback
-    const location = listing.location[language] || listing.location.az || listing.location.ru || listing.location.en || '';
+    const location = displayLocation;
 
     // Use discounted price if available, otherwise use regular price
     const displayPrice = priceInfo && priceInfo.absoluteSavings >= 1
@@ -409,10 +444,10 @@ export default function ListingDetailScreen() {
           url = `https://twitter.com/intent/tweet?text=${encodedText}`;
           break;
         case 'vk':
-          url = `https://vk.com/share.php?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language] || listing.title.az)}&description=${encodeURIComponent(listing.description[language] || listing.description.az)}${imageUrl ? `&image=${encodedImage}` : ''}`;
+          url = `https://vk.com/share.php?url=${encodedUrl}&title=${encodeURIComponent(displayTitle)}&description=${encodeURIComponent(displayDescription || listing.description.az || '')}${imageUrl ? `&image=${encodedImage}` : ''}`;
           break;
         case 'ok':
-          url = `https://connect.ok.ru/offer?url=${encodedUrl}&title=${encodeURIComponent(listing.title[language] || listing.title.az)}&description=${encodeURIComponent(listing.description[language] || listing.description.az)}${imageUrl ? `&imageUrl=${encodedImage}` : ''}`;
+          url = `https://connect.ok.ru/offer?url=${encodedUrl}&title=${encodeURIComponent(displayTitle)}&description=${encodeURIComponent(displayDescription || listing.description.az || '')}${imageUrl ? `&imageUrl=${encodedImage}` : ''}`;
           break;
         case 'tiktok':
         // ✅ TikTok doesn't support direct URL sharing, copy to clipboard
@@ -441,7 +476,7 @@ export default function ListingDetailScreen() {
             const imageUrl = listing.images?.[0];
             await RNShare.share(
               {
-                title: listing.title[language] || listing.title.az,
+                title: displayTitle,
                 message: shareText,
                 ...(imageUrl ? { url: imageUrl } : {}),
               },
@@ -725,8 +760,8 @@ export default function ListingDetailScreen() {
               const phoneNumber = sellerDisplay.phone.replace(/[^0-9]/g, '');
               const message = encodeURIComponent(
                 language === 'az'
-                  ? `Salam! "${listing.title[language]}" elanınızla maraqlanıram.`
-                  : `Здравствуйте! Меня интересует ваше объявление "${listing.title[language]}".`,
+                  ? `Salam! "${displayTitle}" elanınızla maraqlanıram.`
+                  : `Здравствуйте! Меня интересует ваше объявление "${displayTitle}".`,
               );
               Linking.openURL(`whatsapp://send?phone=${phoneNumber}&text=${message}`);
             }
@@ -779,7 +814,7 @@ export default function ListingDetailScreen() {
 
     // Navigate to conversation with the seller
     logger.info('[ListingDetail] Navigating to conversation:', sellerDisplay.id);
-    router.push(`/conversation/${sellerDisplay.id}?listingId=${listing.id}&listingTitle=${encodeURIComponent(listing.title[language])}`);
+    router.push(`/conversation/${sellerDisplay.id}?listingId=${listing.id}&listingTitle=${encodeURIComponent(displayTitle)}`);
   };
 
   // Calculate days remaining until expiration
@@ -923,12 +958,12 @@ export default function ListingDetailScreen() {
           )}
         </View>
 
-        <Text style={styles.title}>{listing.title[language] || listing.title.az || listing.title.ru || listing.title.en}</Text>
+        <Text style={styles.title}>{displayTitle}</Text>
 
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
             <MapPin size={16} color={Colors.textSecondary} />
-            <Text style={styles.infoText}>{listing.location[language]}</Text>
+            <Text style={styles.infoText}>{displayLocation}</Text>
           </View>
 
           <View style={styles.infoItem}>
@@ -988,7 +1023,7 @@ export default function ListingDetailScreen() {
           <Text style={styles.sectionTitle}>
             {language === 'az' ? 'Təsvir' : 'Описание'}
           </Text>
-          <Text style={styles.description}>{listing.description[language] || listing.description.az || listing.description.ru || listing.description.en}</Text>
+          <Text style={styles.description}>{displayDescription}</Text>
         </View>
 
         {(listing.condition ||

@@ -2,6 +2,7 @@ import { queryClient } from '@/lib/queryClient';
 import { realtimeService } from '@/lib/realtime';
 import { useListingStore } from '@/store/listingStore';
 import { useModerationSettingsStore } from '@/store/moderationSettingsStore';
+import { useNotificationStore } from '@/store/notificationStore';
 import type { ModerationSettings } from '@/store/moderationSettingsStore';
 
 let registered = false;
@@ -66,5 +67,26 @@ export function registerGlobalRealtimeHandlers(): void {
   realtimeService.on('listing:invalidate', () => {
     void useListingStore.getState().fetchListings().catch(() => undefined);
     invalidateQueriesMatching('listing');
+  });
+
+  // Chat/support realtime invalidation across tabs/screens.
+  realtimeService.on('message:new', () => {
+    invalidateQueriesMatching('chat');
+    invalidateQueriesMatching('message');
+    useNotificationStore.getState().addNotification({
+      type: 'message',
+      title: 'New message',
+      message: 'You received a new message.',
+    });
+  });
+
+  realtimeService.on('support:new', () => {
+    invalidateQueriesMatching('support');
+    invalidateQueriesMatching('liveChat');
+  });
+
+  realtimeService.on('liveChat:message', () => {
+    invalidateQueriesMatching('support');
+    invalidateQueriesMatching('liveChat');
   });
 }

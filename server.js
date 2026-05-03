@@ -3,7 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
 
 const app = express();
-const PORT = 8081;
+const PORT = 8080;
 
 // Proxy to Metro bundler
 app.use(

@@ -20,6 +20,7 @@ import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
 import { Headphones, Clock, AlertCircle, CheckCircle, ChevronRight, ExternalLink, Send, StickyNote } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
+import { realtimeService } from '@/lib/realtime';
 import { logger } from '@/utils/logger';
 
 type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -111,6 +112,31 @@ export default function AdminTicketsScreen() {
     enabled: canAccess && canManageTickets,
     refetchInterval: 30000,
   });
+
+  useEffect(() => {
+    const refreshTickets = () => {
+      void ticketsQuery.refetch().catch(() => undefined);
+      void utils.support.getTickets.invalidate().catch(() => undefined);
+      void utils.moderation.getStats.invalidate().catch(() => undefined);
+    };
+
+    const onAdminInvalidate = (payload?: { tags?: string[] }) => {
+      const tags = payload?.tags ?? [];
+      if (tags.length === 0 || tags.includes('support') || tags.includes('moderation')) {
+        refreshTickets();
+      }
+    };
+
+    realtimeService.on('admin:invalidate', onAdminInvalidate);
+    realtimeService.on('support:new', refreshTickets);
+    realtimeService.on('liveChat:message', refreshTickets);
+
+    return () => {
+      realtimeService.off('admin:invalidate', onAdminInvalidate);
+      realtimeService.off('support:new', refreshTickets);
+      realtimeService.off('liveChat:message', refreshTickets);
+    };
+  }, [ticketsQuery, utils]);
 
   const ticketsData = ticketsQuery.data as unknown as TicketsQueryResult | undefined;
   const tickets: TicketItem[] = ticketsData?.tickets ?? [];

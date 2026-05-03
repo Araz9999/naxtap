@@ -6,7 +6,7 @@
   "packageManager": "npm@10.9.0",
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
-    "dev": "node backend/run-ts.cjs",
+    "dev": "cd ../naxtap-backend && npm run dev",
     "mobile:start": "cd mobile && npm start",
     "mobile:android": "cd mobile && npm run android",
     "mobile:ios": "cd mobile && npm run ios",

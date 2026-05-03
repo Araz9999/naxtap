@@ -9,7 +9,6 @@ import {
   Alert,
   Animated,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
@@ -19,7 +18,8 @@ import { useSupportStore } from '@/store/supportStore';
 import { getColors } from '@/constants/colors';
 import { prompt } from '@/utils/confirm';
 import { trpc } from '@/lib/trpc';
-import { getBaseUrl } from '@/lib/trpc';
+import { realtimeService } from '@/lib/realtime';
+import { uploadAttachments } from '@/lib/uploadAttachments';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   MessageSquare,
@@ -99,6 +99,31 @@ export default function SupportScreen() {
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
+
+  React.useEffect(() => {
+    const refreshSupportData = () => {
+      void myTicketsQuery.refetch().catch(() => undefined);
+      void presenceQuery.refetch().catch(() => undefined);
+      void utils.support.getMyTickets.invalidate().catch(() => undefined);
+    };
+
+    const onAdminInvalidate = (payload?: { tags?: string[] }) => {
+      const tags = payload?.tags ?? [];
+      if (tags.length === 0 || tags.includes('support')) {
+        refreshSupportData();
+      }
+    };
+
+    realtimeService.on('admin:invalidate', onAdminInvalidate);
+    realtimeService.on('support:new', refreshSupportData);
+    realtimeService.on('liveChat:message', refreshSupportData);
+
+    return () => {
+      realtimeService.off('admin:invalidate', onAdminInvalidate);
+      realtimeService.off('support:new', refreshSupportData);
+      realtimeService.off('liveChat:message', refreshSupportData);
+    };
+  }, [myTicketsQuery, presenceQuery, utils.support.getMyTickets]);
 
   const userTickets = React.useMemo(() => {
     const raw = (myTicketsQuery.data as any[]) || [];
@@ -217,39 +242,7 @@ export default function SupportScreen() {
         const storedTokens = await AsyncStorage.getItem('auth_tokens');
         const parsedTokens = storedTokens ? JSON.parse(storedTokens) : null;
         const accessToken = parsedTokens?.accessToken as string | undefined;
-        const formData = new FormData();
-
-        if (Platform.OS === 'web') {
-          for (const att of attachments) {
-            const response = await fetch(att.uri);
-            const blob = await response.blob();
-            formData.append('files', blob, att.name);
-          }
-        } else {
-          attachments.forEach((att) => {
-            // @ts-ignore react-native form data file type
-            formData.append('files', {
-              uri: att.uri,
-              name: att.name,
-              type: att.mimeType || 'application/octet-stream',
-            });
-          });
-        }
-
-        const uploadResponse = await fetch(`${getBaseUrl()}/api/upload`, {
-          method: 'POST',
-          body: formData,
-          headers: {
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error(`Attachment upload failed: ${uploadResponse.status}`);
-        }
-
-        const uploaded = await uploadResponse.json();
-        attachmentUris = Array.isArray(uploaded?.urls) ? uploaded.urls : [];
+        attachmentUris = await uploadAttachments(attachments, accessToken, 120_000);
       }
 
       await createTicketMutation.mutateAsync({

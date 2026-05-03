@@ -27,9 +27,10 @@ import {
 } from 'lucide-react-native';
 import FileAttachmentPicker, { FileAttachment } from '@/components/FileAttachmentPicker';
 import WebTextInput, { WebTextInputRef } from '@/components/WebTextInput';
-import { trpc, getBaseUrl } from '@/lib/trpc';
+import { trpc } from '@/lib/trpc';
 import { realtimeService } from '@/lib/realtime';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { uploadAttachments } from '@/lib/uploadAttachments';
 
 const { width } = Dimensions.get('window');
 
@@ -183,51 +184,7 @@ export default function LiveChatScreen() {
         const storedTokens = await AsyncStorage.getItem('auth_tokens');
         const parsedTokens = storedTokens ? JSON.parse(storedTokens) : null;
         const accessToken = parsedTokens?.accessToken as string | undefined;
-        const formData = new FormData();
-        
-        if (Platform.OS === 'web') {
-          for (const att of attachments) {
-            const response = await fetch(att.uri);
-            const blob = await response.blob();
-            formData.append('files', blob, att.name);
-          }
-        } else {
-          attachments.forEach((att) => {
-            // @ts-ignore
-            formData.append('files', {
-              uri: att.uri,
-              name: att.name,
-              type: att.mimeType || 'application/octet-stream',
-            });
-          });
-        }
-
-        const baseUrl = getBaseUrl();
-        const uploadAbort = new AbortController();
-        const uploadDeadline = setTimeout(() => uploadAbort.abort(), 120_000);
-        let uploadRes: Response;
-        try {
-          uploadRes = await fetch(`${baseUrl}/api/upload`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'omit',
-            signal: uploadAbort.signal,
-            headers: {
-              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-            },
-          });
-        } finally {
-          clearTimeout(uploadDeadline);
-        }
-
-        if (!uploadRes.ok) {
-          throw new Error(`Upload failed: ${uploadRes.status}`);
-        }
-
-        const data = await uploadRes.json();
-        if (data.urls) {
-          attachmentUrls = data.urls;
-        }
+        attachmentUrls = await uploadAttachments(attachments, accessToken, 120_000);
       } catch (uploadError) {
         Alert.alert(
           language === 'az' ? 'Xəta' : 'Ошибка',

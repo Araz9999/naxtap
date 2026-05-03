@@ -209,7 +209,12 @@ Dövr: ${timeRanges.find(r => r.id === selectedTimeRange)?.label || selectedTime
       if (isAvailable) {
         // Save to temp file
         const fileName = `analytics_${Date.now()}.txt`;
-        const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+        const cacheDir = (FileSystem as any).cacheDirectory as string | undefined;
+        if (!cacheDir) {
+          Alert.alert('Məlumat', 'Bu platformada cache qovluğu əlçatan deyil');
+          return;
+        }
+        const fileUri = `${cacheDir}${fileName}`;
         await FileSystem.writeAsStringAsync(fileUri, summary);
 
         await Sharing.shareAsync(fileUri, {

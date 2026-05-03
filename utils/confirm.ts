@@ -47,7 +47,7 @@ export async function prompt(message: string, title?: string, defaultValue?: str
         message,
         [
           { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
-          { text: 'OK', onPress: (text) => resolve(text || null) },
+          { text: 'OK', onPress: (text?: string) => resolve(text || null) },
         ],
         'plain-text',
         defaultValue,

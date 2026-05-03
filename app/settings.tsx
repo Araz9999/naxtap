@@ -274,9 +274,9 @@ export default function SettingsScreen() {
               }
 
               // Clear file system cache if available
-              if (Platform.OS !== 'web' && FileSystem.cacheDirectory) {
+              const cacheDir = (FileSystem as any).cacheDirectory as string | undefined;
+              if (Platform.OS !== 'web' && cacheDir) {
                 try {
-                  const cacheDir = FileSystem.cacheDirectory;
                   const files = await FileSystem.readDirectoryAsync(cacheDir);
 
                   // Delete cache files

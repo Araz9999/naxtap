@@ -260,7 +260,7 @@ export default function StoreThemeScreen() {
               'Bu rəng mövzusu premium istifadəçilər üçündür. Premium plan almaq istəyirsinizmi?',
               [
                 { text: 'Xeyr', style: 'cancel' },
-                { text: 'Bəli', onPress: () => router.push('/pricing') },
+                { text: 'Bəli', onPress: () => router.push('/store-promotion') },
               ],
             );
             return;
@@ -304,7 +304,7 @@ export default function StoreThemeScreen() {
               'Bu dizayn layoutu premium istifadəçilər üçündür. Premium plan almaq istəyirsinizmi?',
               [
                 { text: 'Xeyr', style: 'cancel' },
-                { text: 'Bəli', onPress: () => router.push('/pricing') },
+                { text: 'Bəli', onPress: () => router.push('/store-promotion') },
               ],
             );
             return;

@@ -35,6 +35,7 @@ interface RealtimeEvents {
   'call:ended': (data: { callId: string }) => void;
 
   // Canlı Dəstək
+  'support:new': (data: { conversationId: string; message: any }) => void;
   'liveChat:message': (data: { conversationId: string; message: any }) => void;
   'liveChat:assigned': (data: { conversationId: string; agentId: string; agentName: string }) => void;
   'liveChat:closed': (data: { conversationId: string }) => void;
