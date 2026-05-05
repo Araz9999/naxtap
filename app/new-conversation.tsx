@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,46 +8,53 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Search } from 'lucide-react-native';
 import { useUserStore } from '@/store/userStore';
 import { useLanguageStore } from '@/store/languageStore';
 import Colors from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
-import { listings } from '@/mocks/listings';
 
 export default function NewConversationScreen() {
   const { language } = useLanguageStore();
   const { currentUser, isUserBlocked } = useUserStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const allUsersQuery = trpc.user.getAllUsers.useQuery(undefined, {
-    enabled: !!currentUser?.id,
-  });
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
-  const users = React.useMemo(() => {
+  const searchOk = debouncedSearch.length >= 2;
+
+  const allUsersQuery = trpc.user.getAllUsers.useQuery(
+    { search: debouncedSearch, limit: 30 },
+    {
+      enabled: !!currentUser?.id && searchOk,
+    },
+  );
+
+  const users = useMemo(() => {
     const data = allUsersQuery.data ?? [];
     return data.filter((u) => {
       if (u.id === currentUser?.id) return false;
       if (isUserBlocked(u.id)) return false;
       const normalizedName = (u.name || '').toLowerCase();
-      const normalizedEmail = (u.email || '').toLowerCase();
       const isLikelyTestAccount =
         normalizedName.includes('test') ||
         normalizedName.includes('admin') ||
-        normalizedName.includes('moderator') ||
-        normalizedEmail.includes('test') ||
-        normalizedEmail.includes('admin') ||
-        normalizedEmail.includes('moderator');
+        normalizedName.includes('moderator');
       if (isLikelyTestAccount) return false;
       return true;
     });
   }, [allUsersQuery.data, currentUser?.id, isUserBlocked]);
 
   const handleSelectUser = (user: { id: string; name: string }) => {
-    const listingId = listings?.[0]?.id ?? 'listing1';
-    logger.info('[NewConversation] Opening conversation with:', { userId: user.id, listingId });
+    logger.info('[NewConversation] Opening conversation with:', { userId: user.id });
     try {
       router.push(`/conversation/${user.id}`);
     } catch (error) {
@@ -80,6 +87,8 @@ export default function NewConversationScreen() {
     );
   };
 
+  const showLoading = searchOk && allUsersQuery.isFetching;
+
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -95,11 +104,32 @@ export default function NewConversationScreen() {
         }}
       />
 
-      {allUsersQuery.isLoading ? (
+      <View style={styles.searchRow}>
+        <Search size={20} color={Colors.textSecondary} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder={language === 'az' ? 'İstifadəçi adı (min. 2 simvol)' : 'Имя пользователя (мин. 2 симв.)'}
+          placeholderTextColor={Colors.textSecondary}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </View>
+
+      {!searchOk ? (
+        <View style={styles.hintContainer}>
+          <Text style={styles.hintText}>
+            {language === 'az'
+              ? 'Yeni söhbət üçün istifadəçi adının ən azı 2 hərflə axtarın.'
+              : 'Введите минимум 2 буквы имени, чтобы найти пользователя.'}
+          </Text>
+        </View>
+      ) : showLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={styles.loadingText}>
-            {language === 'az' ? 'İstifadəçilər yüklənir...' : 'Загрузка пользователей...'}
+            {language === 'az' ? 'Axtarılır...' : 'Поиск...'}
           </Text>
         </View>
       ) : (
@@ -112,8 +142,8 @@ export default function NewConversationScreen() {
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
                 {language === 'az'
-                  ? 'Mesaj göndərmək üçün başqa istifadəçi tapılmadı'
-                  : 'Другие пользователи для сообщений не найдены'}
+                  ? 'Heç bir istifadəçi tapılmadı'
+                  : 'Пользователи не найдены'}
               </Text>
             </View>
           }
@@ -131,6 +161,37 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
     marginLeft: 4,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.text,
+  },
+  hintContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+  },
+  hintText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   list: {
     padding: 16,

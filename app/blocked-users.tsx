@@ -117,13 +117,25 @@ export default function BlockedUsersScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load all users dynamically
+  // Resolve blocked user profiles by id (getAllUsers requires search; blocked list is small)
   useEffect(() => {
     const loadUsers = async () => {
       try {
         setLoading(true);
-        const allUsers = await trpcClient.user.getAllUsers.query();
-        setUsers(allUsers);
+        if (!Array.isArray(blockedUsers) || blockedUsers.length === 0) {
+          setUsers([]);
+          return;
+        }
+        const rows = await Promise.all(
+          blockedUsers.map(async (id) => {
+            try {
+              return await trpcClient.user.getUser.query({ id });
+            } catch {
+              return null;
+            }
+          }),
+        );
+        setUsers(rows.filter(Boolean) as any[]);
       } catch (error) {
         logger.error('[BlockedUsersScreen] Failed to load users:', error);
       } finally {
@@ -132,7 +144,7 @@ export default function BlockedUsersScreen() {
     };
 
     loadUsers();
-  }, []);
+  }, [blockedUsers.join(',')]);
 
   React.useEffect(() => {
     if (!isAuthenticated || !currentUser) {

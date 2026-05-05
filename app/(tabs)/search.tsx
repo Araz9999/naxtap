@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, TextInput, Platform, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity, TextInput, Platform, Alert, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useListingStore } from '@/store/listingStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { categories } from '@/constants/categories';
@@ -11,6 +12,10 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { logger } from '@/utils/logger';
 import { sanitizeNumericInput } from '@/utils/inputValidation';
+import { uploadAttachments } from '@/lib/uploadAttachments';
+import { trpcClient } from '@/lib/trpc';
+import type { Listing } from '@/types/listing';
+
 export default function SearchScreen() {
   const { language } = useLanguageStore();
   const {
@@ -23,6 +28,7 @@ export default function SearchScreen() {
     setPriceRange,
     setSortBy,
     resetFilters,
+    setImageSearchOverride,
   } = useListingStore();
 
   const [showFilters, setShowFilters] = useState(false);
@@ -30,6 +36,7 @@ export default function SearchScreen() {
   const [minPrice, setMinPrice] = useState(priceRange.min?.toString() || '');
   const [maxPrice, setMaxPrice] = useState(priceRange.max?.toString() || '');
   const [searchImage, setSearchImage] = useState<string | null>(null);
+  const [imageSearchBusy, setImageSearchBusy] = useState(false);
 
   const selectedCategoryData = categories.find(c => c.id === selectedCategory);
 
@@ -148,6 +155,68 @@ export default function SearchScreen() {
     setMinPrice('');
     setMaxPrice('');
     setSearchImage(null);
+    setImageSearchOverride(null);
+  };
+
+  const runImageSearch = async (
+    localUri: string,
+    opts?: { mimeType?: string | null; fileName?: string | null },
+  ) => {
+    setImageSearchBusy(true);
+    try {
+      let accessToken: string | undefined;
+      try {
+        const raw = await AsyncStorage.getItem('auth_tokens');
+        if (raw) {
+          const parsed = JSON.parse(raw) as { accessToken?: string };
+          accessToken = parsed.accessToken;
+        }
+      } catch {
+        // optional auth
+      }
+
+      const mime = opts?.mimeType || 'image/jpeg';
+      const extFromMime = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
+      const name =
+        opts?.fileName ||
+        (localUri.split('/').pop()?.split('?')[0] || `search.${extFromMime}`).replace(/[^a-zA-Z0-9._-]/g, '') ||
+        `search.${extFromMime}`;
+
+      const urls = await uploadAttachments(
+        [{ uri: localUri, name, mimeType: mime }],
+        accessToken,
+        120_000,
+      );
+      if (!urls?.[0]) {
+        throw new Error('upload_failed');
+      }
+
+      const data = await trpcClient.listing.searchByImage.query({ imageUrl: urls[0], limit: 40 });
+      const rows = (data.listings || []) as Listing[];
+      setImageSearchOverride(rows.length ? rows : null);
+
+      Alert.alert(
+        language === 'az' ? 'Şəkillə axtarış' : 'Поиск по фото',
+        language === 'az'
+          ? rows.length
+            ? `${rows.length} elan tapıldı`
+            : 'Uyğun elan tapılmadı'
+          : rows.length
+            ? `Найдено объявлений: ${rows.length}`
+            : 'Подходящих объявлений не найдено',
+      );
+    } catch (e) {
+      logger.error('[SearchScreen] Image search failed:', e);
+      setImageSearchOverride(null);
+      Alert.alert(
+        language === 'az' ? 'Xəta' : 'Ошибка',
+        language === 'az'
+          ? 'Şəkil yüklənə və ya axtarıla bilmədi'
+          : 'Не удалось загрузить изображение или выполнить поиск',
+      );
+    } finally {
+      setImageSearchBusy(false);
+    }
   };
 
   const getSortLabel = () => {
@@ -187,15 +256,9 @@ export default function SearchScreen() {
 
       // BUG FIX: Validate assets array exists and has items
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
-        setSearchImage(result.assets[0].uri);
-        // In a real app, we would send this image to a backend for processing
-        // Since we don't have a backend, we'll just show an alert
-        Alert.alert(
-          language === 'az' ? 'Şəkillə axtarış' : 'Поиск по изображению',
-          language === 'az'
-            ? 'Şəkillə axtarış funksiyası tezliklə aktiv olacaq'
-            : 'Функция поиска по изображению скоро будет доступна',
-        );
+        const asset = result.assets[0];
+        setSearchImage(asset.uri);
+        await runImageSearch(asset.uri, { mimeType: asset.mimeType, fileName: asset.fileName });
       }
     } catch (error) {
       logger.error('Error picking image:', error);
@@ -237,14 +300,9 @@ export default function SearchScreen() {
 
       // ✅ Validate assets array exists and has elements
       if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]) {
-        setSearchImage(result.assets[0].uri);
-        // In a real app, we would send this image to a backend for processing
-        Alert.alert(
-          language === 'az' ? 'Şəkillə axtarış' : 'Поиск по изображению',
-          language === 'az'
-            ? 'Şəkillə axtarış funksiyası tezliklə aktiv olacaq'
-            : 'Функция поиска по изображению скоро будет доступна',
-        );
+        const asset = result.assets[0];
+        setSearchImage(asset.uri);
+        await runImageSearch(asset.uri, { mimeType: asset.mimeType, fileName: asset.fileName });
       }
     } catch (error) {
       logger.error('Error using camera:', error);
@@ -261,7 +319,7 @@ export default function SearchScreen() {
         <SearchBar />
 
         <View style={styles.imageSearchContainer}>
-          <TouchableOpacity style={styles.imageSearchButton} onPress={pickImage}>
+          <TouchableOpacity style={styles.imageSearchButton} onPress={pickImage} disabled={imageSearchBusy}>
             <ImageIcon size={20} color={Colors.primary} />
             <Text style={styles.imageSearchText}>
               {language === 'az' ? 'Şəkillə axtar' : 'Поиск по фото'}
@@ -269,13 +327,16 @@ export default function SearchScreen() {
           </TouchableOpacity>
 
           {Platform.OS !== 'web' && (
-            <TouchableOpacity style={styles.imageSearchButton} onPress={handleCameraSearch}>
+            <TouchableOpacity style={styles.imageSearchButton} onPress={handleCameraSearch} disabled={imageSearchBusy}>
               <Camera size={20} color={Colors.primary} />
               <Text style={styles.imageSearchText}>
                 {language === 'az' ? 'Kamera ilə axtar' : 'Поиск камерой'}
               </Text>
             </TouchableOpacity>
           )}
+          {imageSearchBusy ? (
+            <ActivityIndicator size="small" color={Colors.primary} style={{ marginLeft: 8 }} />
+          ) : null}
         </View>
 
         <View style={styles.filterBar}>

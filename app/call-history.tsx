@@ -40,16 +40,27 @@ export default function CallHistoryScreen() {
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
   const [users, setUsers] = useState<Map<string, any>>(new Map());
 
-  // Load users dynamically
+  // Load participant profiles by id (avoid empty getAllUsers without search)
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const allUsers = await trpcClient.user.getAllUsers.query();
-        const userMap = new Map();
-        allUsers.forEach((user: any) => {
-          userMap.set(user.id, user);
-          userCache.set(user.id, user);
+        const ids = new Set<string>();
+        calls.forEach((c) => {
+          if (c.callerId) ids.add(c.callerId);
+          if (c.receiverId) ids.add(c.receiverId);
         });
+        const userMap = new Map<string, any>();
+        await Promise.all(
+          [...ids].map(async (id) => {
+            try {
+              const u = await trpcClient.user.getUser.query({ id });
+              userMap.set(id, u);
+              userCache.set(id, u);
+            } catch {
+              // ignore missing users
+            }
+          }),
+        );
         setUsers(userMap);
       } catch (error) {
         logger.error('[CallHistory] Failed to load users:', error);
@@ -57,7 +68,7 @@ export default function CallHistoryScreen() {
     };
 
     loadUsers();
-  }, []);
+  }, [calls]);
 
   logger.info('[CallHistory] Screen opened:', {
     userId: currentUser?.id,

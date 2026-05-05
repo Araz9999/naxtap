@@ -305,8 +305,17 @@ const ListingCard = React.memo(function ListingCard({
     }
     // Listing-level discount handling
     else if (listing.hasDiscount) {
-      // Check if we have a stored discount percentage that's reasonable (not a tiny decimal)
-      if (typeof listing.discountPercentage === 'number' && listing.discountPercentage >= 1) {
+      if (typeof listing.discountFixedAmount === 'number' && listing.discountFixedAmount > 0) {
+        discountType = 'fixed_amount';
+        discountValue = listing.discountFixedAmount;
+        discountedPrice = listing.price;
+        originalPrice =
+          typeof listing.originalPrice === 'number' && listing.originalPrice > listing.price
+            ? listing.originalPrice
+            : listing.price + listing.discountFixedAmount;
+        discountPercentage =
+          originalPrice > 0 ? ((originalPrice - discountedPrice) / originalPrice) * 100 : 0;
+      } else if (typeof listing.discountPercentage === 'number' && listing.discountPercentage >= 1) {
         // This is a percentage discount
         discountPercentage = listing.discountPercentage;
         discountType = 'percentage';
@@ -355,7 +364,15 @@ const ListingCard = React.memo(function ListingCard({
     } as const;
 
     return result;
-  }, [activeDiscounts, listing.hasDiscount, listing.price, listing.originalPrice, listing.discountPercentage, listing.id]);
+  }, [
+    activeDiscounts,
+    listing.hasDiscount,
+    listing.price,
+    listing.originalPrice,
+    listing.discountPercentage,
+    listing.discountFixedAmount,
+    listing.id,
+  ]);
 
   // Start animations for promotions and creative effects
   useEffect(() => {

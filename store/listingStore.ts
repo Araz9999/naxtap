@@ -20,6 +20,9 @@ interface ListingState {
   userUnusedViews: { [userId: string]: number };
   isLoading: boolean;
   error: string | null;
+  /** When set, search UI filters from this subset (e.g. image search results). */
+  imageSearchOverride: Listing[] | null;
+  setImageSearchOverride: (rows: Listing[] | null) => void;
 
   // ✅ Timeout tracking for cleanup
   notificationTimeouts: Map<string, ReturnType<typeof setTimeout>>;
@@ -39,6 +42,8 @@ interface ListingState {
   getArchivedListings: (userId: string) => Listing[];
   getExpiringListings: (userId: string, days: number) => Listing[];
   deleteListing: (id: string) => void;
+  /** Remove listing from local state after server-side permanent delete. */
+  removeListingById: (id: string) => void;
   deleteListingEarly: (storeId: string, id: string) => Promise<void>;
   addListingToStore: (listing: Listing, storeId?: string) => Promise<void>;
   promoteListing: (id: string, type: 'premium' | 'vip' | 'featured', duration: number) => Promise<void>;
@@ -91,6 +96,12 @@ export const useListingStore = create<ListingState>((set, get) =>
     userUnusedViews: {},
     isLoading: false,
     error: null,
+    imageSearchOverride: null,
+
+    setImageSearchOverride: (rows) => {
+      set({ imageSearchOverride: rows });
+      get().applyFilters();
+    },
 
     // ✅ Initialize timeout map
     notificationTimeouts: new Map(),
@@ -101,10 +112,23 @@ export const useListingStore = create<ListingState>((set, get) =>
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           set({ isLoading: true, error: null });
-          const listings = await trpcClient.listing.getAll.query();
+          const publicList = (await trpcClient.listing.getAll.query()) as Listing[];
+          const uid = useUserStore.getState().currentUser?.id;
+          let merged: Listing[] = [...publicList];
+          if (uid) {
+            try {
+              const mine = (await trpcClient.listing.getMine.query()) as Listing[];
+              const byId = new Map<string, Listing>();
+              publicList.forEach((l) => byId.set(l.id, l));
+              mine.forEach((l) => byId.set(l.id, l));
+              merged = Array.from(byId.values());
+            } catch (e) {
+              logger.warn('[ListingStore] getMine merge skipped:', e);
+            }
+          }
           set({
-            listings: listings as Listing[],
-            filteredListings: listings as Listing[],
+            listings: merged,
+            filteredListings: merged,
             isLoading: false,
           });
           get().applyFilters();
@@ -159,6 +183,7 @@ export const useListingStore = create<ListingState>((set, get) =>
     applyFilters: () => {
       const {
         listings,
+        imageSearchOverride,
         searchQuery,
         selectedCategory,
         selectedSubcategory,
@@ -172,7 +197,9 @@ export const useListingStore = create<ListingState>((set, get) =>
         return;
       }
 
-      let filtered = listings.filter(listing => !listing.deletedAt);
+      const base =
+        imageSearchOverride && imageSearchOverride.length > 0 ? imageSearchOverride : listings;
+      let filtered = base.filter(listing => !listing.deletedAt);
 
       const hasFilters =
         (searchQuery && searchQuery.trim()) ||
@@ -299,6 +326,7 @@ export const useListingStore = create<ListingState>((set, get) =>
         selectedSubcategory: null,
         priceRange: { min: null, max: null },
         sortBy: null,
+        imageSearchOverride: null,
         filteredListings: get().listings,
       });
     },
@@ -415,6 +443,14 @@ export const useListingStore = create<ListingState>((set, get) =>
       }));
 
       logger.info('[ListingStore] Listing soft deleted:', id);
+      get().applyFilters();
+    },
+
+    removeListingById: (id: string) => {
+      set((state) => ({
+        listings: state.listings.filter((l) => l.id !== id),
+        imageSearchOverride: state.imageSearchOverride?.filter((l) => l.id !== id) ?? null,
+      }));
       get().applyFilters();
     },
 

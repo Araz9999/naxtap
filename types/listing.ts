@@ -18,6 +18,8 @@ export interface Listing {
   deletedAt?: string; // Added early deletion date
   archivedAt?: string; // When listing was auto-archived
   isArchived?: boolean; // Whether listing is archived
+  /** False when expired / deactivated from public catalog */
+  isActive?: boolean;
   storeId?: string; // Added store association
   storeAddress?: string; // Store address for store listings
   storeContact?: {
@@ -39,6 +41,8 @@ export interface Listing {
   // Discount fields
   originalPrice?: number; // Original price before discount
   discountPercentage?: number; // Discount percentage applied
+  /** Fixed discount in listing currency when not using percentage */
+  discountFixedAmount?: number;
   hasDiscount?: boolean; // Whether the listing has a discount
   discountEndDate?: string; // When the discount expires
   // Timer bar fields for discounts

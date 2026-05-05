@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Clipboard from 'expo-clipboard';
 import UserActionModal from '@/components/UserActionModal';
 import UserAnalytics from '@/components/UserAnalytics';
@@ -474,16 +475,36 @@ export default function ListingDetailScreen() {
         case 'native':
           try {
             const imageUrl = listing.images?.[0];
-            await RNShare.share(
-              {
-                title: displayTitle,
-                message: shareText,
-                ...(imageUrl ? { url: imageUrl } : {}),
-              },
-              {
-                dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением',
-              },
-            );
+            if (imageUrl && /^https?:\/\//i.test(imageUrl)) {
+              try {
+                const ext = (imageUrl.split('.').pop() || 'jpg').split('?')[0] || 'jpg';
+                const dest = `${FileSystem.cacheDirectory}naxtap-share-${listing.id}.${ext}`;
+                const dl = await FileSystem.downloadAsync(imageUrl, dest);
+                if (await Sharing.isAvailableAsync()) {
+                  await Sharing.shareAsync(dl.uri, {
+                    dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением',
+                    mimeType: 'image/jpeg',
+                    UTI: 'public.jpeg',
+                  });
+                } else {
+                  await RNShare.share(
+                    { title: displayTitle, message: shareText, url: dl.uri },
+                    { dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением' },
+                  );
+                }
+              } catch (imgErr) {
+                logger.warn('[shareToSocialMedia] Image share fallback to link:', imgErr);
+                await RNShare.share(
+                  { title: displayTitle, message: shareText, url: imageUrl },
+                  { dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением' },
+                );
+              }
+            } else {
+              await RNShare.share(
+                { title: displayTitle, message: shareText },
+                { dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением' },
+              );
+            }
             logger.debug('[shareToSocialMedia] Native Share.share completed');
           } catch (nativeShareError) {
             logger.error('[shareToSocialMedia] Native share error:', nativeShareError);

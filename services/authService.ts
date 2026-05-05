@@ -211,6 +211,15 @@ class AuthService {
 
     let deletedSuccessfully = false;
     try {
+      // Refresh access token first — access JWT is short-lived; delete must not fail with "session expired"
+      if (this.tokens?.refreshToken) {
+        try {
+          await this.refreshAccessToken();
+        } catch (refreshErr) {
+          logger.warn('[deleteAccount] Token refresh failed before delete:', refreshErr);
+        }
+      }
+
       // ✅ Add timeout to prevent hanging requests
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout

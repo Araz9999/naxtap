@@ -37,10 +37,12 @@ import {
   ChevronDown,
   X,
   RefreshCw,
+  Trash2,
 } from 'lucide-react-native';
 import AutoRenewalManager from '@/components/AutoRenewalManager';
 
 import { logger } from '@/utils/logger';
+import { trpcClient } from '@/lib/trpc';
 type FormData = {
   title: LocalizedText;
   description: LocalizedText;
@@ -60,7 +62,7 @@ export default function EditListingScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { language } = useLanguageStore();
-  const { listings, updateListing } = useListingStore();
+  const { listings, updateListing, removeListingById } = useListingStore();
   const { currentUser, isAuthenticated } = useUserStore();
 
   const listing = listings.find(l => l.id === id);
@@ -81,6 +83,7 @@ export default function EditListingScreen() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
@@ -541,6 +544,49 @@ export default function EditListingScreen() {
     }
   };
 
+  const handleDeleteListing = () => {
+    if (!listing?.id || listing.userId !== currentUser?.id) {
+      return;
+    }
+    if (isLoading || isDeleting) {
+      return;
+    }
+
+    Alert.alert(
+      language === 'az' ? 'Elanı sil' : 'Удалить объявление',
+      language === 'az'
+        ? 'Bu elanı birdəfəlik silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.'
+        : 'Удалить это объявление навсегда? Это действие нельзя отменить.',
+      [
+        { text: language === 'az' ? 'Ləğv et' : 'Отмена', style: 'cancel' },
+        {
+          text: language === 'az' ? 'Sil' : 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              await trpcClient.listing.delete.mutate({ id: listing.id });
+              removeListingById(listing.id);
+              Alert.alert(
+                language === 'az' ? 'Silindi' : 'Удалено',
+                language === 'az' ? 'Elan silindi' : 'Объявление удалено',
+                [{ text: 'OK', onPress: () => router.replace('/(tabs)') }],
+              );
+            } catch (error) {
+              logger.error('[EditListingScreen] Delete failed:', error);
+              Alert.alert(
+                language === 'az' ? 'Xəta' : 'Ошибка',
+                language === 'az' ? 'Elan silinə bilmədi' : 'Не удалось удалить объявление',
+              );
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -805,9 +851,9 @@ export default function EditListingScreen() {
           {/* Save Button */}
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.saveButtonLarge, isLoading && styles.disabledButton]}
+              style={[styles.saveButtonLarge, (isLoading || isDeleting) && styles.disabledButton]}
               onPress={handleSave}
-              disabled={isLoading}
+              disabled={isLoading || isDeleting}
             >
               {isLoading && <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }} />}
               <Text style={styles.saveButtonText}>
@@ -815,6 +861,23 @@ export default function EditListingScreen() {
                   ? (language === 'az' ? 'Yadda saxlanılır...' : 'Сохранение...')
                   : (language === 'az' ? 'Dəyişiklikləri Yadda Saxla' : 'Сохранить изменения')
                 }
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.deleteButtonLarge, (isLoading || isDeleting) && styles.disabledButton]}
+              onPress={handleDeleteListing}
+              disabled={isLoading || isDeleting}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+              ) : (
+                <Trash2 size={18} color="#fff" style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.deleteButtonText}>
+                {isDeleting
+                  ? (language === 'az' ? 'Silinir...' : 'Удаление...')
+                  : (language === 'az' ? 'Elanı birdəfəlik sil' : 'Удалить объявление навсегда')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1206,6 +1269,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  deleteButtonLarge: {
+    marginTop: 12,
+    backgroundColor: '#DC2626',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
   disabledButton: {
     backgroundColor: Colors.textSecondary,
