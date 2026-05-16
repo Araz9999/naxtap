@@ -21,7 +21,7 @@ export default function MyListingsScreen() {
   const router = useRouter();
   const { language } = useLanguageStore();
   const { currentUser, isAuthenticated, canAfford, spendFromBalance, getTotalBalance } = useUserStore();
-  const { listings, deleteListing, updateListing, getExpiringListings, getArchivedListings } = useListingStore();
+  const { listings, deleteListing, updateListing, getExpiringListings, getArchivedListings, removeListingById } = useListingStore();
   const [refreshing, setRefreshing] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
   const [autoRenewalSettings, setAutoRenewalSettings] = useState<{[key: string]: boolean}>({});
@@ -500,6 +500,70 @@ export default function MyListingsScreen() {
     );
   };
 
+  const handleDeleteListingPermanent = (listingId: string) => {
+    if (!listingId || typeof listingId !== 'string') {
+      logger.error('[MyListings] Invalid listingId for deletion');
+      return;
+    }
+
+    const listing = userListings.find(l => l.id === listingId);
+    if (!listing) {
+      logger.error('[MyListings] Listing not found for deletion:', listingId);
+      return;
+    }
+
+    logger.info('[MyListings] Deleting listing permanently:', listingId);
+
+    Alert.alert(
+      language === 'az' ? 'Elanı sil' : 'Удалить объявление',
+      language === 'az'
+        ? 'Bu elanı həmişəlik silmək istəyirsiniz? Bu əməliyyat geri qaytarıla bilməz.'
+        : 'Вы хотите удалить это объявление навсегда? Это действие нельзя отменить.',
+      [
+        {
+          text: language === 'az' ? 'Ləğv et' : 'Отмена',
+          style: 'cancel',
+        },
+        {
+          text: language === 'az' ? 'Sil' : 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Remove from local store
+              removeListingById(listingId);
+
+              // Remove from archived if present
+              setArchivedListings(prev => prev.filter(l => l.id !== listingId));
+
+              // Remove auto-renewal setting if exists
+              if (autoRenewalSettings[listingId]) {
+                const newSettings = { ...autoRenewalSettings };
+                delete newSettings[listingId];
+                setAutoRenewalSettings(newSettings);
+                await AsyncStorage.setItem('autoRenewalSettings', JSON.stringify(newSettings));
+              }
+
+              logger.info('[MyListings] Listing deleted permanently:', listingId);
+
+              Alert.alert(
+                language === 'az' ? 'Uğurlu!' : 'Успешно!',
+                language === 'az'
+                  ? 'Elan həmişəlik silindi'
+                  : 'Объявление удалено навсегда',
+              );
+            } catch (error) {
+              logger.error('[MyListings] Error deleting listing:', error);
+              Alert.alert(
+                language === 'az' ? 'Xəta!' : 'Ошибка!',
+                language === 'az' ? 'Silmə zamanı xəta baş verdi' : 'Произошла ошибка при удалении',
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const getDaysLeft = (expiresAt: string) => {
     const now = new Date();
     const expirationDate = new Date(expiresAt);
@@ -867,6 +931,16 @@ export default function MyListingsScreen() {
                     {language === 'az' ? 'Arxiv' : 'Архив'}
                   </Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.actionDeleteButton]}
+                  onPress={() => handleDeleteListingPermanent(listing.id)}
+                >
+                  <Trash2 size={14} color={Colors.error} />
+                  <Text style={styles.actionDeleteButtonText}>
+                    {language === 'az' ? 'Sil' : 'Удалить'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           ))}
@@ -1193,6 +1267,15 @@ const styles = StyleSheet.create({
   },
   archiveButtonText: {
     color: Colors.textSecondary,
+    fontSize: 10,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  actionDeleteButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  actionDeleteButtonText: {
+    color: Colors.error,
     fontSize: 10,
     fontWeight: '500',
     marginLeft: 4,
