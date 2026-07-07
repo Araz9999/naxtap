@@ -411,7 +411,28 @@ export default function ListingDetailScreen() {
 
       switch (platform) {
         case 'whatsapp':
-          url = `whatsapp://send?text=${encodedText}`;
+          // WhatsApp: try to download and share image file for richer sharing
+          try {
+            const whatsappImageUrl = listing.images?.[0];
+            if (whatsappImageUrl && /^https?:\/\//i.test(whatsappImageUrl)) {
+              const ext = (whatsappImageUrl.split('.').pop() || 'jpg').split('?')[0] || 'jpg';
+              const dest = `${FileSystem.cacheDirectory}naxtap-wa-${listing.id}.${ext}`;
+              const dl = await FileSystem.downloadAsync(whatsappImageUrl, dest);
+              if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(dl.uri, {
+                  dialogTitle: language === 'az' ? 'Elanı paylaş' : 'Поделиться объявлением',
+                  mimeType: 'image/jpeg',
+                  UTI: 'public.jpeg',
+                });
+              } else {
+                url = `whatsapp://send?text=${encodedText}`;
+              }
+            } else {
+              url = `whatsapp://send?text=${encodedText}`;
+            }
+          } catch {
+            url = `whatsapp://send?text=${encodedText}`;
+          }
           break;
         case 'facebook':
           url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}${imageUrl ? `&picture=${encodedImage}` : ''}`;
@@ -439,7 +460,8 @@ export default function ListingDetailScreen() {
           setIsSharing(false);
           return;
         case 'telegram':
-          url = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
+          // Telegram: include image URL for preview
+          url = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}${imageUrl ? `&imageurl=${encodedImage}` : ''}`;
           break;
         case 'twitter':
           url = `https://twitter.com/intent/tweet?text=${encodedText}`;
@@ -853,11 +875,22 @@ export default function ListingDetailScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: listing.images[currentImageIndex] }}
-          style={styles.image}
-          contentFit="cover"
-        />
+        {listing.images && listing.images.length > 0 && listing.images[currentImageIndex] ? (
+          <Image
+            source={{ uri: listing.images[currentImageIndex] }}
+            style={styles.image}
+            contentFit="cover"
+            onError={() => {
+              logger.warn('[ListingDetail] Failed to load image:', listing.images[currentImageIndex]);
+            }}
+          />
+        ) : (
+          <View style={[styles.image, styles.imagePlaceholder]}>
+            <Text style={styles.imagePlaceholderText}>
+              {listing.title?.az?.[0] || listing.title?.ru?.[0] || 'N'}
+            </Text>
+          </View>
+        )}
 
         {listing.images.length > 1 && (
           <>
@@ -1169,6 +1202,16 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  imagePlaceholder: {
+    backgroundColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#9ca3af',
   },
   imageNav: {
     position: 'absolute',

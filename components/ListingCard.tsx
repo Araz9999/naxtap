@@ -831,15 +831,26 @@ const ListingCard = React.memo(function ListingCard({
       {hasCreativeEffects && activeCreativeEffects.some(e => e.type === 'frame') && renderFrameEffect()}
       <TouchableOpacity style={styles.cardTouchable} onPress={handlePress}>
         <View style={[styles.imageContainer, { aspectRatio: compactMode ? 1 : 4/3 }]}>
-          <Image
-            source={{ uri: listing.images[0] }}
-            style={styles.image}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-            priority="high"
-            testID="listing-image"
-          />
+          {listing.images && listing.images.length > 0 && listing.images[0] ? (
+            <Image
+              source={{ uri: listing.images[0] }}
+              style={styles.image}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+              priority="high"
+              onError={() => {
+                logger.warn('[ListingCard] Failed to load image for listing:', listing.id);
+              }}
+              testID="listing-image"
+            />
+          ) : (
+            <View style={[styles.image, styles.imagePlaceholder]}>
+              <Text style={styles.imagePlaceholderText}>
+                {listing.title?.az?.[0] || listing.title?.ru?.[0] || 'N'}
+              </Text>
+            </View>
+          )}
           <View style={styles.actionButtons}>
             {showDeleteButton && currentUser?.id === listing.userId && (
               <TouchableOpacity
@@ -1245,6 +1256,16 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  imagePlaceholder: {
+    backgroundColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#9ca3af',
   },
   actionButtons: {
     position: 'absolute',

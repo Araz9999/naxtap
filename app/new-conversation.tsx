@@ -74,7 +74,7 @@ export default function NewConversationScreen() {
         activeOpacity={0.7}
       >
         <Image
-          source={{ uri: item.avatar || 'https://i.pravatar.cc/150?img=' + (item.id.charCodeAt(0) % 70) }}
+          source={{ uri: item.avatar || `https://i.pravatar.cc/150?u=${item.id}` }}
           style={styles.avatar}
         />
         <View style={styles.userInfo}>

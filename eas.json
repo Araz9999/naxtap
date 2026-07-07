@@ -15,6 +15,18 @@
         "buildConfiguration": "Debug"
       }
     },
+    "expo-go": {
+      "distribution": "internal",
+      "node": "22.13.0",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_BACKEND_URL": "https://naxtap.az",
+        "EXPO_PUBLIC_RORK_API_BASE_URL": "https://naxtap.az"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "node": "22.13.0",

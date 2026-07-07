@@ -8,14 +8,14 @@ import { useCallStore } from '@/store/callStore';
 import { useListingStore } from '@/store/listingStore';
 import ListingCard from '@/components/ListingCard';
 import Colors from '@/constants/colors';
-import { Star, MessageCircle, Phone, MessageSquare, MoreVertical } from 'lucide-react-native';
+import { Star, MessageCircle, Phone, MessageSquare, MoreVertical, Clock } from 'lucide-react-native';
 import * as Linking from 'expo-linking';
 import StarRating from '@/components/StarRating';
 import RatingModal from '@/components/RatingModal';
 import RatingsList from '@/components/RatingsList';
 import { RatingWithUser } from '@/types/rating';
 import UserActionModal from '@/components/UserActionModal';
-import { trpcClient } from '@/lib/trpc';
+import { trpcClient, trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
 
 export default function UserProfileScreen() {
@@ -32,6 +32,12 @@ export default function UserProfileScreen() {
   const [activeTab, setActiveTab] = useState<'listings' | 'ratings'>('listings');
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Fetch user presence (last seen status)
+  const presenceQuery = trpc.user.getUserPresence.useQuery(
+    { userId: id as string },
+    { enabled: !!id },
+  );
 
   // Load user from API
   useEffect(() => {
@@ -174,6 +180,20 @@ export default function UserProfileScreen() {
           <Text style={styles.memberSince}>
             {language === 'az' ? 'Üzv olub:' : 'Участник с:'} {formatDate(user.memberSince)}
           </Text>
+          {/* Last Seen Status */}
+          {presenceQuery.data && !isCurrentUser && (
+            <View style={styles.lastSeenContainer}>
+              <Clock size={12} color={presenceQuery.data.isOnline ? '#22c55e' : Colors.textSecondary} />
+              <Text style={[
+                styles.lastSeenText,
+                presenceQuery.data.isOnline && styles.onlineText,
+              ]}>
+                {presenceQuery.data.isOnline
+                  ? (language === 'az' ? 'Online' : 'Онлайн')
+                  : presenceQuery.data.lastSeenText || ''}
+              </Text>
+            </View>
+          )}
           <Text style={styles.location}>{user.location[language]}</Text>
         </View>
       </View>
@@ -395,6 +415,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     marginBottom: 4,
+  },
+  lastSeenContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  lastSeenText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  onlineText: {
+    color: '#22c55e',
+    fontWeight: '500',
   },
   location: {
     fontSize: 14,

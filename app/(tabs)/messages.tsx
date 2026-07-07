@@ -208,7 +208,7 @@ export default function MessagesScreen() {
             style: 'destructive',
             onPress: () => {
               logger.info('[Messages] Deleting all messages from user:', otherUser.id);
-              deleteAllFromUserMutation.mutate({ userId: otherUser.id });
+              deleteAllFromUserMutation.mutate({ userId: otherUser.id, conversationId: item.id });
             },
           },
         ],
@@ -222,7 +222,7 @@ export default function MessagesScreen() {
         onLongPress={handleLongPress}
         activeOpacity={0.7}
       >
-        <Image source={{ uri: otherUser.avatar || 'https://i.pravatar.cc/150?img=1' }} style={styles.avatar} />
+        <Image source={{ uri: otherUser.avatar || `https://i.pravatar.cc/150?u=${otherUser.id}` }} style={styles.avatar} />
 
         <View style={styles.conversationContent}>
           <View style={styles.conversationHeader}>
